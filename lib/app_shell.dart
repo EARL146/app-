@@ -1,0 +1,54 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'constants/app_colors.dart';
+import 'navigation/app_router.dart';
+import 'providers/admin_customers_provider.dart';
+import 'providers/admin_orders_provider.dart';
+import 'providers/admin_products_provider.dart';
+import 'providers/cart_provider.dart';
+import 'services/auth_service.dart';
+
+class AppShell extends StatelessWidget {
+  const AppShell({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthService>(create: (_) => AuthService()),
+        ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
+        ChangeNotifierProvider<AdminProductsProvider>(
+            create: (_) => AdminProductsProvider()),
+        ChangeNotifierProvider<AdminOrdersProvider>(
+            create: (_) => AdminOrdersProvider()),
+        ChangeNotifierProvider<AdminCustomersProvider>(
+            create: (_) => AdminCustomersProvider()),
+      ],
+      child: const _AppShellContent(),
+    );
+  }
+}
+
+class _AppShellContent extends StatelessWidget {
+  const _AppShellContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'BurgerBites',
+      theme: ThemeData(
+        scaffoldBackgroundColor: AppColors.pageBackground,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.brandOrange,
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+        fontFamily: 'Roboto',
+      ),
+      onGenerateRoute: AppRouter.generateRoute,
+      initialRoute: '/',
+    );
+  }
+}

@@ -1,10 +1,13 @@
-
 import 'dart:async';
+
+import 'package:burger_bites/app_shell.dart';
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const BurgerBitesApp());
+  runApp(const AppShell());
 }
+
+// Existing prototype code is preserved below for reference and incremental migration.
 
 const Color brandRed = Color(0xFFFF3038);
 const Color pageBackground = Color(0xFFFFFFFF);
@@ -42,21 +45,13 @@ class BurgerLogo extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.lunch_dining,
-            size: size,
-            color: const Color(0xFF394657),
-          ),
+          Icon(Icons.lunch_dining, size: size, color: const Color(0xFF394657)),
           Transform.rotate(
             angle: -0.06,
             child: Text(
               'Burger Bites',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: brandRed,
-                fontSize: size * 0.20,
-                fontWeight: FontWeight.w800,
-              ),
+              style: TextStyle(color: brandRed, fontSize: size * 0.20, fontWeight: FontWeight.w800),
             ),
           ),
         ],
@@ -80,11 +75,8 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
     Timer(const Duration(seconds: 2), () {
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const GreetingsScreen(),
-        ),
-      );
+      Navigator.of(context)
+          .pushReplacement(MaterialPageRoute(builder: (_) => const GreetingsScreen()));
     });
   }
 
@@ -93,24 +85,15 @@ class _LoadingScreenState extends State<LoadingScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const Center(
-            child: BurgerLogo(size: 85),
-          ),
+          const Center(child: BurgerLogo(size: 85)),
           Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: FoodPatternPainter(),
-              ),
-            ),
+            child: IgnorePointer(child: CustomPaint(painter: FoodPatternPainter())),
           ),
           const Center(
             child: SizedBox(
               width: 66,
               height: 66,
-              child: CircularProgressIndicator(
-                color: Colors.black,
-                strokeWidth: 5,
-              ),
+              child: CircularProgressIndicator(color: Colors.black, strokeWidth: 5),
             ),
           ),
         ],
@@ -134,11 +117,8 @@ class _GreetingsScreenState extends State<GreetingsScreen> {
 
     Timer(const Duration(seconds: 2), () {
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => const SignInScreen(),
-        ),
-      );
+      Navigator.of(context)
+          .pushReplacement(MaterialPageRoute(builder: (_) => const SignInScreen()));
     });
   }
 
@@ -155,20 +135,14 @@ class _GreetingsScreenState extends State<GreetingsScreen> {
               const SizedBox(height: 34),
               const Text(
                 'Welcome to Burger Bites',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF333333),
-                ),
+                style: TextStyle(fontSize: 14, color: Color(0xFF333333)),
               ),
               const Spacer(),
               const Padding(
                 padding: EdgeInsets.only(bottom: 24),
                 child: Text(
                   'Fresh burgers, happy moments.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
                 ),
               ),
             ],
@@ -216,11 +190,7 @@ class _SignInScreenState extends State<SignInScreen> {
       setState(() => _loading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Form validated! Connect your login backend next.',
-          ),
-        ),
+        const SnackBar(content: Text('Form validated! Connect your login backend next.')),
       );
     });
   }
@@ -231,10 +201,7 @@ class _SignInScreenState extends State<SignInScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 18,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 390),
               child: Form(
@@ -242,9 +209,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Center(
-                      child: BurgerLogo(size: 92),
-                    ),
+                    const Center(child: BurgerLogo(size: 92)),
                     const SizedBox(height: 18),
                     const Text(
                       'Create an account',
@@ -259,27 +224,19 @@ class _SignInScreenState extends State<SignInScreen> {
                     const Text(
                       'Enter your email to sign up for the app',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.black87,
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.black87),
                     ),
                     const SizedBox(height: 25),
 
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: _inputDecoration(
-                        'Email address',
-                        icon: Icons.mail_outline,
-                      ),
+                      decoration: _inputDecoration('Email address', icon: Icons.mail_outline),
                       validator: (value) {
                         final email = value?.trim() ?? '';
 
                         if (email.isEmpty ||
-                            !RegExp(
-                              r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-                            ).hasMatch(email)) {
+                            !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
                           return 'Enter a valid email address';
                         }
                         return null;
@@ -290,10 +247,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _hidePassword,
-                      decoration: _inputDecoration(
-                        'Password',
-                        icon: Icons.lock_outline,
-                      ).copyWith(
+                      decoration: _inputDecoration('Password', icon: Icons.lock_outline).copyWith(
                         suffixIcon: IconButton(
                           onPressed: () {
                             setState(() {
@@ -324,9 +278,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(5),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
                         ),
                         child: _loading
                             ? const SizedBox(
@@ -337,10 +289,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text(
-                                'Continue',
-                                style: TextStyle(fontSize: 12),
-                              ),
+                            : const Text('Continue', style: TextStyle(fontSize: 12)),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -352,10 +301,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           padding: EdgeInsets.symmetric(horizontal: 10),
                           child: Text(
                             'or continue with',
-                            style: TextStyle(
-                              color: Colors.black54,
-                              fontSize: 10,
-                            ),
+                            style: TextStyle(color: Colors.black54, fontSize: 10),
                           ),
                         ),
                         Expanded(child: Divider()),
@@ -377,11 +323,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     const SizedBox(height: 10),
                     _socialButton(
-                      icon: const Icon(
-                        Icons.apple,
-                        color: Colors.black,
-                        size: 19,
-                      ),
+                      icon: const Icon(Icons.apple, color: Colors.black, size: 19),
                       label: 'Continue with Apple',
                       onPressed: () => _showNotice('Apple sign-in'),
                     ),
@@ -391,11 +333,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       'By clicking continue, you agree to our Terms of '
                       'Service and Privacy Policy.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.black54,
-                        fontSize: 9,
-                        height: 1.6,
-                      ),
+                      style: TextStyle(color: Colors.black54, fontSize: 9, height: 1.6),
                     ),
                   ],
                 ),
@@ -407,23 +345,14 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  InputDecoration _inputDecoration(
-    String hint, {
-    required IconData icon,
-  }) {
+  InputDecoration _inputDecoration(String hint, {required IconData icon}) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(
-        fontSize: 11,
-        color: Colors.black45,
-      ),
+      hintStyle: const TextStyle(fontSize: 11, color: Colors.black45),
       prefixIcon: Icon(icon, size: 17, color: Colors.black54),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 13,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(5),
         borderSide: const BorderSide(color: Color(0xFFE4E4E4)),
@@ -452,19 +381,14 @@ class _SignInScreenState extends State<SignInScreen> {
           backgroundColor: const Color(0xFFF4F4F4),
           foregroundColor: Colors.black,
           side: BorderSide.none,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(5),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             icon,
             const SizedBox(width: 10),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 11),
-            ),
+            Text(label, style: const TextStyle(fontSize: 11)),
           ],
         ),
       ),
@@ -472,13 +396,8 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   void _showNotice(String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$provider is not connected yet.',
-        ),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('$provider is not connected yet.')));
   }
 }
 
@@ -495,13 +414,7 @@ class FoodPatternPainter extends CustomPainter {
       final y = (i * 107.0) % size.height;
 
       canvas.drawCircle(Offset(x, y), 9, paint);
-      canvas.drawArc(
-        Rect.fromCircle(center: Offset(x, y), radius: 13),
-        0.5,
-        2.4,
-        false,
-        paint,
-      );
+      canvas.drawArc(Rect.fromCircle(center: Offset(x, y), radius: 13), 0.5, 2.4, false, paint);
     }
   }
 
