@@ -86,8 +86,9 @@ class AdminOrdersProvider extends ChangeNotifier {
       total: oldOrder.total,
       status: newStatus,
       createdAt: oldOrder.createdAt,
-      deliveredAt:
-          newStatus == OrderStatus.delivered ? DateTime.now() : oldOrder.deliveredAt,
+      deliveredAt: newStatus == OrderStatus.delivered
+          ? DateTime.now()
+          : oldOrder.deliveredAt,
     );
 
     if (_selectedOrder?.id == orderId) {
@@ -95,7 +96,8 @@ class AdminOrdersProvider extends ChangeNotifier {
     }
 
     _isLoading = false;
-    _successMessage = 'Order status updated to ${_statusDisplayName(newStatus)}.';
+    _successMessage =
+        'Order status updated to ${_statusDisplayName(newStatus)}.';
     notifyListeners();
     return true;
   }
@@ -121,7 +123,8 @@ class AdminOrdersProvider extends ChangeNotifier {
     if (order.status == OrderStatus.delivered ||
         order.status == OrderStatus.canceled) {
       _isLoading = false;
-      _errorMessage = 'Cannot cancel ${_statusDisplayName(order.status).toLowerCase()} orders.';
+      _errorMessage =
+          'Cannot cancel ${_statusDisplayName(order.status).toLowerCase()} orders.';
       notifyListeners();
       return false;
     }
@@ -139,7 +142,7 @@ class AdminOrdersProvider extends ChangeNotifier {
     );
 
     _isLoading = false;
-    _successMessage = 'Order ${orderId} cancelled successfully!';
+    _successMessage = 'Order $orderId cancelled successfully!';
     if (_selectedOrder?.id == orderId) {
       _selectedOrder = _orders[index];
     }
@@ -147,18 +150,7 @@ class AdminOrdersProvider extends ChangeNotifier {
     return true;
   }
 
-  String _statusDisplayName(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return 'Pending';
-      case OrderStatus.processing:
-        return 'Processing';
-      case OrderStatus.delivered:
-        return 'Delivered';
-      case OrderStatus.cancelled:
-        return 'Cancelled';
-    }
-  }
+  String _statusDisplayName(OrderStatus status) => status.displayName;
 
   List<Order> searchOrders(String query) {
     if (query.isEmpty) return _filteredOrders;
@@ -170,9 +162,11 @@ class AdminOrdersProvider extends ChangeNotifier {
 
   List<Order> getOrdersByDateRange(DateTime start, DateTime end) {
     return _filteredOrders
-        .where((o) =>
-            o.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
-            o.createdAt.isBefore(end.add(const Duration(days: 1))))
+        .where(
+          (o) =>
+              o.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
+              o.createdAt.isBefore(end.add(const Duration(days: 1))),
+        )
         .toList();
   }
 }

@@ -25,9 +25,11 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.brandOrange,
-        title: const Text('Customers Management',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.pageBackground,
+        title: const Text(
+          'Customers Management',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
       ),
       body: Consumer<AdminCustomersProvider>(
@@ -52,7 +54,8 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                     Expanded(
                       child: _StatCard(
                         label: 'Total Spent',
-                        value: '₱${provider.totalCustomerSpent.toStringAsFixed(0)}',
+                        value:
+                            '₱${provider.totalCustomerSpent.toStringAsFixed(0)}',
                         color: Colors.green,
                       ),
                     ),
@@ -75,7 +78,8 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                     Expanded(
                       child: _StatCard(
                         label: 'Avg Order Value',
-                        value: '₱${provider.averageOrderValue.toStringAsFixed(0)}',
+                        value:
+                            '₱${provider.averageOrderValue.toStringAsFixed(0)}',
                         color: Colors.purple,
                       ),
                     ),
@@ -110,8 +114,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                         Checkbox(
                           value: _showOnlyActive,
                           onChanged: (value) {
-                            setState(
-                                () => _showOnlyActive = value ?? false);
+                            setState(() => _showOnlyActive = value ?? false);
                           },
                           activeColor: AppColors.brandOrange,
                         ),
@@ -127,36 +130,44 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                 child: provider.isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : customers.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.people,
-                                    size: 64, color: Colors.grey[300]),
-                                const SizedBox(height: 16),
-                                Text('No customers found',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium!
-                                        .copyWith(color: Colors.grey[600])),
-                              ],
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.people,
+                              size: 64,
+                              color: Colors.grey[300],
                             ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            itemCount: customers.length,
-                            itemBuilder: (context, index) {
-                              final customer = customers[index];
-                              return _CustomerCard(
-                                customer: customer,
-                                onTap: () => _showCustomerDetails(
-                                    context, customer, provider),
-                                onToggleStatus: () =>
-                                    _toggleStatus(context, customer, provider),
-                              );
-                            },
-                          ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No customers found',
+                              style: Theme.of(context).textTheme.titleMedium!
+                                  .copyWith(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        itemCount: customers.length,
+                        itemBuilder: (context, index) {
+                          final customer = customers[index];
+                          return _CustomerCard(
+                            customer: customer,
+                            onTap: () => _showCustomerDetails(
+                              context,
+                              customer,
+                              provider,
+                            ),
+                            onToggleStatus: () =>
+                                _toggleStatus(context, customer, provider),
+                          );
+                        },
+                      ),
               ),
             ],
           );
@@ -174,8 +185,11 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
     return provider.searchCustomers(_searchController.text);
   }
 
-  void _showCustomerDetails(BuildContext context, Customer customer,
-      AdminCustomersProvider provider) {
+  void _showCustomerDetails(
+    BuildContext context,
+    Customer customer,
+    AdminCustomersProvider provider,
+  ) {
     showModalBottomSheet(
       context: context,
       builder: (context) =>
@@ -184,8 +198,11 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
     );
   }
 
-  void _toggleStatus(BuildContext context, Customer customer,
-      AdminCustomersProvider provider) {
+  void _toggleStatus(
+    BuildContext context,
+    Customer customer,
+    AdminCustomersProvider provider,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -202,6 +219,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
             onPressed: () {
               Navigator.pop(context);
               provider.toggleCustomerStatus(customer.id).then((_) {
+                if (!context.mounted) return;
                 if (provider.successMessage != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -246,17 +264,14 @@ class _StatCard extends StatelessWidget {
         children: [
           Text(
             value,
-            style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(context).textTheme.titleSmall!
+                .copyWith(color: color, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: Theme.of(context).textTheme.labelSmall!
+                .copyWith(color: Colors.grey[600]),
           ),
         ],
       ),
@@ -406,21 +421,15 @@ class _CustomerDetailsBottomSheet extends StatelessWidget {
               const SizedBox(height: 20),
               Text(
                 customer.name,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge!
+                style: Theme.of(context).textTheme.titleLarge!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              _DetailRow('Status',
-                  customer.isActive ? 'Active' : 'Inactive'),
+              _DetailRow('Status', customer.isActive ? 'Active' : 'Inactive'),
               _DetailRow('Email', customer.email),
               _DetailRow('Phone', customer.phone),
               _DetailRow('Address', customer.address),
-              _DetailRow(
-                'Joined',
-                _formatDate(customer.joinedDate),
-              ),
+              _DetailRow('Joined', _formatDate(customer.joinedDate)),
               const Divider(height: 16),
               _DetailRow('Total Orders', customer.orderCount.toString()),
               _DetailRow(
@@ -437,8 +446,9 @@ class _CustomerDetailsBottomSheet extends StatelessWidget {
                     provider.toggleCustomerStatus(customer.id);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        customer.isActive ? Colors.red : Colors.green,
+                    backgroundColor: customer.isActive
+                        ? Colors.red
+                        : Colors.green,
                   ),
                   child: Text(
                     customer.isActive
@@ -464,11 +474,7 @@ class _DetailRow extends StatelessWidget {
   final String value;
   final bool isBold;
 
-  const _DetailRow(
-    this.label,
-    this.value, {
-    this.isBold = false,
-  });
+  const _DetailRow(this.label, this.value, {this.isBold = false});
 
   @override
   Widget build(BuildContext context) {
@@ -481,8 +487,8 @@ class _DetailRow extends StatelessWidget {
           Text(
             value,
             style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                ),
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
         ],
       ),

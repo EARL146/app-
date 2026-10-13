@@ -1,65 +1,60 @@
 # Screen Implementation Status
 
-## Customer (Phase 3 — Complete)
+> Updated: 2026-10-13. “Implemented” refers to Flutter UI/local demo behavior. No screen has been compared with an original Figma frame.
 
-### Authentication Flow
-- Welcome screen: ✅ Implemented — Onboarding flow with signup/login routing
-- Sign-in screen: ✅ Implemented — Form validation, navigation to customer home
-- Registration screen: ✅ Implemented — Full name, email, password handling
+## Navigation
 
-### Customer Dashboard
-- Home dashboard: ✅ Implemented — Location selector, promo banner, product carousel, order history
-- Navigation: ✅ Implemented — 4-tab bottom navigation (Home, Menu, Orders, Profile)
-- Cart badge: ✅ Implemented — Live item count indicator
+- [[PROJECT_MAP]]
+- [[FILE_REGISTRY]]
+- [[SCREEN_DESIGN_SPEC]]
+- [[README]]
 
-### Shopping Flow
-- Product menu: ✅ Implemented — Category filtering, grid view, product cards
-- Search: ✅ Implemented — Real-time search by product name/category
-- Product details: ✅ Implemented — Full view with quantity selector, add-to-cart
-- Cart: ✅ Implemented — Item listing, quantity adjustments, running totals
-- Checkout: ✅ Implemented — Customer/address validation, demo order submission
-- Order success: ✅ Implemented — Confirmation screen with order ID reference
+## Customer screens
 
-### User Pages
-- Order history: ✅ Implemented — Demo orders with status badges (Delivered/Processing)
-- Profile: ✅ Implemented — Profile card, navigation menu to settings
-- Account settings: ✅ Implemented — Listed preference tiles
-- Language selector: ✅ Implemented — Radio selection, switchable
-- Theme selector: ✅ Implemented — Placeholder for future themes/colors
-- Contact: ✅ Implemented — Support contact card
-- About: ✅ Implemented — App description and purpose
+| Screen | Status | Current behavior / limitation |
+| --- | --- | --- |
+| Welcome | Implemented | Prototype landing screen and route links. |
+| Sign in | Implemented | Local field validation and demo navigation; no authentication service connected. |
+| Registration | Implemented | Local field validation and demo navigation; no account is created on a server. |
+| Home | Implemented | Location, promotional hero, categories, sample bestsellers, and sample orders. |
+| Menu | Implemented | Category filtering, local product images, add-to-cart actions. |
+| Search | Implemented | Search by product/category/description, category filters, and local recent/trending UI. |
+| Product details | Implemented | Size, topping, quantity, and local price previews feed the local cart. |
+| Cart | Implemented | Quantity changes, removals, local subtotal, tax, delivery fee, and total. |
+| Checkout | Implemented | Local form validation and payment selection preview; no payment is collected and no server order is saved. |
+| Order confirmation | Implemented | Displays a local reference only. |
+| Order history | Implemented | Static sample orders, status preview, local reorder behavior; live tracking is not connected. |
+| Profile | Implemented | Sample customer identity, rewards summary, and routes to account pages. |
+| Account settings | Implemented | Local switches and fields; preferences are not persisted. |
+| Language | Implemented | Search and selection preview; app translations are not applied. |
+| Theme | Implemented | Palette/display preview selection; global theme is not changed or persisted. |
+| Calendar | Implemented | Date selection and labeled sample milestone content. |
+| Contact | Implemented | Local message validation, sample contact options, and FAQ panels; no support message is sent. |
+| About | Implemented | Sample brand content and bundled product image. |
 
-## Admin (Phase 4 — Pending)
+## Admin screens
 
-- Admin home dashboard: Planned.
-- Orders management: Planned.
-- Products management: Planned.
-- Product add/edit: Planned.
-- Customers: Planned.
-- Rules / revenue / payouts: Planned.
+| Screen | Status | Current behavior / limitation |
+| --- | --- | --- |
+| Dashboard | Implemented | In-memory sample metrics, chart preview, quick actions, and recent sample orders. |
+| Orders | Implemented | Local search/status filtering, status changes, and cancellation; not server-backed. |
+| Products | Implemented | Local search/category filtering, product image cards, availability toggle, edit, delete, and add. |
+| Add/edit product | Implemented | Local product provider state; no image upload or backend persistence. |
+| Customers | Implemented | Sample customer state and local status controls. |
+| More | Implemented | Local admin summary/settings UI; values are not live business records. |
 
-## Implementation Notes
+## Reference verification
 
-### Backend Status
-- **API layer:** Prepared via `ApiService` with auth header injection and error handling
-- **Session:** Secure storage ready (`StorageService`), auth service prepared
-- **Demo data:** Local `DemoData` class provides products and sample orders
-- **Demo order flow:** Cart/checkout validates locally, submits mock order, returns reference ID
+- Supplied screenshots are the design references currently available.
+- No Figma project, exported frame, or design-token file was found in the archive.
+- **Verified Against Figma:** none.
+- Visual comparison in a running emulator/device: not performed for this update.
 
-### Cart Verification
-- Adding items increments quantity or creates new entry
-- Quantity updates and removals work correctly
-- Calculations: Subtotal, tax (12%), delivery fee (25 PHP) are all dynamic
-- Validation: Requires valid customer name and full delivery address
+## Verification record
 
-### Navigation
-- Welcome → Sign-in/Register → Customer Home is fully wired
-- All tabs and links navigate correctly
-- Back buttons and order success redirect to home
-
-## Validation Results (Phase 3 Complete)
-
-✅ Analysis: 13 info warnings (style only), 0 errors  
-✅ Tests: All widget tests pass  
-✅ Navigation: All routes and flows tested and working  
-✅ Cart operations: Tested add, remove, quantity update, checkout flow
+- Flutter: 3.47.6; Dart: 3.13.5.
+- `dart format` on modified Dart files: completed.
+- `flutter analyze --no-pub`: passed with no issues on 2026-10-13.
+- `flutter build web --no-pub`: passed on 2026-10-13. Non-blocking WebAssembly compatibility notices were reported for the secure-storage web plugin; the standard Web build completed.
+- `flutter build apk --debug --no-pub`: did not complete because Gradle could not remove an existing generated assets directory under `build/app/intermediates/assets/debug/mergeDebugAssets`; no new APK was produced.
+- Automated tests: not run for this redesign.

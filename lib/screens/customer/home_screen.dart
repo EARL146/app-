@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
 import '../../data/demo_data.dart';
+import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../widgets/food_image.dart';
 import 'menu_screen.dart';
 import 'order_history_screen.dart';
 import 'profile_screen.dart';
@@ -34,15 +36,24 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.brandOrange,
-        unselectedItemColor: AppColors.textSecondary,
         onTap: (index) => setState(() => _selectedIndex = index),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book_rounded), label: 'Menu'),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: 'Orders'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.restaurant_menu_rounded),
+            label: 'Menu',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long_rounded),
+            label: 'Orders',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
         ],
       ),
     );
@@ -54,207 +65,328 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final products = DemoData.products;
+    return CustomScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+          sliver: SliverList.list(
             children: [
-              const Icon(Icons.location_on_outlined, color: AppColors.brandOrange),
-              const SizedBox(width: 8),
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: const Icon(Icons.menu_rounded, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Burger',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                  ),
+                  const Text(
+                    'Bites',
+                    style: TextStyle(
+                      color: AppColors.brandRed,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Search menu',
+                    onPressed: () => Navigator.of(context).pushNamed('/search'),
+                    icon: const Icon(Icons.search_rounded),
+                  ),
+                  Consumer<CartProvider>(
+                    builder: (context, cart, _) => _CartButton(
+                      count: cart.items.fold<int>(0, (s, i) => s + i.quantity),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               const Text(
-                'Mandaue City',
+                'DELIVER TO',
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const Spacer(),
-              Consumer<CartProvider>(
-                builder: (context, cart, _) {
-                  return Stack(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pushNamed('/cart'),
-                        icon: const Icon(Icons.shopping_bag_outlined),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.location_on_rounded,
+                    color: AppColors.brandOrange,
+                    size: 17,
+                  ),
+                  const SizedBox(width: 4),
+                  const Expanded(
+                    child: Text(
+                      'Compostela, Cebu',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
                       ),
-                      if (cart.items.isNotEmpty)
-                        Positioned(
-                          right: 8,
-                          top: 8,
-                          child: Container(
-                            width: 18,
-                            height: 18,
-                            decoration: const BoxDecoration(
-                              color: AppColors.brandOrange,
-                              shape: BoxShape.circle,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () =>
+                        _showDemoNotice(context, 'Location selection'),
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 17,
+                    ),
+                    label: const Text('Change'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.brandOrange,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _HeroOffer(
+                onOrder: () => Navigator.of(context).pushNamed('/menu'),
+              ),
+              const SizedBox(height: 22),
+              _SectionHeading(
+                title: 'Explore categories',
+                action: 'See all',
+                onTap: () => Navigator.of(context).pushNamed('/menu'),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 74,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _CategoryBubble(
+                      label: 'Burgers',
+                      category: 'Burgers',
+                      icon: Icons.lunch_dining_rounded,
+                    ),
+                    _CategoryBubble(
+                      label: 'Crispy sides',
+                      category: 'Sides',
+                      icon: Icons.fastfood_rounded,
+                    ),
+                    _CategoryBubble(
+                      label: 'Fizzy drinks',
+                      category: 'Drinks',
+                      icon: Icons.local_drink_rounded,
+                    ),
+                    _CategoryBubble(
+                      label: 'Chicken',
+                      category: 'Chicken',
+                      icon: Icons.kebab_dining_rounded,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 22),
+              _SectionHeading(
+                title: 'Popular bestsellers',
+                action: 'View menu',
+                onTap: () => Navigator.of(context).pushNamed('/menu'),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 220,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: products.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) =>
+                      _ProductCard(product: products[index]),
+                ),
+              ),
+              const SizedBox(height: 22),
+              _SectionHeading(
+                title: 'Your recent orders',
+                action: 'Order history',
+                onTap: () => Navigator.of(context).pushNamed('/order-history'),
+              ),
+              const SizedBox(height: 12),
+              ...DemoData.customerOrders
+                  .take(2)
+                  .map(
+                    (order) => Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceMuted,
+                              borderRadius: BorderRadius.circular(13),
                             ),
-                            child: Center(
-                              child: Text(
-                                '${cart.items.fold<int>(0, (sum, item) => sum + item.quantity)}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                            child: const Icon(
+                              Icons.receipt_long_rounded,
+                              color: AppColors.brandOrange,
                             ),
                           ),
-                        ),
-                    ],
-                  );
-                },
-              ),
+                          const SizedBox(width: 11),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  order.id,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${order.items.length} item${order.items.length == 1 ? '' : 's'} · ${order.status.displayName}',
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '₱${order.total.toStringAsFixed(0)}',
+                            style: const TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Good morning, John',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroOffer extends StatelessWidget {
+  const _HeroOffer({required this.onOrder});
+
+  final VoidCallback onOrder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 190,
+      decoration: BoxDecoration(
+        color: const Color(0xFF2B1C16),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.brandOrange.withValues(alpha: .13),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppColors.brandOrange,
-              borderRadius: BorderRadius.circular(24),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 174,
+            child: FoodImage(
+              imageUrl: 'assets/products/smash_burger.jpg',
+              borderRadius: 0,
             ),
-            child: Row(
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF2B1C16),
+                    const Color(0xFF2B1C16).withValues(alpha: .98),
+                    const Color(0xFF2B1C16).withValues(alpha: .06),
+                  ],
+                  stops: const [0, .52, 1],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 17,
+            top: 17,
+            bottom: 17,
+            width: 208,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Fresh tastes, fast delivery',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Discover hot deals and signature burgers.',
-                        style: TextStyle(fontSize: 12, color: Colors.white70),
-                      ),
-                    ],
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
                   ),
-                ),
-                const Icon(Icons.fastfood_rounded, size: 72, color: Colors.white),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Popular menu',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pushNamed('/menu'),
-                child: const Text('See all'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 210,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: DemoData.products.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 14),
-              itemBuilder: (context, index) {
-                final product = DemoData.products[index];
-                return _ProductCard(product: product);
-              },
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Order history',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pushNamed('/order-history'),
-                child: const Text('View all'),
-              ),
-            ],
-          ),
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.only(top: 8),
-              itemCount: DemoData.customerOrders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, index) {
-                final order = DemoData.customerOrders[index];
-                return Container(
-                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.border),
+                    color: AppColors.brandOrange,
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceMuted,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.receipt_long, color: AppColors.brandOrange),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              order.id,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${order.items[0].productName} • ${order.status.displayName}',
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '₱${order.total.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
+                  child: const Text(
+                    'SPECIAL OFFER',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .6,
+                    ),
                   ),
-                );
-              },
+                ),
+                const Spacer(),
+                const Text(
+                  'Delicious food.\nDelivered fast.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    height: 1.05,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Get 20% off your first combo order.',
+                  style: TextStyle(color: Colors.white70, fontSize: 10),
+                ),
+                const SizedBox(height: 11),
+                SizedBox(
+                  height: 32,
+                  child: ElevatedButton.icon(
+                    onPressed: onOrder,
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                    label: const Text(
+                      'Order now',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.brandOrange,
+                      padding: const EdgeInsets.symmetric(horizontal: 13),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -263,68 +395,202 @@ class _HomeTab extends StatelessWidget {
   }
 }
 
-class _ProductCard extends StatelessWidget {
-  const _ProductCard({required this.product, super.key});
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({
+    required this.title,
+    required this.action,
+    required this.onTap,
+  });
 
-  final dynamic product;
+  final String title;
+  final String action;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+          ),
+        ),
+        TextButton(
+          onPressed: onTap,
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.brandOrange,
+            visualDensity: VisualDensity.compact,
+          ),
+          child: Text(
+            action,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CategoryBubble extends StatelessWidget {
+  const _CategoryBubble({
+    required this.label,
+    required this.category,
+    required this.icon,
+  });
+
+  final String label;
+  final String category;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 88,
+      child: InkWell(
+        onTap: () =>
+            Navigator.of(context).pushNamed('/menu', arguments: category),
+        child: Column(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Icon(icon, color: AppColors.brandOrange, size: 21),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 9,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  const _ProductCard({required this.product});
+
+  final Product product;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => Navigator.of(context).pushNamed('/product-details', arguments: product),
-      borderRadius: BorderRadius.circular(22),
+      onTap: () =>
+          Navigator.of(context)
+              .pushNamed('/product-details', arguments: product),
+      borderRadius: BorderRadius.circular(17),
       child: Container(
-        width: 170,
-        padding: const EdgeInsets.all(12),
+        width: 156,
+        padding: const EdgeInsets.all(9),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(17),
           border: Border.all(color: AppColors.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceMuted,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Icon(
-                    _productIcon(product.category ?? 'Burgers'),
-                    size: 62,
-                    color: AppColors.brandOrange,
+            SizedBox(
+              height: 112,
+              width: double.infinity,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: FoodImage(
+                      imageUrl: product.imageUrl,
+                      category: product.category,
+                      borderRadius: 12,
+                    ),
                   ),
-                ),
+                  Positioned(
+                    top: 7,
+                    left: 7,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .94),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 11,
+                            color: AppColors.warning,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            '${product.rating ?? 4.8}',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 7),
             Text(
               product.name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
             ),
-            const SizedBox(height: 4),
+            const Spacer(),
             Row(
               children: [
-                const Icon(Icons.star_rounded, color: Colors.orange, size: 14),
-                const SizedBox(width: 4),
-                Text(
-                  '${product.rating ?? 4.8}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                Expanded(
+                  child: Text(
+                    '₱${product.price.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      color: AppColors.brandOrange,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-                const Spacer(),
-                Text(
-                  '₱${product.price.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                Consumer<CartProvider>(
+                  builder: (context, cart, _) => SizedBox(
+                    width: 29,
+                    height: 29,
+                    child: IconButton.filled(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        cart.addItem(product);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${product.name} added to cart'),
+                            behavior: SnackBarBehavior.floating,
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add_rounded, size: 17),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.brandOrange,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -334,46 +600,53 @@ class _ProductCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  IconData _productIcon(String category) {
-    switch (category) {
-      case 'Burgers':
-        return Icons.lunch_dining_rounded;
-      case 'Chicken':
-        return Icons.kebab_dining_rounded;
-      case 'Sides':
-        return Icons.local_pizza_rounded;
-      case 'Drinks':
-        return Icons.local_cafe_rounded;
-      default:
-        return Icons.fastfood_rounded;
-    }
+class _CartButton extends StatelessWidget {
+  const _CartButton({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Cart',
+      onPressed: () => Navigator.of(context).pushNamed('/cart'),
+      icon: Badge(
+        isLabelVisible: count > 0,
+        label: Text('$count'),
+        child: const Icon(Icons.shopping_cart_outlined),
+      ),
+    );
   }
+}
+
+void _showDemoNotice(BuildContext context, String feature) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('$feature is a demo option.'),
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
 }
 
 class MenuScreenButton extends StatelessWidget {
   const MenuScreenButton({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const MenuScreen();
-  }
+  Widget build(BuildContext context) => const MenuScreen();
 }
 
 class _OrdersTab extends StatelessWidget {
-  const _OrdersTab({super.key});
+  const _OrdersTab();
 
   @override
-  Widget build(BuildContext context) {
-    return const OrderHistoryScreen();
-  }
+  Widget build(BuildContext context) => const OrderHistoryScreen();
 }
 
 class ProfileScreenButton extends StatelessWidget {
-  const ProfileScreenButton();
+  const ProfileScreenButton({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const ProfileScreen();
-  }
+  Widget build(BuildContext context) => const ProfileScreen();
 }

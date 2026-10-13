@@ -13,6 +13,7 @@ class AppRoutes {
   static const String checkout = '/checkout';
   static const String settings = '/settings';
   static const String language = '/language';
+  static const String calendar = '/calendar';
   static const String contact = '/contact';
   static const String about = '/about';
   static const String adminOrders = '/admin-orders';

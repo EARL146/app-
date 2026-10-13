@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../models/order_model.dart';
 import '../../providers/admin_orders_provider.dart';
+import '../../widgets/food_image.dart';
 
 class AdminOrdersScreen extends StatefulWidget {
   const AdminOrdersScreen({super.key});
@@ -26,8 +27,11 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.brandOrange,
-        title: const Text('Orders Management', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.pageBackground,
+        title: const Text(
+          'Orders Management',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
       ),
       body: Consumer<AdminOrdersProvider>(
@@ -107,10 +111,12 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                             const SizedBox(width: 8),
                             _FilterChip(
                               label: 'Pending',
-                              isSelected: _selectedStatus == OrderStatus.pending,
+                              isSelected:
+                                  _selectedStatus == OrderStatus.pending,
                               onTap: () {
-                                setState(() =>
-                                    _selectedStatus = OrderStatus.pending);
+                                setState(
+                                  () => _selectedStatus = OrderStatus.pending,
+                                );
                                 provider.setFilterStatus(OrderStatus.pending);
                               },
                             ),
@@ -120,9 +126,13 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                               isSelected:
                                   _selectedStatus == OrderStatus.processing,
                               onTap: () {
-                                setState(() =>
-                                    _selectedStatus = OrderStatus.processing);
-                                provider.setFilterStatus(OrderStatus.processing);
+                                setState(
+                                  () =>
+                                      _selectedStatus = OrderStatus.processing,
+                                );
+                                provider.setFilterStatus(
+                                  OrderStatus.processing,
+                                );
                               },
                             ),
                             const SizedBox(width: 8),
@@ -131,8 +141,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                               isSelected:
                                   _selectedStatus == OrderStatus.delivered,
                               onTap: () {
-                                setState(() =>
-                                    _selectedStatus = OrderStatus.delivered);
+                                setState(
+                                  () => _selectedStatus = OrderStatus.delivered,
+                                );
                                 provider.setFilterStatus(OrderStatus.delivered);
                               },
                             ),
@@ -140,11 +151,12 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                             _FilterChip(
                               label: 'Cancelled',
                               isSelected:
-                                  _selectedStatus == OrderStatus.cancelled,
+                                  _selectedStatus == OrderStatus.canceled,
                               onTap: () {
-                                setState(() =>
-                                    _selectedStatus = OrderStatus.cancelled);
-                                provider.setFilterStatus(OrderStatus.cancelled);
+                                setState(
+                                  () => _selectedStatus = OrderStatus.canceled,
+                                );
+                                provider.setFilterStatus(OrderStatus.canceled);
                               },
                             ),
                           ],
@@ -160,37 +172,41 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                 child: provider.isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : provider.orders.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.receipt_long,
-                                    size: 64, color: Colors.grey[300]),
-                                const SizedBox(height: 16),
-                                Text('No orders found',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium!
-                                        .copyWith(color: Colors.grey[600])),
-                              ],
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long,
+                              size: 64,
+                              color: Colors.grey[300],
                             ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            itemCount: provider.orders.length,
-                            itemBuilder: (context, index) {
-                              final order = provider.orders[index];
-                              return _OrderCard(
-                                order: order,
-                                onTap: () => _showOrderDetails(context, order),
-                                onStatusUpdate: (newStatus) =>
-                                    _updateOrderStatus(context, order, newStatus),
-                                onCancel: () =>
-                                    _cancelOrder(context, order),
-                              );
-                            },
-                          ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No orders found',
+                              style: Theme.of(context).textTheme.titleMedium!
+                                  .copyWith(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        itemCount: provider.orders.length,
+                        itemBuilder: (context, index) {
+                          final order = provider.orders[index];
+                          return _OrderCard(
+                            order: order,
+                            onTap: () => _showOrderDetails(context, order),
+                            onStatusUpdate: (newStatus) =>
+                                _updateOrderStatus(context, order, newStatus),
+                            onCancel: () => _cancelOrder(context, order),
+                          );
+                        },
+                      ),
               ),
             ],
           );
@@ -208,9 +224,13 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   }
 
   void _updateOrderStatus(
-      BuildContext context, Order order, OrderStatus newStatus) {
+    BuildContext context,
+    Order order,
+    OrderStatus newStatus,
+  ) {
     final provider = context.read<AdminOrdersProvider>();
     provider.updateOrderStatus(order.id, newStatus).then((_) {
+      if (!context.mounted) return;
       if (provider.successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -227,7 +247,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cancel Order'),
-        content: Text('Cancel order ${order.id}? This action cannot be undone.'),
+        content: Text(
+          'Cancel order ${order.id}? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -236,7 +258,10 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              context.read<AdminOrdersProvider>().cancelOrder(order.id).then((_) {
+              context.read<AdminOrdersProvider>().cancelOrder(order.id).then((
+                _,
+              ) {
+                if (!context.mounted) return;
                 final provider = context.read<AdminOrdersProvider>();
                 if (provider.successMessage != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -282,17 +307,14 @@ class _StatCard extends StatelessWidget {
         children: [
           Text(
             value,
-            style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall!
+                .copyWith(color: color, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: Theme.of(context).textTheme.bodySmall!
+                .copyWith(color: Colors.grey[600]),
           ),
         ],
       ),
@@ -349,13 +371,17 @@ class _OrderCard extends StatelessWidget {
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending:
-        return Colors.amber;
+        return AppColors.warning;
       case OrderStatus.processing:
-        return Colors.blue;
+        return AppColors.info;
+      case OrderStatus.ready:
+        return AppColors.success;
+      case OrderStatus.shipped:
+        return const Color(0xFF8963E8);
       case OrderStatus.delivered:
-        return Colors.green;
-      case OrderStatus.cancelled:
-        return Colors.red;
+        return AppColors.success;
+      case OrderStatus.canceled:
+        return AppColors.danger;
     }
   }
 
@@ -365,10 +391,14 @@ class _OrderCard extends StatelessWidget {
         return 'Pending';
       case OrderStatus.processing:
         return 'Processing';
+      case OrderStatus.ready:
+        return 'Ready';
+      case OrderStatus.shipped:
+        return 'Shipped';
       case OrderStatus.delivered:
         return 'Delivered';
-      case OrderStatus.cancelled:
-        return 'Cancelled';
+      case OrderStatus.canceled:
+        return 'Canceled';
     }
   }
 
@@ -410,7 +440,8 @@ class _OrderCard extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(order.status).withValues(alpha: 0.1),
+                      color: _getStatusColor(order.status)
+                          .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -424,6 +455,41 @@ class _OrderCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (order.items.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 45,
+                      height: 45,
+                      child: FoodImage(
+                        imageUrl: order.items.first.productImage,
+                        borderRadius: 11,
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        '${order.items.first.productName}  ×${order.items.first.quantity}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (order.items.length > 1)
+                      Text(
+                        '+${order.items.length - 1} more',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -442,14 +508,28 @@ class _OrderCard extends StatelessWidget {
                           child: Text('Processing'),
                         ),
                         const PopupMenuItem(
+                          value: OrderStatus.ready,
+                          child: Text('Ready'),
+                        ),
+                        const PopupMenuItem(
+                          value: OrderStatus.shipped,
+                          child: Text('Shipped'),
+                        ),
+                        const PopupMenuItem(
                           value: OrderStatus.delivered,
                           child: Text('Delivered'),
+                        ),
+                        const PopupMenuItem(
+                          value: OrderStatus.canceled,
+                          child: Text('Canceled'),
                         ),
                       ],
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Change Status',
-                            overflow: TextOverflow.ellipsis),
+                        label: const Text(
+                          'Change Status',
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         onPressed: null,
                       ),
                     ),
@@ -459,10 +539,10 @@ class _OrderCard extends StatelessWidget {
                     icon: const Icon(Icons.close, size: 16),
                     label: const Text('Cancel'),
                     onPressed:
-                        order.status == OrderStatus.cancelled ||
-                                order.status == OrderStatus.delivered
-                            ? null
-                            : onCancel,
+                        order.status == OrderStatus.canceled ||
+                            order.status == OrderStatus.delivered
+                        ? null
+                        : onCancel,
                   ),
                 ],
               ),
@@ -503,9 +583,7 @@ class _OrderDetailsBottomSheet extends StatelessWidget {
               const SizedBox(height: 20),
               Text(
                 'Order Details',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge!
+                style: Theme.of(context).textTheme.titleLarge!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
@@ -520,31 +598,31 @@ class _OrderDetailsBottomSheet extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 'Items',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium!
+                style: Theme.of(context).textTheme.titleMedium!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              ...order.items.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${item.productName} x${item.quantity}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
+              ...order.items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${item.productName} x${item.quantity}',
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
-                        Text(
-                          '₱${item.subtotal.toStringAsFixed(2)}',
-                          style: Theme.of(context).textTheme.bodySmall!
-                              .copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  )),
+                      ),
+                      Text(
+                        '₱${item.subtotal.toStringAsFixed(2)}',
+                        style: Theme.of(context).textTheme.bodySmall!
+                            .copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const Divider(height: 16),
               _DetailRow('Subtotal', '₱${order.subtotal.toStringAsFixed(2)}'),
               _DetailRow('Tax', '₱${order.tax.toStringAsFixed(2)}'),
@@ -566,9 +644,13 @@ class _OrderDetailsBottomSheet extends StatelessWidget {
         return Colors.amber;
       case OrderStatus.processing:
         return Colors.blue;
+      case OrderStatus.ready:
+        return AppColors.success;
+      case OrderStatus.shipped:
+        return const Color(0xFF8963E8);
       case OrderStatus.delivered:
         return Colors.green;
-      case OrderStatus.cancelled:
+      case OrderStatus.canceled:
         return Colors.red;
     }
   }
@@ -579,10 +661,14 @@ class _OrderDetailsBottomSheet extends StatelessWidget {
         return 'Pending';
       case OrderStatus.processing:
         return 'Processing';
+      case OrderStatus.ready:
+        return 'Ready';
+      case OrderStatus.shipped:
+        return 'Shipped';
       case OrderStatus.delivered:
         return 'Delivered';
-      case OrderStatus.cancelled:
-        return 'Cancelled';
+      case OrderStatus.canceled:
+        return 'Canceled';
     }
   }
 
@@ -611,10 +697,7 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
           if (statusColor != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -635,8 +718,8 @@ class _DetailRow extends StatelessWidget {
             Text(
               value,
               style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                    fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                  ),
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              ),
             ),
         ],
       ),

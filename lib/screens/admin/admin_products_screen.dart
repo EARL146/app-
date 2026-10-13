@@ -5,6 +5,7 @@ import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
 import '../../navigation/app_routes.dart';
 import '../../providers/admin_products_provider.dart';
+import '../../widgets/food_image.dart';
 
 class AdminProductsScreen extends StatefulWidget {
   const AdminProductsScreen({super.key});
@@ -27,9 +28,11 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.brandOrange,
-        title: const Text('Products Management',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.pageBackground,
+        title: const Text(
+          'Products Management',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
         actions: [
           Padding(
@@ -39,14 +42,11 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                 icon: const Icon(Icons.add),
                 label: const Text('Add Product'),
                 onPressed: () {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.adminAddProduct,
-                  );
+                  Navigator.pushNamed(context, AppRoutes.adminAddProduct);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.brandOrange,
+                  backgroundColor: AppColors.brandOrange,
+                  foregroundColor: Colors.white,
                 ),
               ),
             ),
@@ -155,39 +155,41 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                 child: provider.isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _getFilteredProducts(provider).isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.inventory_2,
-                                    size: 64, color: Colors.grey[300]),
-                                const SizedBox(height: 16),
-                                Text('No products found',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium!
-                                        .copyWith(color: Colors.grey[600])),
-                              ],
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.inventory_2,
+                              size: 64,
+                              color: Colors.grey[300],
                             ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            itemCount:
-                                _getFilteredProducts(provider).length,
-                            itemBuilder: (context, index) {
-                              final product =
-                                  _getFilteredProducts(provider)[index];
-                              return _ProductCard(
-                                product: product,
-                                onEdit: () => _editProduct(context, product),
-                                onDelete: () =>
-                                    _deleteProduct(context, product),
-                                onToggleAvailability: () =>
-                                    _toggleAvailability(context, product),
-                              );
-                            },
-                          ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No products found',
+                              style: Theme.of(context).textTheme.titleMedium!
+                                  .copyWith(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        itemCount: _getFilteredProducts(provider).length,
+                        itemBuilder: (context, index) {
+                          final product = _getFilteredProducts(provider)[index];
+                          return _ProductCard(
+                            product: product,
+                            onEdit: () => _editProduct(context, product),
+                            onDelete: () => _deleteProduct(context, product),
+                            onToggleAvailability: () =>
+                                _toggleAvailability(context, product),
+                          );
+                        },
+                      ),
               ),
             ],
           );
@@ -203,9 +205,11 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
 
     if (_searchController.text.isEmpty) return baseList;
     return baseList
-        .where((p) => p.name
-            .toLowerCase()
-            .contains(_searchController.text.toLowerCase()))
+        .where(
+          (p) => p.name.toLowerCase().contains(
+            _searchController.text.toLowerCase(),
+          ),
+        )
         .toList();
   }
 
@@ -238,16 +242,17 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                   .read<AdminProductsProvider>()
                   .deleteProduct(product.id)
                   .then((_) {
-                final provider = context.read<AdminProductsProvider>();
-                if (provider.successMessage != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(provider.successMessage!),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              });
+                    if (!context.mounted) return;
+                    final provider = context.read<AdminProductsProvider>();
+                    if (provider.successMessage != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(provider.successMessage!),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  });
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -261,16 +266,17 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
         .read<AdminProductsProvider>()
         .toggleProductAvailability(product.id)
         .then((_) {
-      final provider = context.read<AdminProductsProvider>();
-      if (provider.successMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(provider.successMessage!),
-            backgroundColor: Colors.blue,
-          ),
-        );
-      }
-    });
+          if (!context.mounted) return;
+          final provider = context.read<AdminProductsProvider>();
+          if (provider.successMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(provider.successMessage!),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
+        });
   }
 }
 
@@ -299,17 +305,14 @@ class _StatCard extends StatelessWidget {
         children: [
           Text(
             value,
-            style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(context).textTheme.headlineSmall!
+                .copyWith(color: color, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: Theme.of(context).textTheme.bodySmall!
+                .copyWith(color: Colors.grey[600]),
           ),
         ],
       ),
@@ -366,66 +369,70 @@ class _ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                SizedBox(
+                  width: 76,
+                  height: 76,
+                  child: FoodImage(
+                    imageUrl: product.imageUrl,
+                    category: product.category,
+                    borderRadius: 13,
+                  ),
+                ),
+                const SizedBox(width: 11),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         product.name,
-                        style: Theme.of(context).textTheme.titleMedium!
-                            .copyWith(fontWeight: FontWeight.bold),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 5),
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 4,
+                        children: [
+                          _ProductTag(
+                            label: product.category ?? 'Burgers',
+                            color: AppColors.brandOrange,
+                          ),
+                          _ProductTag(
+                            label: product.available
+                                ? 'Available'
+                                : 'Unavailable',
+                            color: product.available
+                                ? AppColors.success
+                                : AppColors.danger,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 7),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              product.category,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                            ),
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 13,
+                            color: AppColors.warning,
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: product.available
-                                  ? Colors.green.withValues(alpha: 0.1)
-                                  : Colors.red.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              product.available ? 'Available' : 'Unavailable',
-                              style: TextStyle(
-                                color: product.available
-                                    ? Colors.green
-                                    : Colors.red,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${product.rating ?? 0} · ${product.reviewCount ?? 0} reviews',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -433,62 +440,72 @@ class _ProductCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '₱${product.price.toStringAsFixed(0)}',
-                      style: Theme.of(context).textTheme.titleMedium!
-                          .copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.star, size: 14, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${product.rating} (${product.reviewCount})',
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                      ],
-                    ),
-                  ],
+                const SizedBox(width: 7),
+                Text(
+                  '₱${product.price.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    color: AppColors.brandOrange,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                product.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 9,
+                  height: 1.3,
+                ),
+              ),
+            ),
+            const SizedBox(height: 7),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Flexible(
+                Expanded(
                   child: OutlinedButton.icon(
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('Edit'),
                     onPressed: onEdit,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.toggle_off, size: 16),
-                    label: Text(
-                        product.available ? 'Disable' : 'Enable'),
-                    onPressed: onToggleAvailability,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.delete, size: 16),
-                    label: const Text('Delete'),
-                    onPressed: onDelete,
+                    icon: const Icon(Icons.edit_outlined, size: 14),
+                    label: const Text('Edit', style: TextStyle(fontSize: 10)),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.red),
-                      foregroundColor: Colors.red,
+                      visualDensity: VisualDensity.compact,
                     ),
                   ),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onToggleAvailability,
+                    icon: Icon(
+                      product.available
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 14,
+                    ),
+                    label: Text(
+                      product.available ? 'Disable' : 'Enable',
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Delete product',
+                  onPressed: onDelete,
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.danger,
+                    size: 19,
+                  ),
+                  visualDensity: VisualDensity.compact,
                 ),
               ],
             ),
@@ -497,4 +514,23 @@ class _ProductCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ProductTag extends StatelessWidget {
+  const _ProductTag({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .1),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.w900),
+    ),
+  );
 }

@@ -6,9 +6,10 @@ class DemoData {
     Product(
       id: 'classic-burger',
       name: 'Classic Burger',
-      description: 'A juicy double patty with cheddar, lettuce, and signature sauce.',
+      description:
+          'A juicy double patty with cheddar, lettuce, and signature sauce.',
       price: 280,
-      imageUrl: 'burger',
+      imageUrl: 'assets/products/smash_burger.jpg',
       category: 'Burgers',
       rating: 4.8,
       reviewCount: 216,
@@ -18,9 +19,10 @@ class DemoData {
     Product(
       id: 'smash-burger',
       name: 'Smash Burger',
-      description: 'Thin crispy patties stacked with caramelized onions and pickles.',
+      description:
+          'Thin crispy patties stacked with caramelized onions and pickles.',
       price: 260,
-      imageUrl: 'burger',
+      imageUrl: 'assets/products/smash_burger.jpg',
       category: 'Burgers',
       rating: 4.7,
       reviewCount: 184,
@@ -30,9 +32,10 @@ class DemoData {
     Product(
       id: 'chicken-wrap',
       name: 'Chicken Wrap',
-      description: 'Grilled chicken, crisp greens, and smoky mayo wrapped to go.',
+      description:
+          'Grilled chicken, crisp greens, and smoky mayo wrapped to go.',
       price: 220,
-      imageUrl: 'wrap',
+      imageUrl: 'assets/products/crispy_chicken.jpg',
       category: 'Chicken',
       rating: 4.6,
       reviewCount: 139,
@@ -44,7 +47,7 @@ class DemoData {
       name: 'Loaded Fries',
       description: 'Crispy fries topped with cheese sauce and herb seasoning.',
       price: 180,
-      imageUrl: 'fries',
+      imageUrl: 'assets/products/loaded_fries.jpg',
       category: 'Sides',
       rating: 4.5,
       reviewCount: 201,
@@ -56,7 +59,7 @@ class DemoData {
       name: 'Crispy Chicken',
       description: 'Golden fried chicken with crunchy slaw and honey glaze.',
       price: 240,
-      imageUrl: 'chicken',
+      imageUrl: 'assets/products/crispy_chicken.jpg',
       category: 'Chicken',
       rating: 4.9,
       reviewCount: 168,
@@ -68,7 +71,7 @@ class DemoData {
       name: 'Mocha Shake',
       description: 'Creamy mocha shake with a hint of espresso and cocoa.',
       price: 150,
-      imageUrl: 'shake',
+      imageUrl: 'assets/products/cola.jpg',
       category: 'Drinks',
       rating: 4.4,
       reviewCount: 112,
@@ -77,7 +80,13 @@ class DemoData {
     ),
   ];
 
-  static final List<String> categories = ['All', 'Burgers', 'Chicken', 'Sides', 'Drinks'];
+  static final List<String> categories = [
+    'All',
+    'Burgers',
+    'Chicken',
+    'Sides',
+    'Drinks',
+  ];
 
   static final List<Order> customerOrders = [
     Order(
@@ -89,6 +98,7 @@ class DemoData {
           productName: 'Classic Burger',
           price: 280,
           quantity: 2,
+          productImage: 'assets/products/smash_burger.jpg',
         ),
       ],
       subtotal: 560,
@@ -102,8 +112,20 @@ class DemoData {
       id: 'BB-2052',
       userId: 'user-001',
       items: [
-        OrderItem(productId: 'loaded-fries', productName: 'Loaded Fries', price: 180, quantity: 1),
-        OrderItem(productId: 'mocha-shake', productName: 'Mocha Shake', price: 150, quantity: 1),
+        OrderItem(
+          productId: 'loaded-fries',
+          productName: 'Loaded Fries',
+          price: 180,
+          quantity: 1,
+          productImage: 'assets/products/loaded_fries.jpg',
+        ),
+        OrderItem(
+          productId: 'mocha-shake',
+          productName: 'Mocha Shake',
+          price: 150,
+          quantity: 1,
+          productImage: 'assets/products/cola.jpg',
+        ),
       ],
       subtotal: 330,
       tax: 26.4,

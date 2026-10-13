@@ -4,6 +4,7 @@ import '../data/demo_data.dart';
 import '../models/product_model.dart';
 import '../screens/customer/about_screen.dart';
 import '../screens/customer/cart_screen.dart';
+import '../screens/customer/calendar_screen.dart';
 import '../screens/customer/checkout_screen.dart';
 import '../screens/customer/contact_screen.dart';
 import '../screens/customer/home_screen.dart';
@@ -42,17 +43,25 @@ class AppRouter {
       case '/search':
         return MaterialPageRoute(builder: (_) => const SearchScreen());
       case '/menu':
-        return MaterialPageRoute(builder: (_) => const MenuScreen());
+        final category = settings.arguments as String? ?? 'All';
+        return MaterialPageRoute(
+          builder: (_) => MenuScreen(initialCategory: category),
+        );
       case '/product-details':
-        final product = settings.arguments as Product? ?? DemoData.products.first;
-        return MaterialPageRoute(builder: (_) => ProductDetailsScreen(product: product));
+        final product =
+            settings.arguments as Product? ?? DemoData.products.first;
+        return MaterialPageRoute(
+          builder: (_) => ProductDetailsScreen(product: product),
+        );
       case '/cart':
         return MaterialPageRoute(builder: (_) => const CartScreen());
       case '/checkout':
         return MaterialPageRoute(builder: (_) => const CheckoutScreen());
       case '/order-success':
         final orderId = settings.arguments as String? ?? 'BB-0000';
-        return MaterialPageRoute(builder: (_) => OrderSuccessScreen(orderId: orderId));
+        return MaterialPageRoute(
+          builder: (_) => OrderSuccessScreen(orderId: orderId),
+        );
       case '/order-history':
         return MaterialPageRoute(builder: (_) => const OrderHistoryScreen());
       case '/profile':
@@ -63,6 +72,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ThemeScreen());
       case '/language':
         return MaterialPageRoute(builder: (_) => const LanguageScreen());
+      case '/calendar':
+        return MaterialPageRoute(builder: (_) => const CalendarScreen());
       case '/contact':
         return MaterialPageRoute(builder: (_) => const ContactScreen());
       case '/about':
@@ -76,7 +87,8 @@ class AppRouter {
       case '/admin-add-product':
         return MaterialPageRoute(builder: (_) => const AdminAddProductScreen());
       case '/admin-edit-product':
-        final product = settings.arguments as Product? ?? DemoData.products.first;
+        final product =
+            settings.arguments as Product? ?? DemoData.products.first;
         return MaterialPageRoute(
           builder: (_) => AdminEditProductScreen(product: product),
         );
@@ -86,7 +98,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const AdminMoreScreen());
       default:
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(body: Center(child: Text('Screen not found'))),
+          builder: (_) =>
+              const Scaffold(body: Center(child: Text('Screen not found'))),
         );
     }
   }

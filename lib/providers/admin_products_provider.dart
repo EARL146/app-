@@ -1,23 +1,41 @@
 import 'package:flutter/foundation.dart';
 
 import '../data/demo_data.dart';
-import '../models/product_model.dart';
+import '../models/order_model.dart';
 
-class AdminProductsProvider extends ChangeNotifier {
-  final List<Product> _products = List.from(DemoData.products);
+class AdminOrdersProvider extends ChangeNotifier {
+  final List<Order> _orders = List.from(DemoData.customerOrders);
   String? _errorMessage;
   bool _isLoading = false;
   String? _successMessage;
-  Product? _selectedProduct;
+  Order? _selectedOrder;
+  OrderStatus? _filterStatus;
 
-  List<Product> get products => List.unmodifiable(_products);
+  List<Order> get orders => List.unmodifiable(_filteredOrders);
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
   String? get successMessage => _successMessage;
-  Product? get selectedProduct => _selectedProduct;
+  Order? get selectedOrder => _selectedOrder;
+  OrderStatus? get filterStatus => _filterStatus;
 
-  int get totalProducts => _products.length;
-  int get availableProducts => _products.where((p) => p.available).length;
+  List<Order> get _filteredOrders {
+    if (_filterStatus == null) return _orders;
+    return _orders.where((o) => o.status == _filterStatus).toList();
+  }
+
+  int get totalOrders => _orders.length;
+  int get pendingOrders =>
+      _orders.where((o) => o.status == OrderStatus.pending).length;
+  int get processingOrders =>
+      _orders.where((o) => o.status == OrderStatus.processing).length;
+  int get deliveredOrders =>
+      _orders.where((o) => o.status == OrderStatus.delivered).length;
+  int get cancelledOrders =>
+      _orders.where((o) => o.status == OrderStatus.canceled).length;
+
+  double get totalRevenue => _orders
+      .where((o) => o.status == OrderStatus.delivered)
+      .fold(0, (sum, order) => sum + order.total);
 
   void clearMessages() {
     _errorMessage = null;
@@ -25,48 +43,22 @@ class AdminProductsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void selectProduct(Product product) {
-    _selectedProduct = product;
+  void setFilterStatus(OrderStatus? status) {
+    _filterStatus = status;
     notifyListeners();
   }
 
-  void deselectProduct() {
-    _selectedProduct = null;
+  void selectOrder(Order order) {
+    _selectedOrder = order;
     notifyListeners();
   }
 
-  Future<bool> addProduct({
-    required String name,
-    required String description,
-    required double price,
-    required String category,
-    required String imageUrl,
-    bool available = true,
-  }) async {
-    if (name.trim().isEmpty) {
-      _errorMessage = 'Product name is required.';
-      notifyListeners();
-      return false;
-    }
+  void deselectOrder() {
+    _selectedOrder = null;
+    notifyListeners();
+  }
 
-    if (description.trim().isEmpty) {
-      _errorMessage = 'Product description is required.';
-      notifyListeners();
-      return false;
-    }
-
-    if (price <= 0) {
-      _errorMessage = 'Price must be greater than zero.';
-      notifyListeners();
-      return false;
-    }
-
-    if (category.trim().isEmpty) {
-      _errorMessage = 'Category is required.';
-      notifyListeners();
-      return false;
-    }
-
+  Future<bool> updateOrderStatus(String orderId, OrderStatus newStatus) async {
     _isLoading = true;
     _errorMessage = null;
     _successMessage = null;
@@ -75,105 +67,42 @@ class AdminProductsProvider extends ChangeNotifier {
     // Simulate API call
     await Future<void>.delayed(const Duration(milliseconds: 800));
 
-    // Check for duplicate
-    if (_products.any((p) => p.name.toLowerCase() == name.toLowerCase())) {
-      _isLoading = false;
-      _errorMessage = 'A product with this name already exists.';
-      notifyListeners();
-      return false;
-    }
-
-    final newProduct = Product(
-      id: name.toLowerCase().replaceAll(' ', '-'),
-      name: name,
-      description: description,
-      price: price,
-      imageUrl: imageUrl,
-      category: category,
-      rating: 4.5,
-      reviewCount: 0,
-      available: available,
-      createdAt: DateTime.now(),
-    );
-
-    _products.add(newProduct);
-    _isLoading = false;
-    _successMessage = 'Product "$name" added successfully!';
-    notifyListeners();
-    return true;
-  }
-
-  Future<bool> updateProduct({
-    required String productId,
-    required String name,
-    required String description,
-    required double price,
-    required String category,
-    required String imageUrl,
-    bool available = true,
-  }) async {
-    if (name.trim().isEmpty) {
-      _errorMessage = 'Product name is required.';
-      notifyListeners();
-      return false;
-    }
-
-    if (description.trim().isEmpty) {
-      _errorMessage = 'Product description is required.';
-      notifyListeners();
-      return false;
-    }
-
-    if (price <= 0) {
-      _errorMessage = 'Price must be greater than zero.';
-      notifyListeners();
-      return false;
-    }
-
-    if (category.trim().isEmpty) {
-      _errorMessage = 'Category is required.';
-      notifyListeners();
-      return false;
-    }
-
-    _isLoading = true;
-    _errorMessage = null;
-    _successMessage = null;
-    notifyListeners();
-
-    // Simulate API call
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-
-    final index = _products.indexWhere((p) => p.id == productId);
+    final index = _orders.indexWhere((o) => o.id == orderId);
     if (index == -1) {
       _isLoading = false;
-      _errorMessage = 'Product not found.';
+      _errorMessage = 'Order not found.';
       notifyListeners();
       return false;
     }
 
-    final oldProduct = _products[index];
-    _products[index] = Product(
-      id: oldProduct.id,
-      name: name,
-      description: description,
-      price: price,
-      imageUrl: imageUrl,
-      category: category,
-      rating: oldProduct.rating,
-      reviewCount: oldProduct.reviewCount,
-      available: available,
-      createdAt: oldProduct.createdAt,
+    final oldOrder = _orders[index];
+    _orders[index] = Order(
+      id: oldOrder.id,
+      userId: oldOrder.userId,
+      items: oldOrder.items,
+      subtotal: oldOrder.subtotal,
+      tax: oldOrder.tax,
+      shippingCost: oldOrder.shippingCost,
+      total: oldOrder.total,
+      status: newStatus,
+      createdAt: oldOrder.createdAt,
+      deliveredAt: newStatus == OrderStatus.delivered
+          ? DateTime.now()
+          : oldOrder.deliveredAt,
     );
 
+    if (_selectedOrder?.id == orderId) {
+      _selectedOrder = _orders[index];
+    }
+
     _isLoading = false;
-    _successMessage = 'Product "$name" updated successfully!';
-    _selectedProduct = _products[index];
+    _successMessage =
+        'Order status updated to ${_statusDisplayName(newStatus)}.';
     notifyListeners();
     return true;
   }
 
-  Future<bool> deleteProduct(String productId) async {
+  Future<bool> cancelOrder(String orderId) async {
     _isLoading = true;
     _errorMessage = null;
     _successMessage = null;
@@ -182,53 +111,62 @@ class AdminProductsProvider extends ChangeNotifier {
     // Simulate API call
     await Future<void>.delayed(const Duration(milliseconds: 800));
 
-    final product = _products.firstWhere(
-      (p) => p.id == productId,
-      orElse: () => throw Exception('Product not found'),
+    final index = _orders.indexWhere((o) => o.id == orderId);
+    if (index == -1) {
+      _isLoading = false;
+      _errorMessage = 'Order not found.';
+      notifyListeners();
+      return false;
+    }
+
+    final order = _orders[index];
+    if (order.status == OrderStatus.delivered ||
+        order.status == OrderStatus.canceled) {
+      _isLoading = false;
+      _errorMessage =
+          'Cannot cancel ${_statusDisplayName(order.status).toLowerCase()} orders.';
+      notifyListeners();
+      return false;
+    }
+
+    _orders[index] = Order(
+      id: order.id,
+      userId: order.userId,
+      items: order.items,
+      subtotal: order.subtotal,
+      tax: order.tax,
+      shippingCost: order.shippingCost,
+      total: order.total,
+      status: OrderStatus.canceled,
+      createdAt: order.createdAt,
     );
 
-    _products.removeWhere((p) => p.id == productId);
     _isLoading = false;
-    _successMessage = 'Product "${product.name}" deleted successfully!';
-    _selectedProduct = null;
+    _successMessage = 'Order $orderId cancelled successfully!';
+    if (_selectedOrder?.id == orderId) {
+      _selectedOrder = _orders[index];
+    }
     notifyListeners();
     return true;
   }
 
-  Future<bool> toggleProductAvailability(String productId) async {
-    final index = _products.indexWhere((p) => p.id == productId);
-    if (index == -1) return false;
+  String _statusDisplayName(OrderStatus status) => status.displayName;
 
-    final product = _products[index];
-    _products[index] = Product(
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      imageUrl: product.imageUrl,
-      category: product.category,
-      rating: product.rating,
-      reviewCount: product.reviewCount,
-      available: !product.available,
-      createdAt: product.createdAt,
-    );
-
-    _successMessage =
-        'Product availability updated to ${!product.available ? 'Available' : 'Unavailable'}.';
-    notifyListeners();
-    return true;
-  }
-
-  List<Product> searchProducts(String query) {
-    if (query.isEmpty) return _products;
+  List<Order> searchOrders(String query) {
+    if (query.isEmpty) return _filteredOrders;
     final lowerQuery = query.toLowerCase();
-    return _products
-        .where((p) => p.name.toLowerCase().contains(lowerQuery) || p.category.toLowerCase().contains(lowerQuery))
+    return _filteredOrders
+        .where((o) => o.id.toLowerCase().contains(lowerQuery))
         .toList();
   }
 
-  List<Product> getProductsByCategory(String category) {
-    if (category == 'All') return _products;
-    return _products.where((p) => p.category == category).toList();
+  List<Order> getOrdersByDateRange(DateTime start, DateTime end) {
+    return _filteredOrders
+        .where(
+          (o) =>
+              o.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
+              o.createdAt.isBefore(end.add(const Duration(days: 1))),
+        )
+        .toList();
   }
 }

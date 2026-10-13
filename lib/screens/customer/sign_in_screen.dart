@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_colors.dart';
+import '../../widgets/food_image.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -38,18 +39,35 @@ class _SignInScreenState extends State<SignInScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 2),
                     Center(
                       child: Column(
                         children: [
-                          Icon(Icons.lunch_dining, size: 74, color: AppColors.brandOrange),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'BurgerBites',
+                          SizedBox(
+                            width: 114,
+                            height: 92,
+                            child: FoodImage(
+                              imageUrl: 'assets/products/smash_burger.jpg',
+                              borderRadius: 18,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          const Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Burger',
+                                  style: TextStyle(color: AppColors.brandRed),
+                                ),
+                                TextSpan(
+                                  text: 'Bites',
+                                  style: TextStyle(color: AppColors.brandRed),
+                                ),
+                              ],
+                            ),
                             style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
                             ),
                           ),
                         ],
@@ -69,9 +87,13 @@ class _SignInScreenState extends State<SignInScreen> {
                     const Text(
                       'Sign in to continue ordering your favorite burgers',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        height: 1.5,
+                      ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 23),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -142,13 +164,15 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
-                      height: 52,
+                      height: 45,
                       child: ElevatedButton(
                         onPressed: _isSubmitting ? null : _submit,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandOrange,
+                          backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: _isSubmitting
                             ? const SizedBox(
@@ -160,9 +184,62 @@ class _SignInScreenState extends State<SignInScreen> {
                                 ),
                               )
                             : const Text(
-                                'Sign In',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                                'Continue',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    const Row(
+                      children: [
+                        Expanded(child: Divider()),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            'or continue with',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                        Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _socialButton(
+                      context,
+                      icon: const Text(
+                        'G',
+                        style: TextStyle(
+                          color: Color(0xFF4285F4),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                        ),
+                      ),
+                      label: 'Continue with Google',
+                    ),
+                    const SizedBox(height: 8),
+                    _socialButton(
+                      context,
+                      icon: const Icon(
+                        Icons.apple_rounded,
+                        color: Colors.black,
+                        size: 18,
+                      ),
+                      label: 'Continue with Apple',
+                    ),
+                    const SizedBox(height: 13),
+                    const Text(
+                      'By continuing, you agree to our Terms of Service and Privacy Policy. Demo sign-in does not create or validate an account.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 9,
+                        height: 1.45,
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -171,7 +248,10 @@ class _SignInScreenState extends State<SignInScreen> {
                       children: [
                         const Text(
                           'Don’t have an account?',
-                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                         TextButton(
                           onPressed: () {
@@ -209,6 +289,42 @@ class _SignInScreenState extends State<SignInScreen> {
 
     setState(() => _isSubmitting = false);
 
-    Navigator.of(context).pushNamedAndRemoveUntil('/customer-home', (route) => false);
+    Navigator.of(context)
+        .pushNamedAndRemoveUntil('/customer-home', (route) => false);
+  }
+
+  Widget _socialButton(
+    BuildContext context, {
+    required Widget icon,
+    required String label,
+  }) {
+    return SizedBox(
+      height: 40,
+      child: OutlinedButton(
+        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$label is not connected in this demo.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          side: BorderSide.none,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            icon,
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

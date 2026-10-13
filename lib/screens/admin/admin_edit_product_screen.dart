@@ -27,12 +27,16 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.product.name);
-    _descriptionController =
-        TextEditingController(text: widget.product.description);
-    _priceController =
-        TextEditingController(text: widget.product.price.toString());
-    _imageController = TextEditingController(text: widget.product.imageUrl);
-    _selectedCategory = widget.product.category;
+    _descriptionController = TextEditingController(
+      text: widget.product.description,
+    );
+    _priceController = TextEditingController(
+      text: widget.product.price.toString(),
+    );
+    _imageController = TextEditingController(
+      text: widget.product.imageUrl ?? '',
+    );
+    _selectedCategory = widget.product.category ?? 'Burgers';
     _isAvailable = widget.product.available;
   }
 
@@ -48,10 +52,14 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.darkSurface,
       appBar: AppBar(
-        backgroundColor: AppColors.brandOrange,
-        title: const Text('Edit Product',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.darkSurface,
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Edit Product',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
         elevation: 0,
       ),
       body: Consumer<AdminProductsProvider>(
@@ -81,82 +89,108 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
             });
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildField(
-                  label: 'Product Name',
-                  controller: _nameController,
-                  hint: 'Enter product name',
+          return Theme(
+            data: Theme.of(context).copyWith(
+              scaffoldBackgroundColor: AppColors.darkSurface,
+              textTheme: Theme.of(context).textTheme
+                  .apply(bodyColor: Colors.white, displayColor: Colors.white),
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: AppColors.darkSurfaceAlt,
+                hintStyle: const TextStyle(color: Colors.white54, fontSize: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF3B302B)),
                 ),
-                const SizedBox(height: 16),
-                _buildField(
-                  label: 'Description',
-                  controller: _descriptionController,
-                  hint: 'Enter product description',
-                  maxLines: 4,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF3B302B)),
                 ),
-                const SizedBox(height: 16),
-                _buildField(
-                  label: 'Price (₱)',
-                  controller: _priceController,
-                  hint: 'Enter price',
-                  keyboardType: TextInputType.number,
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.brandOrange,
+                    width: 1.5,
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _buildCategoryDropdown(),
-                const SizedBox(height: 16),
-                _buildField(
-                  label: 'Image Icon/ID',
-                  controller: _imageController,
-                  hint: 'e.g., burger, chicken, fries',
-                ),
-                const SizedBox(height: 16),
-                _buildAvailabilityToggle(),
-                const SizedBox(height: 32),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: provider.isLoading
-                            ? null
-                            : () => _submitForm(context, provider),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandOrange,
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildField(
+                    label: 'Product Name',
+                    controller: _nameController,
+                    hint: 'Enter product name',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    label: 'Description',
+                    controller: _descriptionController,
+                    hint: 'Enter product description',
+                    maxLines: 4,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    label: 'Price (₱)',
+                    controller: _priceController,
+                    hint: 'Enter price',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCategoryDropdown(),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    label: 'Image Icon/ID',
+                    controller: _imageController,
+                    hint: 'e.g., burger, chicken, fries',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildAvailabilityToggle(),
+                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
                         ),
-                        child: provider.isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: provider.isLoading
+                              ? null
+                              : () => _submitForm(context, provider),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.brandOrange,
+                          ),
+                          child: provider.isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  'Save Changes',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              )
-                            : const Text(
-                                'Save Changes',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -176,19 +210,22 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          style: const TextStyle(color: Colors.white, fontSize: 13),
           keyboardType: keyboardType,
           maxLines: maxLines,
           minLines: maxLines == 1 ? 1 : null,
           decoration: InputDecoration(
             hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
@@ -205,24 +242,31 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       children: [
         const Text(
           'Category',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey[300]!),
+            color: AppColors.darkSurfaceAlt,
+            border: Border.all(color: const Color(0xFF3B302B)),
             borderRadius: BorderRadius.circular(12),
           ),
           child: DropdownButton<String>(
             value: _selectedCategory,
+            dropdownColor: AppColors.darkSurfaceAlt,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
             isExpanded: true,
             underline: const SizedBox(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             items: ['Burgers', 'Chicken', 'Sides', 'Drinks']
-                .map((category) => DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
-                    ))
+                .map(
+                  (category) =>
+                      DropdownMenuItem(value: category, child: Text(category)),
+                )
                 .toList(),
             onChanged: (value) {
               if (value != null) {
@@ -241,19 +285,22 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       children: [
         const Text(
           'Availability',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            color: Colors.white,
+          ),
         ),
         Switch(
           value: _isAvailable,
           onChanged: (value) => setState(() => _isAvailable = value),
-          activeColor: AppColors.brandOrange,
+          activeThumbColor: AppColors.brandOrange,
         ),
       ],
     );
   }
 
-  void _submitForm(
-      BuildContext context, AdminProductsProvider provider) async {
+  void _submitForm(BuildContext context, AdminProductsProvider provider) async {
     final success = await provider.updateProduct(
       productId: widget.product.id,
       name: _nameController.text,
@@ -264,7 +311,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       available: _isAvailable,
     );
 
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     if (success) {
       provider.clearMessages();

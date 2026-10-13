@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
 import '../../providers/cart_provider.dart';
+import '../../widgets/food_image.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -13,14 +14,19 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: 'John Doe');
-  final _addressController = TextEditingController(text: '123 Main Street, Mandaue');
+  final _nameController = TextEditingController(text: 'Juan Dela Cruz');
+  final _addressController = TextEditingController(
+    text: 'Poblacion, Compostela, Cebu',
+  );
+  final _phoneController = TextEditingController(text: '+63 912 345 6789');
   final _notesController = TextEditingController();
+  String _paymentMethod = 'Cash on Delivery';
 
   @override
   void dispose() {
     _nameController.dispose();
     _addressController.dispose();
+    _phoneController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -29,163 +35,509 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(backgroundColor: AppColors.pageBackground, title: const Text('Checkout')),
+      appBar: AppBar(title: const Text('Cart & checkout')),
       body: Consumer<CartProvider>(
         builder: (context, cart, _) {
           if (cart.isEmpty) {
-            return const Center(child: Text('Your cart is empty. Add items before checkout.'));
+            return const Center(
+              child: Text('Your cart is empty. Add items before checkout.'),
+            );
           }
-
           return Form(
             key: _formKey,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView(
-                      children: [
-                        const Text(
-                          'Delivery details',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
+                    children: [
+                      _AddressCard(
+                        nameController: _nameController,
+                        addressController: _addressController,
+                        phoneController: _phoneController,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Your feast',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _nameController,
-                          validator: (value) => (value == null || value.trim().length < 2)
-                              ? 'Enter a valid customer name.'
-                              : null,
-                          decoration: const InputDecoration(
-                            labelText: 'Customer name',
-                            prefixIcon: Icon(Icons.person_outline),
+                          Text(
+                            '${cart.items.length} items',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 10,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _addressController,
-                          validator: (value) => (value == null || value.trim().length < 8)
-                              ? 'Enter a valid delivery address.'
-                              : null,
-                          maxLines: 2,
-                          decoration: const InputDecoration(
-                            labelText: 'Delivery address',
-                            prefixIcon: Icon(Icons.location_on_outlined),
+                        ],
+                      ),
+                      const SizedBox(height: 9),
+                      ...cart.items.map(
+                        (item) => Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 10,
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _notesController,
-                          maxLines: 3,
-                          decoration: const InputDecoration(
-                            labelText: 'Order notes (optional)',
-                            prefixIcon: Icon(Icons.note_alt_outlined),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: AppColors.border),
                           ),
-                          child: Column(
+                          child: Row(
                             children: [
-                              _summaryRow('Subtotal', '₱${cart.subtotal.toStringAsFixed(0)}'),
-                              const SizedBox(height: 8),
-                              _summaryRow('Delivery', '₱${cart.deliveryFee.toStringAsFixed(0)}'),
-                              const SizedBox(height: 8),
-                              _summaryRow('Tax', '₱${cart.tax.toStringAsFixed(0)}'),
-                              const SizedBox(height: 12),
-                              const Divider(),
-                              const SizedBox(height: 12),
-                              _summaryRow(
-                                'Total',
-                                '₱${cart.total.toStringAsFixed(0)}',
-                                isTotal: true,
+                              SizedBox(
+                                width: 42,
+                                height: 42,
+                                child: FoodImage(
+                                  imageUrl: item.productImage,
+                                  borderRadius: 11,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.productName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '${item.quantity} × ₱${item.price.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 9,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                '₱${item.subtotal.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: cart.isSubmitting
-                          ? null
-                          : () async {
-                              if (!_formKey.currentState!.validate()) return;
-
-                              final orderId = await cart.submitOrder(
-                                customerName: _nameController.text,
-                                deliveryAddress: _addressController.text,
-                              );
-
-                              if (!mounted) return;
-
-                              if (orderId == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(cart.errorMessage ?? 'Unable to place order.'),
-                                    backgroundColor: AppColors.danger,
-                                  ),
-                                );
-                                return;
-                              }
-
-                              Navigator.of(context)
-                                  .pushReplacementNamed('/order-success', arguments: orderId);
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.brandOrange,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: cart.isSubmitting
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Text('Place order'),
+                      const SizedBox(height: 7),
+                      const _SectionTitle(title: 'Payment method'),
+                      const SizedBox(height: 7),
+                      _PaymentOption(
+                        title: 'Cash on Delivery (COD)',
+                        subtitle: 'Pay when your order arrives',
+                        icon: Icons.payments_outlined,
+                        selected: _paymentMethod == 'Cash on Delivery',
+                        onTap: () =>
+                            setState(() => _paymentMethod = 'Cash on Delivery'),
+                      ),
+                      _PaymentOption(
+                        title: 'GCash e-Wallet',
+                        subtitle: 'Payment selection preview only',
+                        icon: Icons.account_balance_wallet_outlined,
+                        selected: _paymentMethod == 'GCash e-Wallet',
+                        onTap: () =>
+                            setState(() => _paymentMethod = 'GCash e-Wallet'),
+                      ),
+                      _PaymentOption(
+                        title: 'Credit / Debit',
+                        subtitle: 'Payment selection preview only',
+                        icon: Icons.credit_card_outlined,
+                        selected: _paymentMethod == 'Credit / Debit',
+                        onTap: () =>
+                            setState(() => _paymentMethod = 'Credit / Debit'),
+                      ),
+                      const SizedBox(height: 12),
+                      const _SectionTitle(title: 'Order notes'),
+                      const SizedBox(height: 7),
+                      TextFormField(
+                        controller: _notesController,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          hintText: 'Add delivery instructions (optional)',
+                          prefixIcon: Icon(Icons.note_alt_outlined),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _TotalsCard(
+                        subtotal: cart.subtotal,
+                        delivery: cart.deliveryFee,
+                        tax: cart.tax,
+                        total: cart.total,
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(11),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceMuted,
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: AppColors.brandOrange,
+                              size: 16,
+                            ),
+                            SizedBox(width: 7),
+                            Expanded(
+                              child: Text(
+                                'Demo checkout: no payment is collected and orders are not saved to a server.',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 9,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(top: BorderSide(color: AppColors.border)),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 51,
+                      child: ElevatedButton(
+                        onPressed: cart.isSubmitting
+                            ? null
+                            : () => _submit(context, cart),
+                        child: cart.isSubmitting
+                            ? const SizedBox(
+                                width: 19,
+                                height: 19,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Row(
+                                children: [
+                                  const Icon(
+                                    Icons.lock_outline_rounded,
+                                    size: 17,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
+                                      'Place demo order',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    '₱${cart.total.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
       ),
     );
   }
+
+  Future<void> _submit(BuildContext context, CartProvider cart) async {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+    final orderId = await cart.submitOrder(
+      customerName: _nameController.text,
+      deliveryAddress: _addressController.text,
+    );
+    if (!context.mounted) return;
+    if (orderId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(cart.errorMessage ?? 'Unable to place order.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+    Navigator.of(context)
+        .pushReplacementNamed('/order-success', arguments: orderId);
+  }
 }
 
-Widget _summaryRow(String label, String value, {bool isTotal = false}) {
-  return Row(
-    children: [
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: isTotal ? 18 : 14,
-          fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
-          color: isTotal ? AppColors.textPrimary : AppColors.textSecondary,
+class _AddressCard extends StatelessWidget {
+  const _AddressCard({
+    required this.nameController,
+    required this.addressController,
+    required this.phoneController,
+  });
+
+  final TextEditingController nameController;
+  final TextEditingController addressController;
+  final TextEditingController phoneController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.location_on_rounded,
+                color: AppColors.brandOrange,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text(
+                  'DELIVERY TO HOME',
+                  style: TextStyle(
+                    color: AppColors.brandOrange,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .5,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Saved delivery addresses are a demo option.',
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                ),
+                child: const Text('Change', style: TextStyle(fontSize: 10)),
+              ),
+            ],
+          ),
+          TextFormField(
+            controller: nameController,
+            decoration: const InputDecoration(
+              labelText: 'Full name',
+              prefixIcon: Icon(Icons.person_outline_rounded),
+            ),
+            validator: (value) => value == null || value.trim().length < 2
+                ? 'Enter your name.'
+                : null,
+          ),
+          const SizedBox(height: 9),
+          TextFormField(
+            controller: addressController,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'Delivery address',
+              prefixIcon: Icon(Icons.home_outlined),
+            ),
+            validator: (value) => value == null || value.trim().length < 8
+                ? 'Enter a complete delivery address.'
+                : null,
+          ),
+          const SizedBox(height: 9),
+          TextFormField(
+            controller: phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: 'Mobile number',
+              prefixIcon: Icon(Icons.phone_outlined),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Estimated delivery · 35–45 min',
+            style: TextStyle(
+              color: AppColors.success,
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    title,
+    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+  );
+}
+
+class _PaymentOption extends StatelessWidget {
+  const _PaymentOption({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? AppColors.brandOrange : AppColors.border,
+            width: selected ? 1.4 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Icon(icon, color: AppColors.brandOrange, size: 17),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 8,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              selected
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_off_rounded,
+              size: 18,
+              color: selected ? AppColors.brandOrange : AppColors.textSecondary,
+            ),
+          ],
         ),
       ),
-      const Spacer(),
+    );
+  }
+}
+
+class _TotalsCard extends StatelessWidget {
+  const _TotalsCard({
+    required this.subtotal,
+    required this.delivery,
+    required this.tax,
+    required this.total,
+  });
+  final double subtotal;
+  final double delivery;
+  final double tax;
+  final double total;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(15),
+      border: Border.all(color: AppColors.border),
+    ),
+    child: Column(
+      children: [
+        _line('Subtotal', subtotal),
+        const SizedBox(height: 7),
+        _line('Delivery fee', delivery),
+        const SizedBox(height: 7),
+        _line('Tax (12%)', tax),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 9),
+          child: Divider(height: 1),
+        ),
+        _line('Total amount', total, strong: true),
+      ],
+    ),
+  );
+
+  Widget _line(String label, double value, {bool strong = false}) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: strong ? AppColors.textPrimary : AppColors.textSecondary,
+            fontSize: strong ? 12 : 10,
+            fontWeight: strong ? FontWeight.w900 : FontWeight.w600,
+          ),
+        ),
+      ),
       Text(
-        value,
+        '₱${value.toStringAsFixed(0)}',
         style: TextStyle(
-          fontSize: isTotal ? 18 : 14,
-          fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
-          color: AppColors.textPrimary,
+          color: strong ? AppColors.brandOrange : AppColors.textPrimary,
+          fontSize: strong ? 16 : 11,
+          fontWeight: FontWeight.w900,
         ),
       ),
     ],

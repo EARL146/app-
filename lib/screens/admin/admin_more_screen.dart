@@ -13,9 +13,11 @@ class AdminMoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.brandOrange,
-        title:
-            const Text('More', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.pageBackground,
+        title: const Text(
+          'More',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -27,9 +29,7 @@ class AdminMoreScreen extends StatelessWidget {
               // Business Revenue Summary
               Text(
                 'Revenue Summary',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge!
+                style: Theme.of(context).textTheme.titleLarge!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -38,9 +38,7 @@ class AdminMoreScreen extends StatelessWidget {
               // Quick Stats
               Text(
                 'Business Health',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge!
+                style: Theme.of(context).textTheme.titleLarge!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -49,9 +47,7 @@ class AdminMoreScreen extends StatelessWidget {
               // Admin Settings
               Text(
                 'Admin Settings',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge!
+                style: Theme.of(context).textTheme.titleLarge!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -60,9 +56,7 @@ class AdminMoreScreen extends StatelessWidget {
               // Payout Information
               Text(
                 'Payout Information',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge!
+                style: Theme.of(context).textTheme.titleLarge!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -71,9 +65,7 @@ class AdminMoreScreen extends StatelessWidget {
               // App Information
               Text(
                 'App Information',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge!
+                style: Theme.of(context).textTheme.titleLarge!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -92,7 +84,9 @@ class _RevenueSummaryCard extends StatelessWidget {
     return Consumer<AdminOrdersProvider>(
       builder: (context, orderProvider, _) {
         return Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -106,19 +100,16 @@ class _RevenueSummaryCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium!
                           .copyWith(fontWeight: FontWeight.bold),
                     ),
-                    Icon(
-                      Icons.trending_up,
-                      color: AppColors.brandOrange,
-                    ),
+                    Icon(Icons.trending_up, color: AppColors.brandOrange),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
                   '₱${orderProvider.totalRevenue.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.displayMedium!.copyWith(
-                        color: AppColors.brandOrange,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    color: AppColors.brandOrange,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Container(
@@ -153,19 +144,20 @@ class _RevenueSummaryCard extends StatelessWidget {
 class _BusinessHealthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer3<AdminOrdersProvider, AdminProductsProvider,
-        AdminCustomersProvider>(
+    return Consumer3<
+      AdminOrdersProvider,
+      AdminProductsProvider,
+      AdminCustomersProvider
+    >(
       builder: (context, orderProvider, productProvider, customerProvider, _) {
         final deliveryRate = orderProvider.totalOrders > 0
-            ? (orderProvider.deliveredOrders /
-                        orderProvider.totalOrders *
-                        100)
-                    .toStringAsFixed(1) +
-                '%'
+            ? '${(orderProvider.deliveredOrders / orderProvider.totalOrders * 100).toStringAsFixed(1)}%'
             : 'N/A';
 
         return Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -234,9 +226,7 @@ class _HealthMetric extends StatelessWidget {
         ),
         Text(
           value,
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium!
+          style: Theme.of(context).textTheme.bodyMedium!
               .copyWith(fontWeight: FontWeight.bold, color: color),
         ),
       ],
@@ -330,9 +320,7 @@ class _PayoutCard extends StatelessWidget {
           children: [
             Text(
               'Bank Account Details',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium!
+              style: Theme.of(context).textTheme.titleMedium!
                   .copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -357,8 +345,9 @@ class _PayoutCard extends StatelessWidget {
             OutlinedButton(
               onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content:
-                      Text('Backend integration required for payout settings'),
+                  content: Text(
+                    'Backend integration required for payout settings',
+                  ),
                   backgroundColor: Colors.orange,
                 ),
               ),
@@ -379,9 +368,7 @@ class _PayoutCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Payouts are processed weekly on Fridays',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall!
+                      style: Theme.of(context).textTheme.bodySmall!
                           .copyWith(color: Colors.blue[900]),
                     ),
                   ),
@@ -409,9 +396,7 @@ class _PayoutRow extends StatelessWidget {
         Text(label, style: Theme.of(context).textTheme.bodySmall),
         Text(
           value,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall!
+          style: Theme.of(context).textTheme.bodySmall!
               .copyWith(fontWeight: FontWeight.bold),
         ),
       ],
@@ -442,8 +427,7 @@ class _AppInfoCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -452,9 +436,8 @@ class _AppInfoCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Running in demo mode. Changes are not persisted to a backend server.',
-                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                            color: Colors.orange[900],
-                          ),
+                      style: Theme.of(context).textTheme.bodySmall!
+                          .copyWith(color: Colors.orange[900]),
                     ),
                   ),
                 ],
@@ -481,9 +464,7 @@ class _InfoRow extends StatelessWidget {
         Text(label, style: Theme.of(context).textTheme.bodySmall),
         Text(
           value,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall!
+          style: Theme.of(context).textTheme.bodySmall!
               .copyWith(fontWeight: FontWeight.bold),
         ),
       ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'constants/app_colors.dart';
+import 'constants/app_theme.dart';
 import 'navigation/app_router.dart';
 import 'providers/admin_customers_provider.dart';
 import 'providers/admin_orders_provider.dart';
@@ -19,11 +19,14 @@ class AppShell extends StatelessWidget {
         ChangeNotifierProvider<AuthService>(create: (_) => AuthService()),
         ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
         ChangeNotifierProvider<AdminProductsProvider>(
-            create: (_) => AdminProductsProvider()),
+          create: (_) => AdminProductsProvider(),
+        ),
         ChangeNotifierProvider<AdminOrdersProvider>(
-            create: (_) => AdminOrdersProvider()),
+          create: (_) => AdminOrdersProvider(),
+        ),
         ChangeNotifierProvider<AdminCustomersProvider>(
-            create: (_) => AdminCustomersProvider()),
+          create: (_) => AdminCustomersProvider(),
+        ),
       ],
       child: const _AppShellContent(),
     );
@@ -38,15 +41,7 @@ class _AppShellContent extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'BurgerBites',
-      theme: ThemeData(
-        scaffoldBackgroundColor: AppColors.pageBackground,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.brandOrange,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-      ),
+      theme: AppTheme.lightTheme(),
       onGenerateRoute: AppRouter.generateRoute,
       initialRoute: '/',
     );
