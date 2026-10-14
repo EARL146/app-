@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../services/auth_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthService>();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       body: SafeArea(
@@ -58,12 +61,12 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Juan Dela Cruz',
+                                auth.currentUserName ?? 'Customer account',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w900,
@@ -71,7 +74,8 @@ class ProfileScreen extends StatelessWidget {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                'juan.delacruz@example.com',
+                                auth.currentUserEmail ??
+                                    'Sign in to load account details',
                                 style: TextStyle(
                                   fontSize: 10,
                                   color: AppColors.textSecondary,
@@ -86,12 +90,16 @@ class ProfileScreen extends StatelessWidget {
                                     color: AppColors.brandOrange,
                                   ),
                                   SizedBox(width: 3),
-                                  Text(
-                                    'Compostela, Cebu',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textSecondary,
+                                  Expanded(
+                                    child: Text(
+                                      auth.currentUserAddress ??
+                                          'No saved delivery address',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textSecondary,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -119,7 +127,7 @@ class ProfileScreen extends StatelessWidget {
                       Expanded(
                         child: _StatTile(
                           icon: Icons.receipt_long_rounded,
-                          value: '28',
+                          value: '—',
                           label: 'Orders',
                         ),
                       ),
@@ -127,7 +135,7 @@ class ProfileScreen extends StatelessWidget {
                       Expanded(
                         child: _StatTile(
                           icon: Icons.stars_rounded,
-                          value: '480',
+                          value: '—',
                           label: 'Points',
                         ),
                       ),
@@ -135,7 +143,7 @@ class ProfileScreen extends StatelessWidget {
                       Expanded(
                         child: _StatTile(
                           icon: Icons.delivery_dining_rounded,
-                          value: '12',
+                          value: '—',
                           label: 'Deliveries',
                         ),
                       ),
@@ -169,6 +177,12 @@ class ProfileScreen extends StatelessWidget {
                     route: '/calendar',
                   ),
                   _ProfileTile(
+                    title: 'Favorites',
+                    subtitle: 'Products you saved',
+                    icon: Icons.favorite_border_rounded,
+                    route: '/favorites',
+                  ),
+                  _ProfileTile(
                     title: 'Order history',
                     subtitle: 'View your past orders',
                     icon: Icons.receipt_long_outlined,
@@ -191,10 +205,17 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: () => Navigator.of(context)
-                        .pushNamedAndRemoveUntil('/welcome', (route) => false),
+                    onPressed: () async {
+                      if (auth.isAuthenticated) {
+                        await context.read<AuthService>().logout();
+                      }
+                      if (!context.mounted) return;
+                      Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil('/sign-in', (route) => false);
+                    },
                     icon: const Icon(Icons.logout_rounded, size: 17),
-                    label: const Text('Sign out'),
+                    label: Text(auth.isAuthenticated ? 'Sign out' : 'Sign in'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.danger,
                       side: const BorderSide(color: AppColors.border),
@@ -237,15 +258,11 @@ class _RewardsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(
-                Icons.stars_rounded,
-                color: Color(0xFFFFC247),
-                size: 19,
-              ),
-              const SizedBox(width: 7),
-              const Expanded(
+              Icon(Icons.stars_rounded, color: Color(0xFFFFC247), size: 19),
+              SizedBox(width: 7),
+              Expanded(
                 child: Text(
                   'BURGER BITES · REWARDS',
                   style: TextStyle(
@@ -257,67 +274,19 @@ class _RewardsCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'GOLD',
+                'ACCOUNT SERVICE REQUIRED',
                 style: TextStyle(
                   color: Color(0xFFFFC247),
                   fontWeight: FontWeight.w900,
-                  fontSize: 10,
+                  fontSize: 8,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '480',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 28,
-                  height: 1,
-                ),
-              ),
-              SizedBox(width: 6),
-              Padding(
-                padding: EdgeInsets.only(bottom: 2),
-                child: Text(
-                  'points available',
-                  style: TextStyle(color: Colors.white70, fontSize: 10),
-                ),
-              ),
-              Spacer(),
-              Text(
-                '120 pts to next reward',
-                style: TextStyle(color: Colors.white70, fontSize: 8),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: const LinearProgressIndicator(
-              value: .8,
-              minHeight: 6,
-              backgroundColor: Color(0xFF514239),
-              color: Color(0xFFFFB62E),
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Row(
-            children: [
-              Icon(
-                Icons.local_offer_outlined,
-                size: 13,
-                color: Color(0xFFFFC247),
-              ),
-              SizedBox(width: 5),
-              Text(
-                'Earn points with every order',
-                style: TextStyle(color: Colors.white70, fontSize: 9),
-              ),
-            ],
+          const Text(
+            'Rewards and points will appear here when the customer account service is connected.',
+            style: TextStyle(color: Colors.white70, fontSize: 10, height: 1.4),
           ),
         ],
       ),

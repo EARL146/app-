@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
 import '../../providers/cart_provider.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/food_image.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -14,13 +15,23 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: 'Juan Dela Cruz');
-  final _addressController = TextEditingController(
-    text: 'Poblacion, Compostela, Cebu',
-  );
-  final _phoneController = TextEditingController(text: '+63 912 345 6789');
+  final _nameController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
   String _paymentMethod = 'Cash on Delivery';
+  bool _profilePrefilled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_profilePrefilled) return;
+    final auth = context.read<AuthService>();
+    _nameController.text = auth.currentUserName ?? '';
+    _addressController.text = auth.currentUserAddress ?? '';
+    _phoneController.text = auth.currentUserPhone ?? '';
+    _profilePrefilled = true;
+  }
 
   @override
   void dispose() {
@@ -149,19 +160,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                       _PaymentOption(
                         title: 'GCash e-Wallet',
-                        subtitle: 'Payment selection preview only',
+                        subtitle:
+                            'Unavailable: no payment provider is configured',
                         icon: Icons.account_balance_wallet_outlined,
                         selected: _paymentMethod == 'GCash e-Wallet',
-                        onTap: () =>
-                            setState(() => _paymentMethod = 'GCash e-Wallet'),
+                        onTap: _showOnlinePaymentUnavailable,
                       ),
                       _PaymentOption(
                         title: 'Credit / Debit',
-                        subtitle: 'Payment selection preview only',
+                        subtitle:
+                            'Unavailable: no payment provider is configured',
                         icon: Icons.credit_card_outlined,
                         selected: _paymentMethod == 'Credit / Debit',
-                        onTap: () =>
-                            setState(() => _paymentMethod = 'Credit / Debit'),
+                        onTap: _showOnlinePaymentUnavailable,
                       ),
                       const SizedBox(height: 12),
                       const _SectionTitle(title: 'Order notes'),
@@ -198,7 +209,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             SizedBox(width: 7),
                             Expanded(
                               child: Text(
-                                'Demo checkout: no payment is collected and orders are not saved to a server.',
+                                'Orders require the BurgerBites server. Cash on delivery is the only available method; no online payment is processed.',
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 9,
@@ -245,7 +256,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   const SizedBox(width: 8),
                                   const Expanded(
                                     child: Text(
-                                      'Place demo order',
+                                      'Submit COD order',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w900,
                                       ),
@@ -277,6 +288,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final orderId = await cart.submitOrder(
       customerName: _nameController.text,
       deliveryAddress: _addressController.text,
+      phone: _phoneController.text,
+      paymentMethod: _paymentMethod == 'Cash on Delivery'
+          ? 'cod'
+          : 'unavailable',
+      notes: _notesController.text,
     );
     if (!context.mounted) return;
     if (orderId == null) {
@@ -290,6 +306,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
     Navigator.of(context)
         .pushReplacementNamed('/order-success', arguments: orderId);
+  }
+
+  void _showOnlinePaymentUnavailable() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Online payment is not configured. Select cash on delivery.',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }
 
@@ -335,17 +362,6 @@ class _AddressCard extends StatelessWidget {
                   ),
                 ),
               ),
-              TextButton(
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Saved delivery addresses are a demo option.',
-                    ),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                ),
-                child: const Text('Change', style: TextStyle(fontSize: 10)),
-              ),
             ],
           ),
           TextFormField(
@@ -378,15 +394,15 @@ class _AddressCard extends StatelessWidget {
               labelText: 'Mobile number',
               prefixIcon: Icon(Icons.phone_outlined),
             ),
+            validator: (value) =>
+                value == null || value.replaceAll(RegExp(r'\D'), '').length < 10
+                ? 'Enter a valid mobile number.'
+                : null,
           ),
           const SizedBox(height: 4),
           const Text(
-            'Estimated delivery · 35–45 min',
-            style: TextStyle(
-              color: AppColors.success,
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-            ),
+            'Delivery estimate is confirmed by the restaurant after order review.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
           ),
         ],
       ),

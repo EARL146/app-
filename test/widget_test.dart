@@ -1,20 +1,33 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:burger_bites/app_shell.dart';
+import 'package:burger_bites/screens/customer/greetings_screen.dart';
+import 'package:burger_bites/screens/customer/sign_in_screen.dart';
+import 'package:burger_bites/screens/customer/splash_screen.dart';
+import 'package:burger_bites/navigation/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('BurgerBites app shell loads without crashing', (
+  testWidgets('startup shows logo, greetings, then sign in', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const AppShell());
+    await tester.pumpWidget(
+      MaterialApp(
+        onGenerateRoute: AppRouter.generateRoute,
+        home: const SplashScreen(restoreSession: false),
+      ),
+    );
 
-    expect(find.byType(MaterialApp), findsOneWidget);
+    expect(find.byType(SplashScreen), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 1400));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    expect(find.byType(GreetingsScreen), findsOneWidget);
+    expect(find.text('Welcome to BurgerBites'), findsOneWidget);
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.byType(SignInScreen), findsOneWidget);
+    expect(find.text('Welcome back'), findsOneWidget);
   });
 }

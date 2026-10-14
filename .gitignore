@@ -33,6 +33,21 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Graphify output can contain source text and local file paths
+/graphify-out/
+
+# ICM project memory is local user context, not repository content
+/.icm/
+
+# Local secrets (keep template files such as .env.example trackable)
+.env
+.env.*
+!.env.example
+
+# Obsidian's machine-local pane and workspace state
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
 # Symbolication related
 app.*.symbols
 

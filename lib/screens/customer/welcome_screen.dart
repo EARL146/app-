@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_colors.dart';
+import '../../widgets/brand_logo.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -42,7 +43,11 @@ class WelcomeScreen extends StatelessWidget {
                       const Text(
                         'From homemade burgers to craveable flavors, enjoy delicious meals made fresh for your everyday moments.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.6),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                          height: 1.6,
+                        ),
                       ),
                       const SizedBox(height: 30),
                       Container(
@@ -59,8 +64,8 @@ class WelcomeScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: Center(
-                          child: Icon(Icons.lunch_dining, size: 120, color: AppColors.brandOrange),
+                        child: const Center(
+                          child: BrandLogo(width: 190, height: 190),
                         ),
                       ),
                       const Spacer(),
@@ -74,11 +79,16 @@ class WelcomeScreen extends StatelessWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.brandOrange,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
                           child: const Text(
                             'Get Started',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
@@ -93,11 +103,16 @@ class WelcomeScreen extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: AppColors.textPrimary,
                             side: const BorderSide(color: AppColors.border),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
                           child: const Text(
                             'Create Account',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),

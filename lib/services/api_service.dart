@@ -1,178 +1,260 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'storage_service.dart';
 
-/// API response wrapper
 class ApiResponse<T> {
+  const ApiResponse({
+    required this.success,
+    this.data,
+    this.error,
+    this.statusCode,
+  });
+
   final bool success;
   final T? data;
   final String? error;
   final int? statusCode;
-
-  ApiResponse({required this.success, this.data, this.error, this.statusCode});
 }
 
-/// Main API service for handling all HTTP requests
+/// HTTP client for the BurgerBites API. The base URL is supplied at build time.
 class ApiService {
   static final ApiService _instance = ApiService._internal();
-  static const String _baseUrl = 'https://api.burgerbites.com/api/v1';
-  static const Duration _timeout = Duration(seconds: 30);
+  static const String _compileTimeBaseUrl = String.fromEnvironment(
+    'BURGER_BITES_API_BASE_URL',
+  );
+  static const Duration _timeout = Duration(seconds: 15);
 
-  late StorageService _storageService;
-  late http.Client _httpClient;
+  final StorageService _storageService;
+  final http.Client _httpClient;
+  String _baseUrl;
 
-  factory ApiService() {
-    return _instance;
+  factory ApiService() => _instance;
+
+  ApiService._internal()
+    : _storageService = StorageService(),
+      _httpClient = http.Client(),
+      _baseUrl = _compileTimeBaseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
+
+  bool get isConfigured {
+    final uri = Uri.tryParse(_baseUrl);
+    return uri != null &&
+        uri.hasAuthority &&
+        uri.host.isNotEmpty &&
+        const {'http', 'https'}.contains(uri.scheme) &&
+        (!kReleaseMode || uri.scheme == 'https');
   }
 
-  ApiService._internal() {
-    _storageService = StorageService();
-    _httpClient = http.Client();
-  }
-
-  /// Update base URL (useful when switching to Obsidian)
   void setBaseUrl(String newBaseUrl) {
-    // This allows dynamic URL changes when Obsidian is configured
+    final normalized = newBaseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
+    final uri = Uri.tryParse(normalized);
+    if (uri == null ||
+        !uri.hasAuthority ||
+        uri.host.isEmpty ||
+        !const {'http', 'https'}.contains(uri.scheme) ||
+        (kReleaseMode && uri.scheme != 'https')) {
+      throw ArgumentError.value(
+        newBaseUrl,
+        'newBaseUrl',
+        'Expected an HTTP(S) API URL.',
+      );
+    }
+    _baseUrl = normalized;
   }
 
-  /// Get headers with authentication
   Future<Map<String, String>> _getHeaders({bool includeAuth = true}) async {
-    final headers = {'Content-Type': 'application/json', 'Accept': 'application/json'};
-
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
     if (includeAuth) {
       final token = await _storageService.getToken();
-      if (token != null) {
+      if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
       }
     }
-
     return headers;
   }
 
-  /// POST request
+  Uri _endpoint(String endpoint, [Map<String, String>? queryParams]) {
+    final uri = Uri.parse('$_baseUrl$endpoint');
+    return queryParams == null || queryParams.isEmpty
+        ? uri
+        : uri.replace(queryParameters: queryParams);
+  }
+
   Future<ApiResponse<T>> post<T>(
     String endpoint, {
     required T Function(dynamic) fromJson,
     required dynamic body,
     bool requiresAuth = true,
   }) async {
+    if (!isConfigured) return _configurationError<T>();
     try {
-      final headers = await _getHeaders(includeAuth: requiresAuth);
-      final url = Uri.parse('$_baseUrl$endpoint');
-
       final response = await _httpClient
-          .post(url, headers: headers, body: jsonEncode(body))
+          .post(
+            _endpoint(endpoint),
+            headers: await _getHeaders(includeAuth: requiresAuth),
+            body: jsonEncode(body),
+          )
           .timeout(_timeout);
-
       return _handleResponse(response, fromJson);
-    } catch (e) {
-      return ApiResponse<T>(success: false, error: 'Network error: ${e.toString()}');
+    } on TimeoutException {
+      return const ApiResponse(
+        success: false,
+        error: 'The server took too long to respond. Try again.',
+      );
+    } catch (_) {
+      return const ApiResponse(
+        success: false,
+        error: 'Unable to connect to BurgerBites. Check the API URL and connection.',
+      );
     }
   }
 
-  /// GET request
   Future<ApiResponse<T>> get<T>(
     String endpoint, {
     required T Function(dynamic) fromJson,
     bool requiresAuth = true,
     Map<String, String>? queryParams,
   }) async {
+    if (!isConfigured) return _configurationError<T>();
     try {
-      final headers = await _getHeaders(includeAuth: requiresAuth);
-      var url = Uri.parse('$_baseUrl$endpoint');
-
-      if (queryParams != null && queryParams.isNotEmpty) {
-        url = url.replace(queryParameters: queryParams);
-      }
-
-      final response = await _httpClient.get(url, headers: headers).timeout(_timeout);
-
+      final response = await _httpClient
+          .get(
+            _endpoint(endpoint, queryParams),
+            headers: await _getHeaders(includeAuth: requiresAuth),
+          )
+          .timeout(_timeout);
       return _handleResponse(response, fromJson);
-    } catch (e) {
-      return ApiResponse<T>(success: false, error: 'Network error: ${e.toString()}');
+    } on TimeoutException {
+      return const ApiResponse(
+        success: false,
+        error: 'The server took too long to respond. Try again.',
+      );
+    } catch (_) {
+      return const ApiResponse(
+        success: false,
+        error: 'Unable to connect to BurgerBites. Check the API URL and connection.',
+      );
     }
   }
 
-  /// PUT request
   Future<ApiResponse<T>> put<T>(
     String endpoint, {
     required T Function(dynamic) fromJson,
     required dynamic body,
     bool requiresAuth = true,
   }) async {
+    if (!isConfigured) return _configurationError<T>();
     try {
-      final headers = await _getHeaders(includeAuth: requiresAuth);
-      final url = Uri.parse('$_baseUrl$endpoint');
-
       final response = await _httpClient
-          .put(url, headers: headers, body: jsonEncode(body))
+          .put(
+            _endpoint(endpoint),
+            headers: await _getHeaders(includeAuth: requiresAuth),
+            body: jsonEncode(body),
+          )
           .timeout(_timeout);
-
       return _handleResponse(response, fromJson);
-    } catch (e) {
-      return ApiResponse<T>(success: false, error: 'Network error: ${e.toString()}');
+    } on TimeoutException {
+      return const ApiResponse(
+        success: false,
+        error: 'The server took too long to respond. Try again.',
+      );
+    } catch (_) {
+      return const ApiResponse(
+        success: false,
+        error: 'Unable to connect to BurgerBites. Check the API URL and connection.',
+      );
     }
   }
 
-  /// DELETE request
   Future<ApiResponse<T>> delete<T>(
     String endpoint, {
     required T Function(dynamic) fromJson,
     bool requiresAuth = true,
   }) async {
+    if (!isConfigured) return _configurationError<T>();
     try {
-      final headers = await _getHeaders(includeAuth: requiresAuth);
-      final url = Uri.parse('$_baseUrl$endpoint');
-
-      final response = await _httpClient.delete(url, headers: headers).timeout(_timeout);
-
+      final response = await _httpClient
+          .delete(
+            _endpoint(endpoint),
+            headers: await _getHeaders(includeAuth: requiresAuth),
+          )
+          .timeout(_timeout);
       return _handleResponse(response, fromJson);
-    } catch (e) {
-      return ApiResponse<T>(success: false, error: 'Network error: ${e.toString()}');
+    } on TimeoutException {
+      return const ApiResponse(
+        success: false,
+        error: 'The server took too long to respond. Try again.',
+      );
+    } catch (_) {
+      return const ApiResponse(
+        success: false,
+        error: 'Unable to connect to BurgerBites. Check the API URL and connection.',
+      );
     }
   }
 
-  /// Handle HTTP responses
-  ApiResponse<T> _handleResponse<T>(http.Response response, T Function(dynamic) fromJson) {
+  ApiResponse<T> _handleResponse<T>(
+    http.Response response,
+    T Function(dynamic) fromJson,
+  ) {
+    dynamic responseData;
     try {
-      final responseData = jsonDecode(response.body);
+      responseData = response.body.isEmpty ? null : jsonDecode(response.body);
+    } on FormatException {
+      return ApiResponse<T>(
+        success: false,
+        error: 'The server returned an invalid response.',
+        statusCode: response.statusCode,
+      );
+    }
 
-      // Handle success responses (200-299)
-      if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      try {
         return ApiResponse<T>(
           success: true,
           data: fromJson(responseData),
           statusCode: response.statusCode,
         );
-      }
-
-      // Handle unauthorized (401) - token might be expired
-      if (response.statusCode == 401) {
-        // Token refresh logic can be added here
+      } catch (_) {
         return ApiResponse<T>(
           success: false,
-          error: 'Unauthorized. Please login again.',
+          error: 'The server response did not match the expected format.',
           statusCode: response.statusCode,
         );
       }
+    }
 
-      // Handle other errors (400, 403, 404, 500, etc.)
-      final errorMessage = responseData['message'] ?? responseData['error'] ?? 'Unknown error';
+    if (response.statusCode == 401) {
       return ApiResponse<T>(
         success: false,
-        error: errorMessage.toString(),
+        error: 'Email or password is incorrect, or your session has expired.',
         statusCode: response.statusCode,
       );
-    } catch (e) {
-      return ApiResponse<T>(success: false, error: 'Failed to parse response: ${e.toString()}');
     }
+
+    final responseMap = responseData is Map<String, dynamic>
+        ? responseData
+        : const <String, dynamic>{};
+    final errorMessage = responseMap['message'] ?? responseMap['error'];
+    return ApiResponse<T>(
+      success: false,
+      error: errorMessage is String && errorMessage.isNotEmpty
+          ? errorMessage
+          : 'BurgerBites could not complete the request. Try again.',
+      statusCode: response.statusCode,
+    );
   }
 
-  /// Logout - clear stored tokens
-  Future<void> logout() async {
-    await _storageService.clearAll();
-  }
+  ApiResponse<T> _configurationError<T>() => ApiResponse<T>(
+    success: false,
+    error: 'The BurgerBites API is not configured. Set BURGER_BITES_API_BASE_URL and restart the app.',
+  );
+
+  Future<void> logout() => _storageService.clearAll();
 }

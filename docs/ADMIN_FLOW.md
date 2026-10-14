@@ -1,24 +1,24 @@
 # Admin Flow
 
-[[PROJECT_HOME]] · [[SCREEN_IMPLEMENTATION_STATUS]] · [[SECURITY]] · [[API_SPEC]]
+[[PROJECT_HOME]] · [[SYSTEM_FLOW]] · [[SCREEN_FLOW]] · [[SECURITY]] · [[API_SPEC]]
 
-## Preview sign-in and navigation
+## Authentication and route access
 
-The sign-in form compares the email and password against the local constants in `lib/constants/demo_admin_account.dart`. A match navigates to `/admin-home`. This is a UI preview shortcut; it does not verify a password on a server or protect admin routes from direct navigation.
-
-From the dashboard, the profile icon opens `/admin-profile`. The **More** screen also has an Admin profile entry. Profile shows the demo account's identity, branch, role, admin ID, access summary, and active label. Editing name, phone, and branch changes widget state for the current page/session only. **Log out** asks for confirmation and replaces the route with sign-in; it is not a server token revocation flow.
+- Sign-in calls the configured API. The client opens `/admin-home` only when the API response includes role `admin`.
+- On app restart, a stored session is checked through `GET /me` before opening admin home.
+- `AdminRouteGate` checks local session state to prevent accidental navigation to an admin screen.
+- This Flutter guard is not a security boundary. PHP must authenticate every request, check the role from the validated token, authorize the target resource, and record sensitive actions.
+- There is no hard-coded admin email or password in the app. After database setup, an authorized operator can create a new admin with `backend/tools/create_admin.ps1`; it refuses to overwrite an existing email.
 
 ## Admin screens
 
-| Screen | Local behavior | Limit |
+| Screen | Current behavior | Status |
 | --- | --- | --- |
-| Dashboard | Shows sample counts, sales/chart preview, and recent orders. | Metrics are not read from a business database. |
-| Orders | Search/filter and update sample order status. | No server persistence or audited transitions. |
-| Products | Browse/filter/add/edit/delete sample products and toggle availability. | No API, durable storage, or image upload. |
-| Customers | List/search sample customers and toggle local active state. | No server authorization or persisted customer data. |
-| More | Admin navigation and preview settings. | Not connected to account/security services. |
-| Profile | Displays details, local edits, and sign-out navigation. | Demo identity; changes are not persisted. |
+| Dashboard | Shows local sample counts, chart, and orders | Not connected to API |
+| Orders | Search/filter and change sample status | Not persistent; server transition rules absent |
+| Products | Local add/edit/delete/availability toggle | Not persistent; stock/API absent |
+| Customers | Search and toggle sample active status | Not persistent; privacy authorization absent |
+| Profile | Reads server identity fields and sends edits through `PUT /me`; logout calls `/auth/logout` | PHP route exists and DB is configured; admin login/profile journey still needs end-to-end verification |
+| More | Navigation and preview settings | Several operations remain local or unimplemented |
 
-## Routes and source
-
-See `lib/navigation/app_routes.dart`, `lib/navigation/app_router.dart`, and `lib/screens/admin/`. State is held by `AdminOrdersProvider`, `AdminProductsProvider`, and `AdminCustomersProvider`. No role-enforcing API was found; see [[SECURITY]] and [[API_SPEC]].
+PHP admin management endpoints remain unimplemented. The schema supports admin roles, and the database is configured. No admin account was created in this setup. See [[DATABASE_SCHEMA]], [[API_SPEC]], [[SECURITY]], and [[PRODUCTION_READINESS_AUDIT]].

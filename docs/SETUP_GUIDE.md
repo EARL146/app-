@@ -1,61 +1,39 @@
 # Setup Guide
 
-[[PROJECT_HOME]] · [[TESTING]] · [[KNOWN_ISSUES]] · [[NEXT_SESSION]]
+[[PROJECT_HOME]] · [[TESTING]] · [[KNOWN_ISSUES]] · [[API_SPEC]] · [[DATABASE_SCHEMA]]
 
-## Contents
-
-- [Windows / Flutter Web](#windows--flutter-web)
-- [Android emulator or device](#android-emulator-or-device)
-- [AMPPS / PHP / MySQL](#ampps--php--mysql)
-- [Obsidian](#obsidian)
-
-## Windows / Flutter Web
-
-Open PowerShell in:
+## Flutter client
 
 ```powershell
 Set-Location 'C:\Users\shizu\OneDrive\Documents\Ampps\www\Burger_bites'
-```
-
-Check the tools and available disk space:
-
-```powershell
-flutter --version
-dart --version
-Get-PSDrive C | Select-Object Name,@{Name='FreeGB';Expression={[math]::Round($_.Free/1GB,2)}}
-```
-
-Then fetch dependencies and run in Edge:
-
-```powershell
 flutter pub get
+flutter devices
 flutter run -d edge
 ```
 
-Recent user output showed `flutter pub get` succeeded, but Edge compilation ran out of C: disk space while writing a Dart artifact. Free several GB before retrying. Do not delete application source or the Pub cache as the first response to a disk-space error. See [[KNOWN_ISSUES]].
+For Android, connect a USB-debugging phone or start an emulator and use the device ID printed by `flutter devices`.
 
-## Android emulator or device
+## Local API and database
 
-Install Flutter/Android Studio and configure an Android SDK, then use:
+The PHP API and SQL migrations are in `backend/`. The local database and API settings are already configured. Follow [backend/README.md](../backend/README.md) for setup details. Current database state:
+
+- `Burger_Bites` (`burger_bites`) has the seven core schema tables from migration `001`.
+- API account `burger_bites_app` has least-privilege CRUD grants and is configured in ignored `backend/.env`.
+- Optional sample products from migration `002` were not added.
+- Start PHP on port 8081. Port 8080 is occupied by Tomcat on this computer. An admin account is created separately using the hidden-password helper; there is no default credential.
+
+Run Edge against the API with a stable browser origin:
 
 ```powershell
-flutter doctor
-flutter emulators
-flutter devices
-flutter run -d <device-id>
+flutter run -d edge --web-port=5000 --dart-define=BURGER_BITES_API_BASE_URL=http://127.0.0.1:8081/api/v1
 ```
 
-No Android device/emulator run was verified for this documentation update. A debug APK build previously failed during generated asset cleanup; see [[TESTING]].
-
-## AMPPS / PHP / MySQL
-
-The `Burger_bites` tree contains no PHP API, SQL schema, migration, or database configuration. Therefore this Flutter project alone cannot start or configure the AMPPS backend. If the backend is a separate folder under AMPPS, keep it in place and record its exact path and safe schema export before documenting endpoints/database setup. Do not put DB passwords in the vault or Flutter app. See [[API_SPEC]] and [[DATABASE_SCHEMA]].
+`backend/.env` already allows `http://localhost:5000`. For Android Emulator, use `http://10.0.2.2:8081/api/v1`. Release builds require HTTPS. Do not expose a development server publicly.
 
 ## Obsidian
 
-1. Select the `Burger_bites` vault from Obsidian's vault list; it has been registered there.
-2. Open `docs/PROJECT_HOME.md` from the file explorer and pin it if desired.
-3. If the vault is not listed, select **Open folder as vault** and choose the project root.
-4. New notes default to `docs/` via `.obsidian/app.json`.
+Open the project folder as a vault and select `docs/PROJECT_HOME.md`. If needed, choose **Open folder as vault** and use the project directory above. New notes are directed to `docs/` by `.obsidian/app.json`.
 
-The existing unrelated Obsidian vaults were left unchanged. [[PROJECT_HOME]] is the BurgerBites vault entry point.
+## Configuration safety
+
+The local database connection was verified. Keep `backend/.env`, OAuth credentials, and payment secrets out of Git and Obsidian.

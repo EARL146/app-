@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../data/demo_data.dart';
 import '../models/product_model.dart';
+import 'admin_route_gate.dart';
 import '../screens/customer/about_screen.dart';
 import '../screens/customer/cart_screen.dart';
 import '../screens/customer/calendar_screen.dart';
 import '../screens/customer/checkout_screen.dart';
 import '../screens/customer/contact_screen.dart';
+import '../screens/customer/favorites_screen.dart';
 import '../screens/customer/home_screen.dart';
 import '../screens/customer/language_screen.dart';
 import '../screens/customer/menu_screen.dart';
@@ -17,6 +19,8 @@ import '../screens/customer/profile_screen.dart';
 import '../screens/customer/register_screen.dart';
 import '../screens/customer/search_screen.dart';
 import '../screens/customer/settings_screen.dart';
+import '../screens/customer/splash_screen.dart';
+import '../screens/customer/greetings_screen.dart';
 import '../screens/customer/sign_in_screen.dart';
 import '../screens/customer/theme_screen.dart';
 import '../screens/customer/welcome_screen.dart';
@@ -33,6 +37,10 @@ class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/':
+      case '/splash':
+        return MaterialPageRoute(builder: (_) => const SplashScreen());
+      case '/greetings':
+        return MaterialPageRoute(builder: (_) => const GreetingsScreen());
       case '/welcome':
         return MaterialPageRoute(builder: (_) => const WelcomeScreen());
       case '/sign-in':
@@ -43,6 +51,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const CustomerHomeScreen());
       case '/search':
         return MaterialPageRoute(builder: (_) => const SearchScreen());
+      case '/favorites':
+        return MaterialPageRoute(builder: (_) => const FavoritesScreen());
       case '/menu':
         final category = settings.arguments as String? ?? 'All';
         return MaterialPageRoute(
@@ -80,25 +90,40 @@ class AppRouter {
       case '/about':
         return MaterialPageRoute(builder: (_) => const AboutScreen());
       case '/admin-home':
-        return MaterialPageRoute(builder: (_) => const AdminHomeScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AdminRouteGate(child: AdminHomeScreen()),
+        );
       case '/admin-profile':
-        return MaterialPageRoute(builder: (_) => const AdminProfileScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AdminRouteGate(child: AdminProfileScreen()),
+        );
       case '/admin-orders':
-        return MaterialPageRoute(builder: (_) => const AdminOrdersScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AdminRouteGate(child: AdminOrdersScreen()),
+        );
       case '/admin-products':
-        return MaterialPageRoute(builder: (_) => const AdminProductsScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AdminRouteGate(child: AdminProductsScreen()),
+        );
       case '/admin-add-product':
-        return MaterialPageRoute(builder: (_) => const AdminAddProductScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AdminRouteGate(child: AdminAddProductScreen()),
+        );
       case '/admin-edit-product':
         final product =
             settings.arguments as Product? ?? DemoData.products.first;
         return MaterialPageRoute(
-          builder: (_) => AdminEditProductScreen(product: product),
+          builder: (_) =>
+              AdminRouteGate(child: AdminEditProductScreen(product: product)),
         );
       case '/admin-customers':
-        return MaterialPageRoute(builder: (_) => const AdminCustomersScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AdminRouteGate(child: AdminCustomersScreen()),
+        );
       case '/admin-more':
-        return MaterialPageRoute(builder: (_) => const AdminMoreScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AdminRouteGate(child: AdminMoreScreen()),
+        );
       default:
         return MaterialPageRoute(
           builder: (_) =>

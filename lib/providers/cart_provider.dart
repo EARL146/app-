@@ -2,8 +2,10 @@ import 'package:flutter/foundation.dart';
 
 import '../models/order_model.dart';
 import '../models/product_model.dart';
+import '../services/api_service.dart';
 
 class CartProvider extends ChangeNotifier {
+  final ApiService _apiService = ApiService();
   final List<OrderItem> _items = [];
   String? _errorMessage;
   bool _isSubmitting = false;
@@ -96,6 +98,9 @@ class CartProvider extends ChangeNotifier {
   Future<String?> submitOrder({
     required String customerName,
     required String deliveryAddress,
+    required String phone,
+    required String paymentMethod,
+    String? notes,
   }) async {
     if (_items.isEmpty) {
       _errorMessage = 'Your cart is empty.';
@@ -114,14 +119,56 @@ class CartProvider extends ChangeNotifier {
       notifyListeners();
       return null;
     }
+    if (phone.replaceAll(RegExp(r'\D'), '').length < 10) {
+      _errorMessage = 'Enter a valid mobile number.';
+      notifyListeners();
+      return null;
+    }
+    if (paymentMethod != 'cod') {
+      _errorMessage =
+          'Online payment is not configured. Choose cash on delivery.';
+      notifyListeners();
+      return null;
+    }
 
     _isSubmitting = true;
     _errorMessage = null;
     notifyListeners();
 
-    await Future<void>.delayed(const Duration(milliseconds: 900));
+    final response = await _apiService.post<Map<String, dynamic>>(
+      '/orders',
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid order response.'),
+      body: {
+        'customer_name': customerName.trim(),
+        'delivery_address': deliveryAddress.trim(),
+        'phone': phone.trim(),
+        'payment_method': paymentMethod,
+        if (notes?.trim().isNotEmpty == true) 'notes': notes!.trim(),
+        'items': _items
+            .map(
+              (item) => {
+                'product_id': item.productId,
+                'quantity': item.quantity,
+              },
+            )
+            .toList(),
+      },
+    );
+    final order = response.data?['order'];
+    final result = order is Map<String, dynamic> ? order : response.data;
+    final id = result?['order_id'] ?? result?['id'];
+    if (!response.success || id == null || id.toString().isEmpty) {
+      _isSubmitting = false;
+      _errorMessage =
+          response.error ??
+          'The server did not confirm the order. Your cart is unchanged.';
+      notifyListeners();
+      return null;
+    }
 
-    final orderId = 'BB-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    final orderId = id.toString();
     _lastOrderId = orderId;
     _isSubmitting = false;
     _items.clear();

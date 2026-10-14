@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../widgets/favorite_button.dart';
 import '../../widgets/food_image.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
@@ -95,22 +96,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           child: CircleAvatar(
                             radius: 18,
                             backgroundColor: Colors.white,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              onPressed: () => ScaffoldMessenger.of(context)
-                                  .showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Favorites are a demo option.',
-                                      ),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  ),
-                              icon: const Icon(
-                                Icons.favorite_border_rounded,
-                                color: AppColors.brandOrange,
-                                size: 18,
-                              ),
+                            child: FavoriteButton(
+                              product: product,
+                              iconSize: 18,
                             ),
                           ),
                         ),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../constants/demo_admin_account.dart';
 import '../../navigation/app_routes.dart';
+import '../../services/auth_service.dart';
 
 class AdminProfileScreen extends StatefulWidget {
   const AdminProfileScreen({super.key});
@@ -16,17 +17,15 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
   late final TextEditingController _phoneController;
   late final TextEditingController _branchController;
 
-  String _name = DemoAdminAccount.name;
-  String _phone = DemoAdminAccount.phone;
-  String _branch = DemoAdminAccount.branch;
   bool _editing = false;
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: _name);
-    _phoneController = TextEditingController(text: _phone);
-    _branchController = TextEditingController(text: _branch);
+    _nameController = TextEditingController();
+    _phoneController = TextEditingController();
+    _branchController = TextEditingController();
   }
 
   @override
@@ -39,6 +38,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthService>();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
@@ -59,7 +59,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _profileHeader(),
+                  _profileHeader(auth),
                   const SizedBox(height: 20),
                   Row(
                     children: [
@@ -75,15 +75,15 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  if (_editing) _editCard() else _profileDetailsCard(),
+                  if (_editing) _editCard() else _profileDetailsCard(auth),
                   const SizedBox(height: 20),
                   const _SectionTitle('Admin access'),
                   const SizedBox(height: 8),
-                  _accessCard(),
+                  _accessCard(auth),
                   const SizedBox(height: 20),
                   const _SectionTitle('Security'),
                   const SizedBox(height: 8),
-                  _securityCard(),
+                  _securityCard(auth),
                   const SizedBox(height: 22),
                   SizedBox(
                     height: 50,
@@ -105,7 +105,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'Demo account details and profile edits are local to this preview. No admin account service is connected.',
+                    'Administrator identity and profile changes are supplied by the authenticated BurgerBites server account.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppColors.textSecondary,
@@ -122,7 +122,10 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     );
   }
 
-  Widget _profileHeader() {
+  Widget _profileHeader(AuthService auth) {
+    final name = auth.currentUserName?.trim().isNotEmpty == true
+        ? auth.currentUserName!.trim()
+        : 'Administrator';
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -146,7 +149,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
             radius: 31,
             backgroundColor: Colors.white,
             child: Text(
-              _initials(_name),
+              _initials(name),
               style: const TextStyle(
                 color: AppColors.brandOrangeDark,
                 fontWeight: FontWeight.w900,
@@ -160,7 +163,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _name,
+                  name,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -169,7 +172,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  DemoAdminAccount.role,
+                  'Administrator',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: .9),
                     fontSize: 12,
@@ -177,7 +180,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                 ),
                 const SizedBox(height: 7),
                 Text(
-                  DemoAdminAccount.email,
+                  auth.currentUserEmail ?? 'Email unavailable',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: .9),
                     fontSize: 11,
@@ -193,7 +196,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              'ACTIVE',
+              'SIGNED IN',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 9,
@@ -207,27 +210,27 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     );
   }
 
-  Widget _profileDetailsCard() {
+  Widget _profileDetailsCard(AuthService auth) {
     return _InfoCard(
       children: [
         _DetailRow(
           label: 'Full name',
-          value: _name,
+          value: auth.currentUserName ?? 'Not provided by the server',
           icon: Icons.person_outline,
         ),
         _DetailRow(
           label: 'Email address',
-          value: DemoAdminAccount.email,
+          value: auth.currentUserEmail ?? 'Not provided',
           icon: Icons.email_outlined,
         ),
         _DetailRow(
           label: 'Phone number',
-          value: _phone,
+          value: auth.currentUserPhone ?? 'Not provided',
           icon: Icons.phone_outlined,
         ),
         _DetailRow(
           label: 'Restaurant branch',
-          value: _branch,
+          value: auth.currentUserBranch ?? 'Not assigned',
           icon: Icons.storefront_outlined,
           showDivider: false,
         ),
@@ -251,9 +254,15 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
             width: double.infinity,
             height: 44,
             child: FilledButton.icon(
-              onPressed: _saveProfile,
-              icon: const Icon(Icons.check_rounded),
-              label: const Text('Save profile'),
+              onPressed: _saving ? null : _saveProfile,
+              icon: _saving
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check_rounded),
+              label: Text(_saving ? 'Saving…' : 'Save profile'),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.brandOrange,
                 foregroundColor: Colors.white,
@@ -265,17 +274,17 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     );
   }
 
-  Widget _accessCard() {
+  Widget _accessCard(AuthService auth) {
     return _InfoCard(
       children: [
         _DetailRow(
           label: 'Admin ID',
-          value: DemoAdminAccount.adminId,
+          value: auth.currentUserId ?? 'Unavailable',
           icon: Icons.badge_outlined,
         ),
         _DetailRow(
           label: 'Account role',
-          value: DemoAdminAccount.role,
+          value: 'Administrator (server role)',
           icon: Icons.admin_panel_settings_outlined,
         ),
         _DetailRow(
@@ -288,17 +297,17 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     );
   }
 
-  Widget _securityCard() {
+  Widget _securityCard(AuthService auth) {
     return _InfoCard(
-      children: const [
+      children: [
         _DetailRow(
           label: 'Sign-in method',
-          value: 'Local demo account',
+          value: 'BurgerBites server session',
           icon: Icons.lock_outline_rounded,
         ),
         _DetailRow(
           label: 'Account status',
-          value: 'Active for preview',
+          value: auth.isAuthenticated ? 'Authenticated' : 'Signed out',
           icon: Icons.verified_user_outlined,
           showDivider: false,
         ),
@@ -307,34 +316,42 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
   }
 
   void _beginEditing() {
-    _nameController.text = _name;
-    _phoneController.text = _phone;
-    _branchController.text = _branch;
+    final auth = context.read<AuthService>();
+    _nameController.text = auth.currentUserName ?? '';
+    _phoneController.text = auth.currentUserPhone ?? '';
+    _branchController.text = auth.currentUserBranch ?? '';
     setState(() => _editing = true);
   }
 
   void _cancelEditing() => setState(() => _editing = false);
 
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Full name is required.')));
+    if (name.length < 2) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Enter your full name.')));
       return;
     }
+    setState(() => _saving = true);
+    final auth = context.read<AuthService>();
+    final saved = await auth.updateProfile(
+      name: name,
+      phone: _phoneController.text,
+      branch: _branchController.text,
+    );
+    if (!mounted) return;
     setState(() {
-      _name = name;
-      _phone = _phoneController.text.trim().isEmpty
-          ? 'Not provided'
-          : _phoneController.text.trim();
-      _branch = _branchController.text.trim().isEmpty
-          ? 'Not assigned'
-          : _branchController.text.trim();
-      _editing = false;
+      _saving = false;
+      if (saved) _editing = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile updated for this session.')),
+      SnackBar(
+        content: Text(
+          saved
+              ? 'Profile saved to your account.'
+              : auth.errorMessage ?? 'Unable to save profile changes.',
+        ),
+      ),
     );
   }
 
@@ -361,12 +378,15 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
       ),
     );
     if (shouldLogout != true || !mounted) return;
+    await context.read<AuthService>().logout();
+    if (!mounted) return;
     Navigator.of(context)
         .pushNamedAndRemoveUntil(AppRoutes.signIn, (route) => false);
   }
 
   String _initials(String name) {
     final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.first.isEmpty) return 'AD';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
         .toUpperCase();

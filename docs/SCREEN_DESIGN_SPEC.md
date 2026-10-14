@@ -64,7 +64,7 @@ The reference is the set of BurgerBites customer and admin screen screenshots su
 
 ## Data and interaction limits
 
-- The Flutter archive contains no PHP API controllers, SQL schema, or live database connection.
+- The original Flutter archive contained no PHP API controllers or SQL schema. A PHP API and unapplied SQL schema were added during the 2026-10-14 implementation pass; there is still no live database connection.
 - Catalog, order history, admin metrics, and account details are sample data held in app state.
 - Payment, social login, calendar milestones, profile persistence, message sending, tracking, and global theme/language application are not connected to production services.
 - The design uses the screenshot references as a direction; exact Figma spacing, type scale, colors, and transitions remain unverified.

@@ -6,6 +6,7 @@ import '../../data/demo_data.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/food_image.dart';
+import '../../widgets/favorite_button.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key, this.initialCategory = 'All'});
@@ -409,6 +410,19 @@ class MenuProductCard extends StatelessWidget {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .95),
+                        shape: BoxShape.circle,
+                      ),
+                      child: FavoriteButton(product: product, iconSize: 17),
                     ),
                   ),
                   Positioned(

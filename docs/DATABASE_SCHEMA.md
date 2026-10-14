@@ -1,26 +1,38 @@
-# Database Schema
+# Database Schema and Inspection Status
 
-[[PROJECT_HOME]] · [[PROJECT_MAP]] · [[API_SPEC]] · [[SECURITY]]
+[[PROJECT_HOME]] · [[API_SPEC]] · [[SECURITY]] · [[PRODUCTION_READINESS_AUDIT]]
 
-## Inspection result
+## Database selection
 
-No MySQL schema can be documented from this project tree: no SQL dump, migration, PHP connection file, or database config was found under `Burger_bites`. The AMPPS/phpMyAdmin database may be stored or defined elsewhere; it has not been inspected. Do not treat the Dart models below as actual database tables.
+The user identified the existing phpMyAdmin database as `Burger_Bites`. Read-only inspection confirmed its MySQL name is `burger_bites` and it had no tables before setup. Migration `001_initial_schema.sql` was then applied; the seven core tables are visible to the PHP API's restricted account. `streetfood_db` was not changed.
 
-## Client-side data models (not database tables)
+Migration `001` uses `CREATE TABLE IF NOT EXISTS`; it does not drop data, but an existing table with a different structure would not be repaired by that statement. Do not point this API at `streetfood_db`.
 
-The following JSON keys are visible in the Flutter model serializers. They are client serialization shapes only; their compatibility with any server/database is unverified.
+## Versioned schema files
 
-| Dart type | Client fields/JSON keys |
+`backend/database/migrations/001_initial_schema.sql` defines:
+
+| Table | Purpose and key rules |
 | --- | --- |
-| `Product` in `lib/models/product_model.dart` | `id`, `name`, `description`, `price`, `image_url`, `category`, `rating`, `review_count`, `available`, `created_at`. |
-| `OrderItem` in `lib/models/order_model.dart` | `product_id`, `product_name`, `price`, `quantity`, `product_image`. |
-| `Order` in `lib/models/order_model.dart` | `id`, `user_id`, `items`, `subtotal`, `tax`, `shipping_cost`, `total`, `status`, `notes`, `delivery_address`, `created_at`, `updated_at`, `delivered_at`. |
-| `User` in `lib/models/user_model.dart` | `id`, `email`, `first_name`, `last_name`, `phone_number`, `profile_image`, `created_at`. |
+| `users` | Unique email, Argon2id password hash, server-owned role, profile fields. Public registration always creates `customer`. |
+| `api_tokens` | HMAC-hashed access/refresh tokens, family revocation, user foreign key, expiry index. |
+| `products` | String IDs matching the current Flutter catalog, `DECIMAL(10,2)` prices, availability, stock, search indexes. |
+| `favorites` | Composite primary key `(user_id, product_id)` prevents duplicates; both foreign keys cascade. |
+| `orders` | Owner, delivery snapshot, COD-only method, status, decimal price totals and owner/status indexes. |
+| `order_items` | Product/name/image/price snapshots and quantity; order/product foreign keys. |
+| `auth_rate_limits` | HMAC-hashed email/IP subjects and fixed-window counters; no raw email/IP is stored in this table. |
 
-## Local-only state
+`002_development_catalog.sql` inserts the six products currently in `lib/data/demo_data.dart`. It is sample data with sample stock, for development only. Replace it with verified restaurant data before accepting real orders.
 
-`DemoData` seeds sample products and customer orders. Cart and admin providers mutate in-memory Dart lists. Closing/restarting the app does not provide durable order/product/customer persistence. Checkout totals are computed on the client and are not authoritative for a real purchase.
+## Applying locally
 
-## To document the real AMPPS database
+1. Start MySQL in AMPPS and select `Burger_Bites` (`burger_bites`) in phpMyAdmin.
+2. The initial schema is already installed. For a fresh copy, import `001_initial_schema.sql`; optionally import `002_development_catalog.sql` for local sample products.
+3. The `burger_bites_app` API account has only `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on `burger_bites.*`. Root credentials are not stored in the API configuration.
+4. `backend/.env` contains local generated settings and is ignored by Git. Do not share its secrets. See [[SETUP_GUIDE]] and `backend/README.md`.
 
-Provide or inspect the separate backend directory and a safe schema export (table/column definitions without passwords or customer data). Then record actual tables, column types, primary/foreign keys, indexes, constraints, migrations, and backup procedure. Do not copy database credentials into this vault. See [[NEXT_SESSION]].
+Migration `001` was applied against the verified empty local database. The API account successfully connected and confirmed seven tables are visible. No product/customer/order rows were added. Migration `002` remains unapplied.
+
+## Gaps
+
+The current schema has one `default_address` field rather than multiple saved addresses. It has no product categories table, password-reset tokens, email-verification state, audit log, payment records, or migrations tracking table. Admin APIs, customer order history, and cancellation/restocking flows are not implemented. Extend the schema only after confirming the business rules and target database.

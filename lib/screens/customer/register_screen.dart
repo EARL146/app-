@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/brand_logo.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -43,18 +46,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 8),
                     Center(
                       child: Column(
-                        children: [
-                          Icon(Icons.lunch_dining, size: 70, color: AppColors.brandOrange),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'BurgerBites',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
+                        children: [const BrandLogo(width: 120, height: 120)],
                       ),
                     ),
                     const SizedBox(height: 26),
@@ -71,7 +63,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const Text(
                       'Enter your details below to sign up for the app',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        height: 1.5,
+                      ),
                     ),
                     const SizedBox(height: 26),
                     TextFormField(
@@ -123,7 +119,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       validator: (value) {
                         final v = value?.trim() ?? '';
-                        if (v.isEmpty || !v.contains('@')) {
+                        if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                            .hasMatch(v)) {
                           return 'Enter a valid email address';
                         }
                         return null;
@@ -163,8 +160,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       validator: (value) {
-                        if ((value ?? '').length < 6) {
-                          return 'Password must be at least 6 characters';
+                        if ((value ?? '').length < 12) {
+                          return 'Use at least 12 characters';
                         }
                         return null;
                       },
@@ -177,7 +174,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.brandOrange,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         child: _isSubmitting
                             ? const SizedBox(
@@ -190,7 +189,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               )
                             : const Text(
                                 'Create account',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                       ),
                     ),
@@ -200,7 +202,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       children: [
                         const Text(
                           'Already have an account?',
-                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
@@ -229,13 +234,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
-
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-
+    final auth = context.read<AuthService>();
+    final success = await auth.register(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim().toLowerCase(),
+      password: _passwordController.text,
+    );
     if (!mounted) return;
-
     setState(() => _isSubmitting = false);
-
-    Navigator.of(context).pushNamedAndRemoveUntil('/customer-home', (route) => false);
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Unable to create this account.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    Navigator.of(context)
+        .pushNamedAndRemoveUntil('/customer-home', (route) => false);
   }
 }

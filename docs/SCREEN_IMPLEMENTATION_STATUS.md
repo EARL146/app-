@@ -1,71 +1,44 @@
 # Screen Implementation Status
 
-[[PROJECT_HOME]] · [[SCREEN_DESIGN_SPEC]] · [[TESTING]] · [[FILE_REGISTRY]]
+[[PROJECT_HOME]] · [[SCREEN_DESIGN_SPEC]] · [[TESTING]] · [[FILE_REGISTRY]] · [[PRODUCTION_READINESS_AUDIT]]
 
-> Updated: 2026-10-14. “Implemented” refers to Flutter UI/local demo behavior. No screen has been compared with an original Figma frame.
-
-## Contents
-
-- [Customer screens](#customer-screens)
-- [Admin screens](#admin-screens)
-- [Reference verification](#reference-verification)
-- [Verification record](#verification-record)
-
-## Navigation
-
-- [[PROJECT_MAP]]
-- [[FILE_REGISTRY]]
-- [[SCREEN_DESIGN_SPEC]]
-- [[README]]
+Updated: 2026-10-14. “Implemented” describes the Flutter client; absent server behavior is not implied.
 
 ## Customer screens
 
-| Screen | Status | Current behavior / limitation |
+| Screen | Status | Current behavior / limit |
 | --- | --- | --- |
-| Welcome | Implemented | Prototype landing screen and route links. |
-| Sign in | Implemented | Local demo admin credentials open the admin dashboard; other valid entries use demo customer navigation. No authentication service is connected. |
-| Registration | Implemented | Local field validation and demo navigation; no account is created on a server. |
-| Home | Implemented | Location, promotional hero, categories, sample bestsellers, and sample orders. |
-| Menu | Implemented | Category filtering, local product images, add-to-cart actions. |
-| Search | Implemented | Search by product/category/description, category filters, and local recent/trending UI. |
-| Product details | Implemented | Size, topping, quantity, and local price previews feed the local cart. |
-| Cart | Implemented | Quantity changes, removals, local subtotal, tax, delivery fee, and total. |
-| Checkout | Implemented | Local form validation and payment selection preview; no payment is collected and no server order is saved. |
-| Order confirmation | Implemented | Displays a local reference only. |
-| Order history | Implemented | Static sample orders, status preview, local reorder behavior; live tracking is not connected. |
-| Profile | Implemented | Sample customer identity, rewards summary, and routes to account pages. |
-| Account settings | Implemented | Local switches and fields; preferences are not persisted. |
-| Language | Implemented | Search and selection preview; app translations are not applied. |
-| Theme | Implemented | Palette/display preview selection; global theme is not changed or persisted. |
-| Calendar | Implemented | Date selection and labeled sample milestone content. |
-| Contact | Implemented | Local message validation, sample contact options, and FAQ panels; no support message is sent. |
-| About | Implemented | Sample brand content and bundled product image. |
+| Splash / Greetings | Implemented and tested | Owner-supplied logo; route to sign-in or registration. Returning session check uses `/me` when API is configured. |
+| Sign in | Implemented, database connection pending | Calls the new PHP API; no local credential or arbitrary-customer fallback. Requires the DB setup in `backend/README.md`. |
+| Registration | Implemented, database connection pending | Client and PHP both validate; PHP hashes with Argon2id and assigns customer role. Requires DB setup and runtime verification. |
+| Home / Menu | Preview data | Product/location/promotions remain from `DemoData`. |
+| Search | Implemented over preview data | Search/category and three-dot sort menu; does not fetch server catalog. |
+| Product details | Partially connected | Local product/cart actions; favorite button calls API. |
+| Favorites | Implemented, database connection pending | Dedicated screen, visible saved-state icon, and PHP user-scoped endpoints; persistence not tested against MySQL. |
+| Cart | Preview state | In-memory quantities and local estimate, not persisted. |
+| Checkout | API request implemented, database connection pending | PHP validates address/items, reads server price/stock, and creates COD order transactionally. DB and stock behavior not tested. |
+| Order confirmation | Conditional on server | Shows request reference only when server returns order ID. |
+| Order history | Preview data | Static sample records; not linked to created server orders. |
+| Profile | Server fields expected | Reads authenticated identity cache; saved address editing still needs full address API/UI. |
+| Settings / language / theme / calendar | Preview | Changes are not consistently persisted or applied globally. |
+| Contact / about | Preview | Contact form does not send a server message. |
 
 ## Admin screens
 
-| Screen | Status | Current behavior / limitation |
+| Screen | Status | Current behavior / limit |
 | --- | --- | --- |
-| Dashboard | Implemented | In-memory sample metrics, chart preview, quick actions, and recent sample orders. |
-| Orders | Implemented | Local search/status filtering, status changes, and cancellation; not server-backed. |
-| Products | Implemented | Local search/category filtering, product image cards, availability toggle, edit, delete, and add. |
-| Add/edit product | Implemented | Local product provider state; no image upload or backend persistence. |
-| Customers | Implemented | Sample customer state and local status controls. |
-| More | Implemented | Local admin summary/settings UI; values are not live business records. |
-| Admin profile | Implemented | Demo name, email, phone, branch, role, ID, access list; profile edits are session-only and logout returns to sign-in. |
+| Admin route gate | Client-side guard | Requires server-returned role `admin`; server must independently authorize endpoints. |
+| Dashboard | Preview data | Metrics, chart, and orders are local samples. |
+| Orders | Preview data | Status changes/cancellation are local; no API or audit log. |
+| Products | Preview data | Add/edit/delete/availability state is not persisted; inventory API absent. |
+| Customers | Preview data | Sample customers and toggles; authorization/privacy service absent. |
+| Admin profile | API path implemented, DB verification pending | Displays cached server identity and calls `PUT /me`; logout clears local session and attempts server logout. |
+| More | Preview | Several settings are not connected to services. |
 
-## Reference verification
+## Design and verification
 
-- Supplied screenshots are the design references currently available.
-- No Figma project, exported frame, or design-token file was found in the archive.
-- **Verified Against Figma:** none.
-- Visual comparison in a running emulator/device: not performed for this update.
-
-## Verification record
-
-- Flutter: 3.47.6; Dart: 3.13.5.
-- `dart format` on modified Dart files: completed.
-- `flutter analyze --no-pub`: passed with no issues on 2026-10-14.
-- `flutter build web --no-pub`: passed on 2026-10-14. Non-blocking WebAssembly compatibility notices were reported for the secure-storage web plugin; the standard Web build completed.
-- Latest user `flutter run -d edge`: failed while writing `app.dill` because C: had about 0.12 GB free; see [[KNOWN_ISSUES]].
-- `flutter build apk --debug --no-pub`: did not complete because Gradle could not remove an existing generated assets directory under `build/app/intermediates/assets/debug/mergeDebugAssets`; no new APK was produced.
-- Automated tests: not run for this redesign.
+- Supplied conversation screenshots are current design references. The Figma URL could not be opened by the viewer, so **Verified Against Figma: none**.
+- The user-supplied logo is bundled at `assets/branding/burger_bites_logo.png`.
+- `flutter test --reporter expanded`: 4 tests passed (startup route and cart preview math).
+- `flutter analyze --no-pub`: passed with no issues; see [[TESTING]].
+- Android debug APK build: Gradle failed to resolve `storage.googleapis.com`; no APK was produced. No Android device/emulator is connected.

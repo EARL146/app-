@@ -6,6 +6,7 @@ import '../../data/demo_data.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/food_image.dart';
+import '../../widgets/favorite_button.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -17,6 +18,7 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
   String _category = 'Burgers';
+  _ProductSort _sort = _ProductSort.recommended;
   final List<String> _recentSearches = [
     'Double Bacon Smash',
     'Crispy Chicken',
@@ -32,20 +34,50 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final query = _controller.text.trim().toLowerCase();
-    final filteredByCategory = DemoData.products
-        .where((product) => _category == 'All' || product.category == _category)
-        .toList();
-    final results = query.isEmpty
-        ? filteredByCategory
-        : DemoData.products.where((product) {
-            return product.name.toLowerCase().contains(query) ||
-                product.description.toLowerCase().contains(query) ||
-                (product.category ?? '').toLowerCase().contains(query);
-          }).toList();
+    final results = DemoData.products.where((product) {
+      final matchesCategory =
+          _category == 'All' || product.category == _category;
+      final matchesQuery =
+          query.isEmpty ||
+          product.name.toLowerCase().contains(query) ||
+          product.description.toLowerCase().contains(query) ||
+          (product.category ?? '').toLowerCase().contains(query);
+      return matchesCategory && matchesQuery;
+    }).toList();
+    switch (_sort) {
+      case _ProductSort.priceLowToHigh:
+        results.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case _ProductSort.priceHighToLow:
+        results.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case _ProductSort.topRated:
+        results.sort((a, b) => (b.rating ?? 0).compareTo(a.rating ?? 0));
+        break;
+      case _ProductSort.recommended:
+        break;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(title: const Text('Search menu')),
+      appBar: AppBar(
+        title: const Text('Search menu'),
+        actions: [
+          PopupMenuButton<_ProductSort>(
+            tooltip: 'Sort menu items',
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (value) => setState(() => _sort = value),
+            itemBuilder: (context) => _ProductSort.values
+                .map(
+                  (sort) => PopupMenuItem<_ProductSort>(
+                    value: sort,
+                    child: Text(sort.label),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
@@ -121,7 +153,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        query.isEmpty ? 'Top picks' : 'Top match',
+                        '${query.isEmpty ? 'Menu picks' : 'Search results'} · ${_sort.label}',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
@@ -259,6 +291,16 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 }
 
+enum _ProductSort {
+  recommended('Recommended'),
+  priceLowToHigh('Price: low to high'),
+  priceHighToLow('Price: high to low'),
+  topRated('Top rated');
+
+  const _ProductSort(this.label);
+  final String label;
+}
+
 class _CategoryFilter extends StatelessWidget {
   const _CategoryFilter({
     required this.label,
@@ -377,25 +419,31 @@ class _SearchResultTile extends StatelessWidget {
                 ],
               ),
             ),
-            Consumer<CartProvider>(
-              builder: (context, cart, _) => IconButton.filled(
-                onPressed: () {
-                  cart.addItem(product);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${product.name} added to cart'),
-                      behavior: SnackBarBehavior.floating,
-                      duration: const Duration(seconds: 1),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FavoriteButton(product: product, iconSize: 18),
+                Consumer<CartProvider>(
+                  builder: (context, cart, _) => IconButton.filled(
+                    onPressed: () {
+                      cart.addItem(product);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('${product.name} added to cart'),
+                          behavior: SnackBarBehavior.floating,
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add_rounded, size: 17),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.brandOrange,
+                      foregroundColor: Colors.white,
+                      visualDensity: VisualDensity.compact,
                     ),
-                  );
-                },
-                icon: const Icon(Icons.add_rounded, size: 17),
-                style: IconButton.styleFrom(
-                  backgroundColor: AppColors.brandOrange,
-                  foregroundColor: Colors.white,
-                  visualDensity: VisualDensity.compact,
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),

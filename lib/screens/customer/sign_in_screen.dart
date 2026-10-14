@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../constants/demo_admin_account.dart';
+import '../../services/auth_service.dart';
 import '../../navigation/app_routes.dart';
-import '../../widgets/food_image.dart';
+import '../../widgets/brand_logo.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -44,35 +45,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     const SizedBox(height: 2),
                     Center(
                       child: Column(
-                        children: [
-                          SizedBox(
-                            width: 114,
-                            height: 92,
-                            child: FoodImage(
-                              imageUrl: 'assets/products/smash_burger.jpg',
-                              borderRadius: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          const Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'Burger',
-                                  style: TextStyle(color: AppColors.brandRed),
-                                ),
-                                TextSpan(
-                                  text: 'Bites',
-                                  style: TextStyle(color: AppColors.brandRed),
-                                ),
-                              ],
-                            ),
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
+                        children: [const BrandLogo(width: 142, height: 142)],
                       ),
                     ),
                     const SizedBox(height: 26),
@@ -96,46 +69,6 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'ADMIN DEMO ACCOUNT',
-                            style: TextStyle(
-                              color: AppColors.brandOrange,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Email: ${DemoAdminAccount.email}',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 11,
-                            ),
-                          ),
-                          Text(
-                            'Password: ${DemoAdminAccount.password}',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                     const SizedBox(height: 23),
                     TextFormField(
                       controller: _emailController,
@@ -159,7 +92,8 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                       validator: (value) {
                         final v = value?.trim() ?? '';
-                        if (v.isEmpty || !v.contains('@')) {
+                        if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                            .hasMatch(v)) {
                           return 'Enter a valid email address';
                         }
                         return null;
@@ -277,7 +211,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     const SizedBox(height: 13),
                     const Text(
-                      'By continuing, you agree to our Terms of Service and Privacy Policy. Demo sign-in does not create or validate an account.',
+                      'By continuing, you agree to our Terms of Service and Privacy Policy.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: AppColors.textSecondary,
@@ -286,8 +220,9 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         const Text(
                           'Don’t have an account?',
@@ -324,36 +259,31 @@ class _SignInScreenState extends State<SignInScreen> {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
 
-    final email = _emailController.text.trim().toLowerCase();
-    final password = _passwordController.text;
-
     setState(() => _isSubmitting = true);
-
-    await Future<void>.delayed(const Duration(milliseconds: 700));
+    final auth = context.read<AuthService>();
+    final success = await auth.login(
+      email: _emailController.text.trim().toLowerCase(),
+      password: _passwordController.text,
+    );
 
     if (!mounted) return;
-
     setState(() => _isSubmitting = false);
 
-    if (email == DemoAdminAccount.email &&
-        password == DemoAdminAccount.password) {
-      Navigator.of(context)
-          .pushNamedAndRemoveUntil(AppRoutes.adminHome, (route) => false);
-      return;
-    }
-
-    if (email == DemoAdminAccount.email) {
+    if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('The demo admin password is incorrect.'),
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Unable to sign in.'),
           behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
 
+    final destination = auth.currentUserRole == 'admin'
+        ? AppRoutes.adminHome
+        : AppRoutes.customerHome;
     Navigator.of(context)
-        .pushNamedAndRemoveUntil(AppRoutes.customerHome, (route) => false);
+        .pushNamedAndRemoveUntil(destination, (route) => false);
   }
 
   Widget _socialButton(

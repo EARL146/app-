@@ -1,29 +1,38 @@
 # Customer Flow
 
-[[PROJECT_HOME]] · [[SCREEN_IMPLEMENTATION_STATUS]] · [[API_SPEC]] · [[SECURITY]]
+[[PROJECT_HOME]] · [[SYSTEM_FLOW]] · [[SCREEN_FLOW]] · [[API_SPEC]] · [[SECURITY]]
 
-## Route outline
+## Sign-in and profile
 
-1. App starts in `lib/main.dart` and `AppShell` sends `/` to the welcome screen.
-2. Welcome page links to sign-in or registration.
-3. Sign-in validates fields locally. The configured admin demo email/password pair opens `/admin-home`; other valid entries follow the preview customer navigation. This does not authenticate a real account.
-4. Customer home links to menu/search, product detail, cart, profile, and order history.
-5. The customer can add products to `CartProvider`, update quantities, and remove items.
-6. Checkout validates a name/address, simulates submission locally, clears the cart, and shows a generated reference. It does not create a persistent server order or charge payment.
-7. Profile links to account settings, language, theme, calendar, contact, and about previews.
+1. Splash checks for a saved token and role using `GET /me` when the API URL is configured.
+2. New users see Greetings, then can open Sign in or Register.
+3. Flutter validates email and a 12-character password; the PHP API repeats validation, checks a small common-password list, and stores an Argon2id hash.
+4. Login/register call `AuthService`. The UI accepts a session only when the server returns a token, user ID, and `customer` or `admin` role.
+5. Access/refresh tokens, ID, role, and returned profile fields are stored with Flutter Secure Storage. Access tokens expire after 15 minutes; on a 401 at startup, the client rotates the refresh token and retries `/me`. Logout revokes the token family and clears local storage.
+6. The customer profile displays the returned name, email, phone, and default address. Saving profile fields requires `PUT /me`.
 
-## Screen map
+PHP routes and the local MySQL schema are configured. The database-backed products endpoint passed a smoke check. Authentication, profile loading/editing, and session persistence still need a full end-to-end user journey test.
 
-| Screen | Main behavior | Data source / limitation |
+## Browse, favorites, and cart
+
+| Screen/feature | Current implementation | Data boundary |
 | --- | --- | --- |
-| Welcome, sign-in, registration | Navigate and validate form fields. | Demo; no real registration/session. |
-| Home, menu, search | Show promotions, category selection, products, query results. | `DemoData`; local images. |
-| Product details | Show product and configure local cart action. | Local model/provider. |
-| Cart, checkout, order success | Calculate local totals, validate details, show mock order ref. | No server validation, persistence, or payment. |
-| Order history | Show sample status/order history. | Static demo records. |
-| Profile/settings/language/theme/calendar | Show customer and preference previews. | Persistence/localization/global theme not verified. |
-| Contact/about | Show contact details, FAQ, and brand content. | Contact message is not sent to a server. |
+| Home, menu, search | Search/category/sort UI over `DemoData.products` | Catalog is still local sample data. |
+| Product details | Shows local product and adds to the shared cart | Server price/stock checks are still required. |
+| Favorites | Favorite heart and dedicated Favorites screen | Calls user-scoped PHP `GET/POST/DELETE /me/favorites`; requires signed-in customer and configured database. |
+| Cart | Merge same product ID, change quantity, remove item, calculate preview totals | In-memory only; not persisted. |
 
-## Related source
+## Checkout algorithm
 
-Routes are in `lib/navigation/app_routes.dart` and `lib/navigation/app_router.dart`; page status is tracked in [[SCREEN_IMPLEMENTATION_STATUS]]. Cart math is documented in [[DATABASE_SCHEMA]] as client-only state, not database structure.
+1. Validate non-empty cart, customer name, address, and phone.
+2. Keep the cart's displayed total as an estimate only.
+3. Send only product IDs, quantities, customer name, address, phone, notes, and `payment_method: cod` to `POST /orders`.
+4. Do not send client price or amount as authoritative data.
+5. The PHP route reloads prices and stock and writes the pending COD order in one transaction. If the API fails or gives no order ID, show the server/setup error and keep the cart unchanged.
+6. If the server confirms an order ID, clear the cart and show “Order request received”; payment is not collected online.
+
+Online payment choices are disabled because no provider is configured. The current Order History screen still shows sample records and is not backed by the submitted orders. The API/database flow has not been integration-tested.
+
+## Account/support screens
+
+Settings, language, theme, calendar, contact, and about screens remain prototype/local views. The profile no longer displays a made-up customer name/address or fake point balance. See [[PRODUCTION_READINESS_AUDIT]] for feature status and remaining backend work.

@@ -24,11 +24,15 @@ class OrderSuccessScreen extends StatelessWidget {
                   color: const Color(0xFFEAFBF0),
                   borderRadius: BorderRadius.circular(30),
                 ),
-                child: const Icon(Icons.check_circle, size: 72, color: AppColors.success),
+                child: const Icon(
+                  Icons.check_circle,
+                  size: 72,
+                  color: AppColors.success,
+                ),
               ),
               const SizedBox(height: 24),
               const Text(
-                'Order placed successfully',
+                'Order request received',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
@@ -38,11 +42,14 @@ class OrderSuccessScreen extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 'Reference: $orderId',
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 18),
               const Text(
-                'This demo confirms the UI flow and local cart validation. A real backend must complete the final order creation and payment handling.',
+                'Your order is awaiting restaurant confirmation. Cash on delivery was selected; no online payment was collected.',
                 textAlign: TextAlign.center,
                 style: TextStyle(height: 1.5, color: AppColors.textSecondary),
               ),
@@ -52,13 +59,17 @@ class OrderSuccessScreen extends StatelessWidget {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context)
-                        .pushNamedAndRemoveUntil('/customer-home', (route) => false);
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/customer-home',
+                      (route) => false,
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.brandOrange,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   child: const Text('Back to home'),
                 ),
