@@ -92,13 +92,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                   Icons.notifications_none_rounded,
                                 ),
                               ),
-                              const CircleAvatar(
-                                radius: 16,
-                                backgroundColor: AppColors.surfaceMuted,
-                                child: Icon(
-                                  Icons.person_rounded,
-                                  color: AppColors.brandOrange,
-                                  size: 19,
+                              IconButton(
+                                tooltip: 'Admin profile',
+                                onPressed: () => Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.adminProfile,
+                                ),
+                                icon: const CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: AppColors.surfaceMuted,
+                                  child: Icon(
+                                    Icons.person_rounded,
+                                    color: AppColors.brandOrange,
+                                    size: 19,
+                                  ),
                                 ),
                               ),
                             ],

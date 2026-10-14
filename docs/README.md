@@ -1,19 +1,16 @@
-# BurgerBites Project Documentation
+# BurgerBites documentation
 
-This vault stores the engineering notes for the BurgerBites Flutter mobile app.
+Open [[PROJECT_HOME]] for the project dashboard and navigation to all current and historical notes. This folder is the Obsidian documentation area inside the existing project vault.
 
-## Scope
+## Quick navigation
 
-- Customer mobile experience
-- Admin mobile experience
-- Secure authentication and token handling
-- UI implementation based on Figma references
-- API and data model abstraction
-- Security, performance, and release-readiness notes
+- [[PROJECT_MAP]] · [[FILE_REGISTRY]]
+- [[CUSTOMER_FLOW]] · [[ADMIN_FLOW]]
+- [[DATABASE_SCHEMA]] · [[API_SPEC]] · [[SECURITY]]
+- [[SETUP_GUIDE]] · [[TESTING]] · [[KNOWN_ISSUES]] · [[NEXT_SESSION]]
+- [[SCREEN_DESIGN_SPEC]] · [[SCREEN_IMPLEMENTATION_STATUS]]
+- [[PERFORMANCE_AND_SCALABILITY]] · [[DECISIONS]] · [[CHANGELOG]]
+- Historical records: [[PHASE_3_COMPLETION_REPORT]], [[PHASE_3_DELIVERY_SUMMARY]], [[PHASE_4_6_DELIVERY_REPORT]]
+- [Copilot instructions](../.github/copilot-instructions.md)
 
-## Current status
-
-- Phase 1 audit completed.
-- Phase 2 foundation started.
-- Real backend integration not yet verified.
-- Full Figma implementation is planned incrementally.
+[[PROJECT_HOME]]

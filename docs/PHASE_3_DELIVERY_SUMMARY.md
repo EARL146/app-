@@ -1,5 +1,22 @@
 # BurgerBites Phase 3 Delivery Summary
 
+> **Historical snapshot:** This report preserves earlier Phase 3 notes and includes claims that were not re-run in the 2026-10-14 documentation audit. Use [[PROJECT_HOME]], [[SCREEN_IMPLEMENTATION_STATUS]], and [[TESTING]] for current status and verified results.
+
+[[PROJECT_HOME]] · [[CUSTOMER_FLOW]] · [[TESTING]]
+
+## Contents
+
+- [Overview](#overview)
+- [What was accomplished](#what-was-accomplished)
+- [Technical details](#technical-details)
+- [Quality assurance](#quality-assurance)
+- [Known limitations and future work](#known-limitations--future-work)
+- [Key statistics](#key-statistics)
+- [How to run the app](#how-to-run-the-app)
+- [Verification checklist](#verification-checklist)
+- [Next steps](#next-steps)
+- [Conclusion](#conclusion)
+
 ## Overview
 
 Phase 3 of the BurgerBites Flutter mobile app development is **COMPLETE**. The complete customer-facing UI flow has been implemented, tested, and verified. The app is now feature-complete for customer ordering with secure offline demo mode and production-ready backend integration points.

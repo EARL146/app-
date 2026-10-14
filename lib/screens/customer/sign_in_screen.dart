@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_colors.dart';
+import '../../constants/demo_admin_account.dart';
+import '../../navigation/app_routes.dart';
 import '../../widgets/food_image.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -91,6 +93,47 @@ class _SignInScreenState extends State<SignInScreen> {
                         fontSize: 13,
                         color: AppColors.textSecondary,
                         height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ADMIN DEMO ACCOUNT',
+                            style: TextStyle(
+                              color: AppColors.brandOrange,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Email: ${DemoAdminAccount.email}',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 11,
+                            ),
+                          ),
+                          Text(
+                            'Password: ${DemoAdminAccount.password}',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 23),
@@ -281,6 +324,9 @@ class _SignInScreenState extends State<SignInScreen> {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
 
+    final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text;
+
     setState(() => _isSubmitting = true);
 
     await Future<void>.delayed(const Duration(milliseconds: 700));
@@ -289,8 +335,25 @@ class _SignInScreenState extends State<SignInScreen> {
 
     setState(() => _isSubmitting = false);
 
+    if (email == DemoAdminAccount.email &&
+        password == DemoAdminAccount.password) {
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(AppRoutes.adminHome, (route) => false);
+      return;
+    }
+
+    if (email == DemoAdminAccount.email) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('The demo admin password is incorrect.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     Navigator.of(context)
-        .pushNamedAndRemoveUntil('/customer-home', (route) => false);
+        .pushNamedAndRemoveUntil(AppRoutes.customerHome, (route) => false);
   }
 
   Widget _socialButton(

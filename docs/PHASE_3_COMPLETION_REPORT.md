@@ -1,5 +1,20 @@
 # Phase 3 Completion Report: Customer UI and Flow
 
+> **Historical snapshot:** This report preserves earlier Phase 3 notes and includes claims that were not re-run in the 2026-10-14 documentation audit. Use [[PROJECT_HOME]], [[SCREEN_IMPLEMENTATION_STATUS]], and [[TESTING]] for current status and verified results.
+
+[[PROJECT_HOME]] · [[CUSTOMER_FLOW]] · [[TESTING]]
+
+## Contents
+
+- [Completed deliverables](#completed-deliverables)
+- [Core features implemented](#core-features-implemented)
+- [Files created and modified](#files-created-and-modified)
+- [Validation results](#validation-results)
+- [Functional verification](#functional-verification)
+- [Blockers and limitations](#blockers-and-limitations)
+- [Backend integration notes](#backend-integration-ready)
+- [Conclusion](#conclusion)
+
 ## Completed Deliverables
 
 ### Screens Implemented (14 total)

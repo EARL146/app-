@@ -26,6 +26,7 @@ import '../screens/admin/admin_edit_product_screen.dart';
 import '../screens/admin/admin_home_screen.dart';
 import '../screens/admin/admin_more_screen.dart';
 import '../screens/admin/admin_orders_screen.dart';
+import '../screens/admin/admin_profile_screen.dart';
 import '../screens/admin/admin_products_screen.dart';
 
 class AppRouter {
@@ -80,6 +81,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const AboutScreen());
       case '/admin-home':
         return MaterialPageRoute(builder: (_) => const AdminHomeScreen());
+      case '/admin-profile':
+        return MaterialPageRoute(builder: (_) => const AdminProfileScreen());
       case '/admin-orders':
         return MaterialPageRoute(builder: (_) => const AdminOrdersScreen());
       case '/admin-products':

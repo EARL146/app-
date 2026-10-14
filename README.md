@@ -1,49 +1,31 @@
 # BurgerBites
 
-BurgerBites is an existing Flutter food-ordering prototype with customer and admin flows. The current UI follows the screenshot references supplied for the project and uses bundled sample food photography.
+BurgerBites is an existing Flutter food-ordering prototype with customer and administrator screens. It currently runs with local sample data; this project tree does not contain a connected PHP API or MySQL schema.
 
-## Run the app
+## Open the project in Obsidian
 
-Requirements: Flutter 3.47.6 with Dart 3.13.5 or a compatible newer stable SDK.
+BurgerBites is registered in Obsidian's vault list. Open the `Burger_bites` vault and start with [`docs/PROJECT_HOME.md`](docs/PROJECT_HOME.md). The `.obsidian/app.json` setting directs newly created notes into `docs/`. The documentation uses Obsidian links and stays inside the existing Flutter project.
+
+## Run on Windows
+
+From this project directory:
 
 ```powershell
 flutter pub get
-flutter run
+flutter run -d edge
 ```
 
-To inspect source diagnostics:
+The latest reported Edge run stopped because C: had only about 0.12 GB free while Dart was writing a build artifact. Free several GB, then retry. See [[docs/SETUP_GUIDE]] and [[docs/KNOWN_ISSUES]].
 
-```powershell
-flutter analyze
-```
+## Current status
 
-## Project layout
+- Customer and admin screens are present and primarily use in-memory sample data.
+- Admin preview sign-in uses a hard-coded local demo account in `lib/constants/demo_admin_account.dart`; it is not server authentication.
+- Admin profile details and session-only edits are available at `lib/screens/admin/admin_profile_screen.dart`; logout returns to sign-in.
+- No PHP, SQL, or migration files were found under this project directory. A separate AMPPS backend or database was not inspected.
+- Supplied screenshots are the current design references. No original Figma file was found, so no screen is marked verified against Figma.
+- Prior analyzer and Web build passes are recorded in [[docs/TESTING]]. The most recent `flutter run -d edge` failed from insufficient disk space.
 
-- `lib/screens/customer/` — customer sign-in, home, menu, search, product, cart, checkout, profile, and preference screens.
-- `lib/screens/admin/` — dashboard, orders, product management, customers, and admin menu.
-- `lib/providers/` — in-memory cart and admin state providers.
-- `lib/data/demo_data.dart` — sample catalog and order data.
-- `lib/widgets/food_image.dart` — shared local/network product image widget.
-- `assets/products/` — BurgerBites prototype product photography.
-- `docs/SCREEN_DESIGN_SPEC.md` — screenshot-based visual direction and screen requirements.
-- `docs/SCREEN_IMPLEMENTATION_STATUS.md` — implementation and verification state.
+## Documentation
 
-See [[PROJECT_MAP]] and [[FILE_REGISTRY]] for more source details.
-
-## Data and backend status
-
-The included customer catalog, cart checkout, order history, and admin metrics use local demo data. Checkout creates a local reference only. The Flutter archive contains no PHP controllers, SQL schema, or connected production backend. `lib/services/api_service.dart` is a generic client abstraction; its configured API host is a placeholder and has not been validated against a live service.
-
-The customer preference screens and admin dashboard identify preview-only behavior where settings, payment, messaging, notifications, or account services are not connected.
-
-## Design references
-
-The provided screenshots are the available visual references. No Figma source file or exported frames were included in this archive, so no screen is marked “Verified Against Figma.” See [[SCREEN_DESIGN_SPEC]] and [[SCREEN_IMPLEMENTATION_STATUS]].
-
-## Verification record
-
-- `dart format` — completed on the modified Dart files.
-- `flutter analyze --no-pub` — passed with no issues on 2026-10-13.
-- `flutter build web --no-pub` — passed on 2026-10-13. Flutter reported non-blocking WebAssembly compatibility notices for the secure-storage web plugin; the standard Web build completed.
-- `flutter build apk --debug --no-pub` — did not complete; Gradle could not remove an existing generated assets directory under `build/app/intermediates/assets/debug/mergeDebugAssets`, so this attempt produced no new APK.
-- Automated tests and device/emulator visual review — not run for this redesign.
+Start at [[docs/PROJECT_HOME]]. See [[docs/PROJECT_MAP]], [[docs/FILE_REGISTRY]], [[docs/CUSTOMER_FLOW]], [[docs/ADMIN_FLOW]], [[docs/DATABASE_SCHEMA]], [[docs/API_SPEC]], [[docs/SECURITY]], [[docs/TESTING]], [[docs/SETUP_GUIDE]], [[docs/SCREEN_DESIGN_SPEC]], [[docs/SCREEN_IMPLEMENTATION_STATUS]], [[docs/PERFORMANCE_AND_SCALABILITY]], [[docs/DECISIONS]], [[docs/CHANGELOG]], [[docs/KNOWN_ISSUES]], and [[docs/NEXT_SESSION]].

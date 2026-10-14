@@ -1,13 +1,17 @@
 # BurgerBites Screen Design Spec
 
+[[PROJECT_HOME]] · [[SCREEN_IMPLEMENTATION_STATUS]] · [[FILE_REGISTRY]]
+
 > Status: implemented from the supplied screenshot references; not visually verified against an original Figma file.
 
-## Navigation
+## Contents
 
-- [[PROJECT_MAP]]
-- [[FILE_REGISTRY]]
-- [[SCREEN_IMPLEMENTATION_STATUS]]
-- [[README]]
+- [Reference source](#reference-source)
+- [Visual language](#visual-language)
+- [Screen requirements](#screen-requirements-from-the-screenshots)
+- [Local image assets](#local-image-assets)
+- [Data and interaction limits](#data-and-interaction-limits)
+- [Related implementation status](#related-implementation-status)
 
 ## Reference source
 
@@ -47,7 +51,7 @@ The reference is the set of BurgerBites customer and admin screen screenshots su
 | Orders | Search and status filters, order summary, valid status choices, and cancellation controls. |
 | Products | Search, categories, product images, availability, price, add/edit/delete actions. |
 | Add/edit product | Dark editor surface, image path/ID, product fields, category, availability, and save action. |
-| Customers / more | Searchable local customer state and supporting admin options, clearly distinguished from live data. |
+| Customers / more / profile | Searchable local customer state, supporting admin options, profile identity/access summary, local profile editing, and logout. Clearly distinguish demo values from live data. |
 
 ## Local image assets
 

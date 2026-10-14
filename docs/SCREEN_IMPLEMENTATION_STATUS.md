@@ -1,6 +1,15 @@
 # Screen Implementation Status
 
-> Updated: 2026-10-13. “Implemented” refers to Flutter UI/local demo behavior. No screen has been compared with an original Figma frame.
+[[PROJECT_HOME]] · [[SCREEN_DESIGN_SPEC]] · [[TESTING]] · [[FILE_REGISTRY]]
+
+> Updated: 2026-10-14. “Implemented” refers to Flutter UI/local demo behavior. No screen has been compared with an original Figma frame.
+
+## Contents
+
+- [Customer screens](#customer-screens)
+- [Admin screens](#admin-screens)
+- [Reference verification](#reference-verification)
+- [Verification record](#verification-record)
 
 ## Navigation
 
@@ -14,7 +23,7 @@
 | Screen | Status | Current behavior / limitation |
 | --- | --- | --- |
 | Welcome | Implemented | Prototype landing screen and route links. |
-| Sign in | Implemented | Local field validation and demo navigation; no authentication service connected. |
+| Sign in | Implemented | Local demo admin credentials open the admin dashboard; other valid entries use demo customer navigation. No authentication service is connected. |
 | Registration | Implemented | Local field validation and demo navigation; no account is created on a server. |
 | Home | Implemented | Location, promotional hero, categories, sample bestsellers, and sample orders. |
 | Menu | Implemented | Category filtering, local product images, add-to-cart actions. |
@@ -42,6 +51,7 @@
 | Add/edit product | Implemented | Local product provider state; no image upload or backend persistence. |
 | Customers | Implemented | Sample customer state and local status controls. |
 | More | Implemented | Local admin summary/settings UI; values are not live business records. |
+| Admin profile | Implemented | Demo name, email, phone, branch, role, ID, access list; profile edits are session-only and logout returns to sign-in. |
 
 ## Reference verification
 
@@ -54,7 +64,8 @@
 
 - Flutter: 3.47.6; Dart: 3.13.5.
 - `dart format` on modified Dart files: completed.
-- `flutter analyze --no-pub`: passed with no issues on 2026-10-13.
-- `flutter build web --no-pub`: passed on 2026-10-13. Non-blocking WebAssembly compatibility notices were reported for the secure-storage web plugin; the standard Web build completed.
+- `flutter analyze --no-pub`: passed with no issues on 2026-10-14.
+- `flutter build web --no-pub`: passed on 2026-10-14. Non-blocking WebAssembly compatibility notices were reported for the secure-storage web plugin; the standard Web build completed.
+- Latest user `flutter run -d edge`: failed while writing `app.dill` because C: had about 0.12 GB free; see [[KNOWN_ISSUES]].
 - `flutter build apk --debug --no-pub`: did not complete because Gradle could not remove an existing generated assets directory under `build/app/intermediates/assets/debug/mergeDebugAssets`; no new APK was produced.
 - Automated tests: not run for this redesign.

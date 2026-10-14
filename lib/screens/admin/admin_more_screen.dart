@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../navigation/app_routes.dart';
 import '../../providers/admin_customers_provider.dart';
 import '../../providers/admin_orders_provider.dart';
 import '../../providers/admin_products_provider.dart';
@@ -26,6 +27,29 @@ class AdminMoreScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: AppColors.surfaceMuted,
+                    child: Icon(
+                      Icons.admin_panel_settings_rounded,
+                      color: AppColors.brandOrange,
+                    ),
+                  ),
+                  title: const Text(
+                    'Admin profile',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: const Text('Account details and sign out'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRoutes.adminProfile),
+                ),
+              ),
+              const SizedBox(height: 24),
               // Business Revenue Summary
               Text(
                 'Revenue Summary',
