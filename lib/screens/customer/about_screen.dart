@@ -21,7 +21,7 @@ class AboutScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              'OUR STORY · LOCAL FLAVOR',
+              'ABOUT BURGERBITES',
               style: TextStyle(
                 color: AppColors.brandOrange,
                 fontSize: 8,
@@ -41,7 +41,7 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Fresh burgers, bright flavors, and happy moments — the BurgerBites brand experience.',
+            'Browse the menu, customize available options, and follow your orders from your account.',
             style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 10,
@@ -133,7 +133,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Our sample story is rooted in the comfort of a freshly cooked burger: crisp edges, warm buns, and flavors worth sharing.',
+                  'BurgerBites brings the menu, order options, and order history together in one place.',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 9,
@@ -144,18 +144,18 @@ class AboutScreen extends StatelessWidget {
                 const Row(
                   children: [
                     Expanded(
-                      child: _MiniFact(value: 'Fresh', label: 'made to order'),
+                      child: _MiniFact(value: 'Browse', label: 'the menu'),
                     ),
                     SizedBox(width: 7),
                     Expanded(
                       child: _MiniFact(
-                        value: 'Local',
-                        label: 'community focus',
+                        value: 'Choose',
+                        label: 'available options',
                       ),
                     ),
                     SizedBox(width: 7),
                     Expanded(
-                      child: _MiniFact(value: 'Happy', label: 'everyday bites'),
+                      child: _MiniFact(value: 'Follow', label: 'order status'),
                     ),
                   ],
                 ),
@@ -164,55 +164,27 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 13),
           const Text(
-            'The recipe for great bites',
+            'What you can do',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
           const _ValueCard(
-            icon: Icons.eco_outlined,
-            title: 'Fresh ingredients',
-            description: 'A visual promise of crisp greens, golden fries, and made-to-order favorites.',
+            icon: Icons.restaurant_menu_rounded,
+            title: 'Explore the menu',
+            description: 'View the burgers, sides, drinks, and other products listed by the store.',
           ),
           const _ValueCard(
             icon: Icons.restaurant_menu_rounded,
-            title: 'Made with care',
-            description: 'The app highlights the choices and details customers need before ordering.',
+            title: 'Customize your order',
+            description: 'Choose available sizes and toppings before adding an item to your cart.',
           ),
           const _ValueCard(
-            icon: Icons.groups_2_outlined,
-            title: 'A welcoming table',
-            description: 'A friendly neighborhood brand concept, designed around shared meals.',
+            icon: Icons.receipt_long_outlined,
+            title: 'Follow order status',
+            description: 'Signed-in customers can view saved orders and their latest recorded status.',
           ),
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(13),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.info_outline_rounded,
-                  color: AppColors.brandOrange,
-                  size: 16,
-                ),
-                const SizedBox(width: 7),
-                const Expanded(
-                  child: Text(
-                    'Brand story and values are illustrative sample content for this prototype.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 9,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 13),
+          const SizedBox(height: 6),
           SizedBox(
             width: double.infinity,
             height: 45,

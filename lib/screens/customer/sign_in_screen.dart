@@ -45,7 +45,13 @@ class _SignInScreenState extends State<SignInScreen> {
                     const SizedBox(height: 2),
                     Center(
                       child: Column(
-                        children: [const BrandLogo(width: 142, height: 142)],
+                        children: [
+                          const BrandLogo(
+                            width: 142,
+                            height: 142,
+                            animate: true,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 26),
@@ -296,7 +302,9 @@ class _SignInScreenState extends State<SignInScreen> {
       child: OutlinedButton(
         onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$label is not connected in this demo.'),
+            content: Text(
+              '$label is not configured yet. Use your email and password to sign in.',
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         ),

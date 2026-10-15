@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 
-import '../data/demo_data.dart';
 import '../models/order_model.dart';
+import '../services/api_service.dart';
 
 class AdminOrdersProvider extends ChangeNotifier {
-  final List<Order> _orders = List.from(DemoData.customerOrders);
+  AdminOrdersProvider({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
+
+  final ApiService _apiService;
+  final List<Order> _orders = [];
   String? _errorMessage;
   bool _isLoading = false;
   String? _successMessage;
@@ -17,25 +21,54 @@ class AdminOrdersProvider extends ChangeNotifier {
   String? get successMessage => _successMessage;
   Order? get selectedOrder => _selectedOrder;
   OrderStatus? get filterStatus => _filterStatus;
-
-  List<Order> get _filteredOrders {
-    if (_filterStatus == null) return _orders;
-    return _orders.where((o) => o.status == _filterStatus).toList();
-  }
-
   int get totalOrders => _orders.length;
   int get pendingOrders =>
-      _orders.where((o) => o.status == OrderStatus.pending).length;
-  int get processingOrders =>
-      _orders.where((o) => o.status == OrderStatus.processing).length;
+      _orders.where((order) => order.status == OrderStatus.pending).length;
+  int get processingOrders => _orders
+      .where(
+        (order) =>
+            order.status == OrderStatus.processing ||
+            order.status == OrderStatus.ready ||
+            order.status == OrderStatus.shipped,
+      )
+      .length;
   int get deliveredOrders =>
-      _orders.where((o) => o.status == OrderStatus.delivered).length;
+      _orders.where((order) => order.status == OrderStatus.delivered).length;
   int get cancelledOrders =>
-      _orders.where((o) => o.status == OrderStatus.canceled).length;
-
+      _orders.where((order) => order.status == OrderStatus.canceled).length;
   double get totalRevenue => _orders
-      .where((o) => o.status == OrderStatus.delivered)
+      .where((order) => order.status == OrderStatus.delivered)
       .fold(0, (sum, order) => sum + order.total);
+
+  List<Order> get _filteredOrders => _filterStatus == null
+      ? _orders
+      : _orders.where((order) => order.status == _filterStatus).toList();
+
+  Future<void> loadOrders({bool force = false}) async {
+    if (_isLoading || (!force && _orders.isNotEmpty)) return;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/admin/orders',
+      fromJson: _asMap,
+    );
+    if (!response.success || response.data == null) {
+      _errorMessage = response.error ?? 'Unable to load orders.';
+    } else {
+      try {
+        final rows = response.data!['orders'];
+        if (rows is! List) throw const FormatException('Invalid orders list.');
+        _orders
+          ..clear()
+          ..addAll(rows.whereType<Map<String, dynamic>>().map(Order.fromJson));
+      } catch (_) {
+        _errorMessage = 'The server returned an invalid order list.';
+      }
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
 
   void clearMessages() {
     _errorMessage = null;
@@ -59,114 +92,84 @@ class AdminOrdersProvider extends ChangeNotifier {
   }
 
   Future<bool> updateOrderStatus(String orderId, OrderStatus newStatus) async {
-    _isLoading = true;
-    _errorMessage = null;
-    _successMessage = null;
-    notifyListeners();
-
-    // Simulate API call
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-
-    final index = _orders.indexWhere((o) => o.id == orderId);
-    if (index == -1) {
-      _isLoading = false;
+    final index = _orders.indexWhere((order) => order.id == orderId);
+    if (index < 0) {
       _errorMessage = 'Order not found.';
       notifyListeners();
       return false;
     }
-
-    final oldOrder = _orders[index];
-    _orders[index] = Order(
-      id: oldOrder.id,
-      userId: oldOrder.userId,
-      items: oldOrder.items,
-      subtotal: oldOrder.subtotal,
-      tax: oldOrder.tax,
-      shippingCost: oldOrder.shippingCost,
-      total: oldOrder.total,
-      status: newStatus,
-      createdAt: oldOrder.createdAt,
-      deliveredAt: newStatus == OrderStatus.delivered
-          ? DateTime.now()
-          : oldOrder.deliveredAt,
-    );
-
-    if (_selectedOrder?.id == orderId) {
-      _selectedOrder = _orders[index];
-    }
-
-    _isLoading = false;
-    _successMessage =
-        'Order status updated to ${_statusDisplayName(newStatus)}.';
-    notifyListeners();
-    return true;
-  }
-
-  Future<bool> cancelOrder(String orderId) async {
     _isLoading = true;
     _errorMessage = null;
     _successMessage = null;
     notifyListeners();
-
-    // Simulate API call
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-
-    final index = _orders.indexWhere((o) => o.id == orderId);
-    if (index == -1) {
-      _isLoading = false;
-      _errorMessage = 'Order not found.';
-      notifyListeners();
-      return false;
-    }
-
-    final order = _orders[index];
-    if (order.status == OrderStatus.delivered ||
-        order.status == OrderStatus.canceled) {
-      _isLoading = false;
-      _errorMessage =
-          'Cannot cancel ${_statusDisplayName(order.status).toLowerCase()} orders.';
-      notifyListeners();
-      return false;
-    }
-
-    _orders[index] = Order(
-      id: order.id,
-      userId: order.userId,
-      items: order.items,
-      subtotal: order.subtotal,
-      tax: order.tax,
-      shippingCost: order.shippingCost,
-      total: order.total,
-      status: OrderStatus.canceled,
-      createdAt: order.createdAt,
+    final apiStatus = switch (newStatus) {
+      OrderStatus.pending => 'pending',
+      OrderStatus.processing => 'preparing',
+      OrderStatus.ready => 'ready',
+      OrderStatus.shipped => 'out_for_delivery',
+      OrderStatus.delivered => 'delivered',
+      OrderStatus.canceled => 'cancelled',
+    };
+    final response = await _apiService.put<Map<String, dynamic>>(
+      '/admin/orders/${Uri.encodeComponent(orderId)}',
+      body: {'status': apiStatus},
+      fromJson: _asMap,
     );
-
     _isLoading = false;
-    _successMessage = 'Order $orderId cancelled successfully!';
-    if (_selectedOrder?.id == orderId) {
-      _selectedOrder = _orders[index];
+    if (!response.success) {
+      _errorMessage = response.error ?? 'Unable to update the order.';
+      notifyListeners();
+      return false;
     }
+    final old = _orders[index];
+    final updated = _withStatus(old, newStatus);
+    _orders[index] = updated;
+    if (_selectedOrder?.id == orderId) _selectedOrder = updated;
+    _successMessage = 'Order status updated to ${newStatus.displayName}.';
     notifyListeners();
     return true;
   }
 
-  String _statusDisplayName(OrderStatus status) => status.displayName;
+  Future<bool> cancelOrder(String orderId) =>
+      updateOrderStatus(orderId, OrderStatus.canceled);
 
   List<Order> searchOrders(String query) {
-    if (query.isEmpty) return _filteredOrders;
-    final lowerQuery = query.toLowerCase();
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return _filteredOrders;
     return _filteredOrders
-        .where((o) => o.id.toLowerCase().contains(lowerQuery))
+        .where((order) => order.id.toLowerCase().contains(normalized))
         .toList();
   }
 
-  List<Order> getOrdersByDateRange(DateTime start, DateTime end) {
-    return _filteredOrders
-        .where(
-          (o) =>
-              o.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
-              o.createdAt.isBefore(end.add(const Duration(days: 1))),
-        )
-        .toList();
-  }
+  List<Order> getOrdersByDateRange(DateTime start, DateTime end) =>
+      _filteredOrders
+          .where(
+            (order) =>
+                !order.createdAt.isBefore(start) &&
+                !order.createdAt.isAfter(end.add(const Duration(days: 1))),
+          )
+          .toList();
+
+  Order _withStatus(Order order, OrderStatus status) => Order(
+    id: order.id,
+    userId: order.userId,
+    items: order.items,
+    subtotal: order.subtotal,
+    tax: order.tax,
+    shippingCost: order.shippingCost,
+    total: order.total,
+    status: status,
+    notes: order.notes,
+    deliveryAddress: order.deliveryAddress,
+    createdAt: order.createdAt,
+    updatedAt: DateTime.now(),
+    deliveredAt: status == OrderStatus.delivered
+        ? DateTime.now()
+        : order.deliveredAt,
+  );
+
+  static Map<String, dynamic> _asMap(dynamic json) =>
+      json is Map<String, dynamic>
+      ? json
+      : throw const FormatException('Invalid order response.');
 }

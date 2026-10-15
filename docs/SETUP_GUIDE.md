@@ -20,6 +20,7 @@ The PHP API and SQL migrations are in `backend/`. The local database and API set
 - `Burger_Bites` (`burger_bites`) has the seven core schema tables from migration `001`.
 - API account `burger_bites_app` has least-privilege CRUD grants and is configured in ignored `backend/.env`.
 - Optional sample products from migration `002` were not added.
+- Required workflow migration `003_app_workflows.sql` is still pending. The current database already has migration 001; do not import 001 again. Export a SQL backup first, then import only 003 once through phpMyAdmin's Import tab while `Burger_Bites` is selected. Admin More → App Information reports readiness afterward.
 - Start PHP on port 8081. Port 8080 is occupied by Tomcat on this computer. An admin account is created separately using the hidden-password helper; there is no default credential.
 
 Run Edge against the API with a stable browser origin:

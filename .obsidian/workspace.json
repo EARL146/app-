@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "e25a30a7888d84a8",
+        "id": "3d85d9ad14d40c74",
         "type": "tabs",
         "children": [
           {
-            "id": "4d7f0123b9642cca",
+            "id": "36d9922904d36f34",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -181,8 +181,53 @@
       "bases:Create new base": false
     }
   },
-  "active": "4d7f0123b9642cca",
+  "active": "36d9922904d36f34",
   "lastOpenFiles": [
-    "docs/PROJECT_HOME.md"
+    "build/test_cache/build/887949da",
+    "build/test_cache/build/7c060cfa",
+    "build/test_cache/build/72f98105",
+    "build/web/manifest.json",
+    "build/test_cache/build/dff202f",
+    "build/test_cache/build/b832eef3",
+    "build/test_cache/build/eda8ed09",
+    "assets/products/smash_burger_cutout.png",
+    "assets/branding/burger_bites_logo_cutout.png",
+    "lib/screens/admin/admin_store_profile_screen.dart",
+    "build/flutter_assets/assets/products/smash_burger.jpg",
+    "build/flutter_assets/assets/products/loaded_fries.jpg",
+    "build/flutter_assets/assets/products/crispy_chicken.jpg",
+    "build/flutter_assets/assets/products/cola.jpg",
+    "build/flutter_assets/assets/branding/burger_bites_logo.png",
+    "build/flutter_assets/assets/products",
+    "build/flutter_assets/assets/branding",
+    "build/flutter_assets/assets",
+    "build/web/favicon.png",
+    "build/web/icons/Icon-maskable-512.png",
+    "build/web/icons/Icon-maskable-192.png",
+    "docs/2026-10-15.md",
+    "docs/PROJECT_HOME.md",
+    "docs/AGENT_MONITOR.md",
+    "tools/agent-monitor/README.md",
+    "RTK.md",
+    "docs/README.md",
+    "docs/SECURITY.md",
+    "docs/create a link.md",
+    "AGENTS.md",
+    "Burger_Bites app/Welcome.md",
+    "docs/NEXT_SESSION.md",
+    "docs/BACKUP_WORKFLOW.md",
+    "docs/OBSIDIAN_SETUP.md",
+    "docs/INTEGRATION_MAP.md",
+    "docs/API_DATABASE.md",
+    "docs/SYSTEM_FLOW.md",
+    "docs/PROJECT_MAP.md",
+    "docs/TESTING.md",
+    "docs/PRODUCTION_READINESS_AUDIT.md",
+    "docs/SETUP_GUIDE.md",
+    "backend/README.md",
+    "docs/DATABASE_SCHEMA.md",
+    "docs/API_SPEC.md",
+    "README.md",
+    "docs/KNOWN_ISSUES.md"
   ]
 }

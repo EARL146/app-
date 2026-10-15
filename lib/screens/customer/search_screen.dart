@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../data/demo_data.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/catalog_provider.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/favorite_button.dart';
 
@@ -34,7 +34,9 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final query = _controller.text.trim().toLowerCase();
-    final results = DemoData.products.where((product) {
+    final catalog = context.watch<CatalogProvider>();
+    final products = catalog.products;
+    final results = products.where((product) {
       final matchesCategory =
           _category == 'All' || product.category == _category;
       final matchesQuery =
@@ -116,33 +118,15 @@ class _SearchScreenState extends State<SearchScreen> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 17),
               scrollDirection: Axis.horizontal,
-              children: [
-                _CategoryFilter(
-                  label: 'All',
-                  selected: _category == 'All',
-                  onTap: () => setState(() => _category = 'All'),
-                ),
-                _CategoryFilter(
-                  label: 'Burgers',
-                  selected: _category == 'Burgers',
-                  onTap: () => setState(() => _category = 'Burgers'),
-                ),
-                _CategoryFilter(
-                  label: 'Chicken',
-                  selected: _category == 'Chicken',
-                  onTap: () => setState(() => _category = 'Chicken'),
-                ),
-                _CategoryFilter(
-                  label: 'Sides',
-                  selected: _category == 'Sides',
-                  onTap: () => setState(() => _category = 'Sides'),
-                ),
-                _CategoryFilter(
-                  label: 'Drinks',
-                  selected: _category == 'Drinks',
-                  onTap: () => setState(() => _category = 'Drinks'),
-                ),
-              ],
+              children: catalog.categories
+                  .map(
+                    (category) => _CategoryFilter(
+                      label: category,
+                      selected: _category == category,
+                      onTap: () => setState(() => _category = category),
+                    ),
+                  )
+                  .toList(),
             ),
           ),
           Expanded(
@@ -271,7 +255,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                ...DemoData.products
+                ...products
                     .take(3)
                     .map(
                       (product) => _TrendingTile(

@@ -6,7 +6,7 @@
 
 The project root contains `.obsidian/` and can be opened as an Obsidian vault without moving application files. It may not appear in your vault list yet. If it is not shown, choose **Open folder as vault** and select `C:\Users\shizu\OneDrive\Documents\Ampps\www\Burger_bites`. `.obsidian/app.json` sends newly created notes to `docs/`.
 
-This pass adds a dependency-free PHP API and versioned schema files. The user identified `Burger_Bites`; inspection confirmed it was empty, and migration `001` has now created the seven core tables in MySQL database `burger_bites`. The PHP API's restricted account connects successfully. `streetfood_db` was not opened or changed. Customer catalog and admin management remain local previews. See [[PRODUCTION_READINESS_AUDIT]].
+The app uses Flutter/Dart with a dependency-free PHP/PDO API backed by MySQL database `burger_bites` (the user's phpMyAdmin name is `Burger_Bites`). Migration `001` is installed; the newer SQL-backed customer/admin routes require migration `003_app_workflows.sql`, which is in the repository but still awaits import. Optional catalog seed `002` is unapplied, so the live menu can be empty. Online payments, courier GPS, notifications, and app-wide localization/theme switching remain external follow-ups. See [[API_SPEC]], [[SCREEN_IMPLEMENTATION_STATUS]], and [[PRODUCTION_READINESS_AUDIT]].
 
 ## Documentation map
 
@@ -26,16 +26,16 @@ This pass adds a dependency-free PHP API and versioned schema files. The user id
 
 - Flutter customer and admin screens exist. See [[CUSTOMER_FLOW]] and [[ADMIN_FLOW]].
 - The supplied logo is in `assets/branding/burger_bites_logo.png`; startup routes through Splash → Greetings → Sign in/Register.
-- The hard-coded admin credential was removed. PHP auth/profile/favorites/product/COD-order routes exist; MySQL is configured and the products route passed an HTTP/database smoke check. Full account/order journeys are not yet verified.
-- Admin routes have a client-side role guard; admin providers and catalog/order history still use sample data. Backend authorization and persistence are missing.
+- The hard-coded admin credential was removed. PHP auth/profile/favorites/catalog/COD-order routes and SQL-backed admin workflows exist in code; migration 003 and end-to-end checks remain pending.
+- Admin providers, customer catalog, favorites, cart, and customer order history call the SQL-backed API in code. Admin endpoints enforce roles on the server; migration 003 is still required before the new customer/admin flows can run against the database.
 - The Figma link was inaccessible. Supplied screenshots remain the design reference; no exact Figma comparison is marked verified.
 
 ## Latest verification snapshot
 
-- `flutter test --reporter expanded` passed 4 tests; `flutter analyze --no-pub` and PHP syntax checks passed. See [[TESTING]].
+- Latest `flutter test --no-pub` passed 10 tests; `flutter analyze --no-pub` reported no issues. PHP syntax checks passed in the previous backend verification pass. See [[TESTING]].
 - Android SDK is available, but no Android device/emulator is connected. Android build status is in [[TESTING]].
 - The Android APK build could not download Flutter engine artifacts because DNS resolution for `storage.googleapis.com` failed; no APK was produced. No Android device/emulator was connected.
-- MySQL migration `001`, a least-privilege API user, and local `backend/.env` are configured. `GET /api/v1/products` returned HTTP 200 with an empty catalog. `streetfood_db` remains untouched; optional seed migration `002` is unapplied.
+- MySQL migration `001`, a least-privilege API user, and local `backend/.env` are configured. A previous `GET /api/v1/products` returned HTTP 200 with an empty catalog. `streetfood_db` remains untouched; optional seed `002` and required workflow migration `003` are unapplied.
 - Backend, social login, online payment, and production infrastructure are not verified. See [[PRODUCTION_READINESS_AUDIT]] and [[KNOWN_ISSUES]].
 
 ## Navigation tips

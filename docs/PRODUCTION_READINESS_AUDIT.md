@@ -2,17 +2,19 @@
 
 [[PROJECT_HOME]] · [[SYSTEM_FLOW]] · [[API_SPEC]] · [[DATABASE_SCHEMA]] · [[SECURITY]] · [[TESTING]] · [[NEXT_SESSION]]
 
-Audit date: 2026-10-14. The audit covers the Flutter repository and local AMPPS tooling. This work does **not** declare the app production-ready.
+Audit date: 2026-10-15. The audit covers the Flutter repository and local AMPPS tooling. This work does **not** declare the app production-ready.
 
 ## Database setup update (2026-10-14)
 
 The user identified the phpMyAdmin database as `Burger_Bites`. Read-only inspection confirmed it was empty, so migration `001_initial_schema.sql` was applied there; MySQL reports the normalized database name as `burger_bites`. A restricted `burger_bites_app` account and ignored `backend/.env` were configured. A live PHP HTTP request to `GET /api/v1/products` returned HTTP 200 with an empty list. The optional sample catalog was not inserted, and `streetfood_db` was not changed. Port 8080 belongs to Tomcat, so run the API on port 8081. See [[DATABASE_SCHEMA]] and [[TESTING]].
 
+Latest implementation update (2026-10-15): customer catalog/order history/settings/support and admin dashboard/order/product/customer/support flows now call SQL-backed PHP routes. Migration `003_app_workflows.sql` adds required fields/tables and has **not** been imported. The local PHP API was stopped during this latest pass, so these newly added routes have not had live integration checks.
+
 ## Architecture inspected
 
-- Flutter 3.47.6 / Dart 3.13.5 mobile-first client. `lib/main.dart` starts `AppShell`; `AppRouter` maps screens; Provider holds cart and preview admin state.
-- The existing client initially had no PHP API or SQL migrations. A dependency-free PHP 8/PDO API and isolated migration set were added under `backend/` to match authentication, profile, product-read, favorites, and COD-order paths.
-- Flutter menu/search, order history, and admin product/order/customer screens still use `DemoData` or local state.
+- Flutter 3.47.6 / Dart 3.13.5 mobile-first client. `lib/main.dart` starts `AppShell`; `AppRouter` maps screens; Provider manages session, catalog, orders, cart, and admin data.
+- A dependency-free PHP 8/PDO API and versioned migrations under `backend/` support authentication, profiles/preferences, product catalog, favorites, COD orders/history, admin operations, and contact messages.
+- The catalog/order/admin screens call the API in code; optional seed `002` and required workflow migration `003` are pending in phpMyAdmin.
 - AMPPS provides PHP 8.2, PDO MySQL, MySQL tooling, and Argon2id. Apache/MySQL were not listening during the original inspection.
 - `streetfood_db` has no project configuration linking it to BurgerBites and remains untouched. The user-confirmed empty `Burger_Bites` database now contains the initial schema.
 - The supplied Figma URL could not be opened in the available viewer. The provided screenshots remain visual references; the owner-supplied logo is bundled in the app.
@@ -34,25 +36,26 @@ The user identified the phpMyAdmin database as `Burger_Bites`. Read-only inspect
 | --- | --- | --- |
 | Logo and initial navigation | Implemented and tested | Startup widget test covers logo, greetings, and sign-in routing. Figma visual match is not verified. |
 | Flutter format/analyze | Implemented and tested | Modified Dart files formatted; `flutter analyze --no-pub` reported no issues. |
-| Flutter automated tests | Implemented and tested | 4 tests passed: startup route and cart math/availability. They do not cover a live API. |
-| Customer/admin auth code | Implemented but not fully verified | Flutter and PHP registration/login/session routes exist and MySQL is configured. Full signup/login/session journeys remain untested. Admin account helper is present; no default credentials. |
-| Profiles and favorites | Implemented but not fully verified | PHP endpoints are scoped to the bearer-token user; no DB integration test has run. Multiple saved addresses are not supported. |
-| Product browse/search | Partially implemented | PHP public product list/detail API exists; Flutter menu/search still use local sample data. |
+| Flutter automated tests | Implemented and tested | 9 tests passed: startup, admin profile/password controls, customer address and notification preference settings, Contact screen verified-detail state, cart math/availability, customized cart merging, and per-configuration quantity changes. They do not cover live API calls. |
+| Customer/admin auth code | Partially verified | Temporary customer registration, `/me`, logout, and customer-to-admin 403 boundary passed. Admin login, `/me`, readiness authorization, password change, and logout passed. Refresh/session restoration remain untested. One development admin exists; no default credentials are embedded. |
+| Profile and default address | Partially verified | Customer profile `PUT /me` saved, loaded, and cleared the default address in a live temporary-account check; admin password change also passed. Multiple saved addresses are not supported. |
+| Favorites | Connected in code, not live-verified | User-scoped API endpoints exist, but their database workflow has not been tested against a populated catalog. |
+| Product browse/search | Connected in code | Flutter home/menu/search use the SQL catalog API; optional menu seed is not present. |
 | Cart calculation | Implemented and tested as a preview | Provider math tested. Backend recomputes authoritative totals; no SQL order test ran. |
-| COD order placement | Implemented but not fully verified | PHP transaction checks/decrements stock and writes snapshots; migration/database absent, no cancellation/restock lifecycle. |
-| Admin product/order/customer operations | Not implemented | Flutter views are local preview data; PHP `/admin/*` routes are not implemented. Route gating in Flutter is not server authorization. |
+| COD order placement/history | Connected in code, not live-verified | Server validates customizations/prices/stock, saves orders, and supports customer pending cancellation with restock. Requires migration 003 for customization data/status values. |
+| Admin product/order/customer/support | Connected in code, not live-verified | PHP role-checked routes cover dashboard, inventory CRUD/archive, order lifecycle, customer activation, and support inbox. Requires migration 003. Admin authentication and readiness authorization were smoke-tested. |
 | Google/Apple sign-in and online payment | Not implemented | Provider credentials/token verification and payment service/callbacks are absent. |
-| MySQL schema | Configured locally | Seven core tables from migration `001` are installed in `burger_bites`; restricted account and `GET /products` DB/HTTP check passed. No sample data was inserted. |
+| MySQL schema | Partially configured | Seven core tables from migration `001` are installed in `burger_bites`; workflow migration `003` and optional sample data `002` are pending. |
 | Android APK/runtime | Blocked | Gradle could not resolve `storage.googleapis.com`; no APK produced. No Android device/emulator connected. |
 | Hosting protections | Not implemented | No public host/domain, TLS certificate, CDN/WAF/DDoS service, monitoring, or backup process configured. |
 
 ## Remaining work by priority
 
-1. Test registration/login/refresh/logout, profile, favorites, and COD order against MySQL, including authorization, token expiry, duplicate registration, stock changes, and rollback cases.
+1. Back up the confirmed `Burger_Bites` database, import migration `003` once, start the PHP API, and live-test auth, catalog, COD customization, history/cancel/restock, admin status/CRUD/customer/support routes.
 2. Add verified menu data before enabling real ordering; do not treat optional development seed rows as real restaurant data.
-3. Connect Flutter catalog, order history, and admin screens to API endpoints; implement admin product/category/inventory/order/customer operations with server role checks and audit events.
-4. Implement multiple-address management and an order cancellation/status lifecycle that safely returns stock.
-5. Decide the actual tax/delivery/stock rules and verify exact pricing with the owner.
+3. Import optional sample catalog migration `002` only for a local preview; replace it with verified BurgerBites products/prices/stock before real orders.
+4. Implement GCash/Maya only after sandbox credentials, webhook/callback details, and settlement rules are supplied; COD remains the only active payment method.
+5. Decide actual tax/delivery/stock rules; complete notifications, GPS tracking, social sign-in, account recovery, app-wide localization/theme, image upload, and saved addresses. Calendar reminders are account-scoped SQL records in code but require migration 003 and live verification; they do not send alerts.
 6. Use the provided screenshots for design review; run layout checks on Android phone/emulator when available.
 7. Retry the Android build after DNS/network access to `storage.googleapis.com` works; verify on a device.
 8. Configure production host, HTTPS, DNS, firewall/proxy, backups/restoration, monitoring, and incident response after choosing a provider.
@@ -62,10 +65,12 @@ The user identified the phpMyAdmin database as `Burger_Bites`. Read-only inspect
 - `php -l` on all PHP files: passed.
 - Local PHP HTTP configuration smoke check: passed; with no database settings, the app returned a safe JSON `503`. This verifies bootstrap/error handling only.
 - MySQL setup and PHP database connection: passed. Verified all seven core tables through the restricted app account; `GET /api/v1/products` returned HTTP 200 with an empty list.
+- Read-only migration 003 preflight: passed for the live baseline columns and `order_items.uq_order_product` index referenced by its `ALTER TABLE` statements, compatible user/product foreign-key types and collations, and InnoDB engines. Migration has not been applied; this check does not verify the full import.
 - `dart format` on modified Dart files: completed, 0 changes on final formatting pass.
 - `flutter analyze --no-pub`: passed, no issues.
-- `flutter test --reporter expanded --no-pub`: passed, 4 tests.
+- `flutter test --reporter expanded --no-pub`: earlier run passed, 4 tests.
+- Latest 2026-10-15 UI follow-up: `dart format` completed; `flutter analyze --no-pub` passed; `flutter test --no-pub` passed 9 tests, including Contact details/form and Settings preference coverage. The Web build from the preceding customer-settings pass succeeded; it was not rerun after the Contact/About/Cart/Admin dashboard/Language/Theme/Settings updates. Earlier PHP source syntax and live auth/address API checks passed. The readiness endpoint reports migration 003 missing; cart/order/reminder/inventory/customer/favorites/support routes remain unverified until it is imported. Local Graphify is at 1,647 nodes, 2,627 edges, 108 communities and still reports the pre-existing Linux header parse warning.
 - Android `flutter build apk --debug --no-pub`: failed while Gradle tried to download Flutter artifacts; DNS could not resolve `storage.googleapis.com`. No APK was produced.
-- Signup/login, favorites, order integration journeys, payment, external login, deployment, and Android device tests were not performed.
+- Favorites, order integration journeys, payment, external login, deployment, refresh/session restoration, and Android device tests were not performed. Customer registration and admin auth/profile-password API checks are recorded above.
 - C: had about 0.32 GB free after Flutter tests; more space is needed before further builds.
 - The earlier user-reported Edge compile error was disk-full (`errno 112`); the current Android attempt failed separately during network artifact download.

@@ -18,6 +18,14 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
   OrderStatus? _selectedStatus;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AdminOrdersProvider>().loadOrders();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -38,6 +46,13 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
         builder: (context, provider, _) {
           return Column(
             children: [
+              if (provider.isLoading) const LinearProgressIndicator(),
+              if (provider.errorMessage != null)
+                TextButton.icon(
+                  onPressed: () => provider.loadOrders(force: true),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(provider.errorMessage!),
+                ),
               // Stats Cards Row
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -404,6 +419,13 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final nextStatuses = switch (order.status) {
+      OrderStatus.pending => [OrderStatus.processing, OrderStatus.canceled],
+      OrderStatus.processing => [OrderStatus.ready, OrderStatus.canceled],
+      OrderStatus.ready => [OrderStatus.shipped, OrderStatus.canceled],
+      OrderStatus.shipped => [OrderStatus.delivered],
+      OrderStatus.delivered || OrderStatus.canceled => <OrderStatus>[],
+    };
     return GestureDetector(
       onTap: onTap,
       child: Card(
@@ -495,39 +517,24 @@ class _OrderCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Flexible(
-                    child: PopupMenuButton(
+                    child: PopupMenuButton<OrderStatus>(
+                      enabled: nextStatuses.isNotEmpty,
                       onSelected: (OrderStatus status) =>
                           onStatusUpdate(status),
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: OrderStatus.pending,
-                          child: Text('Pending'),
-                        ),
-                        const PopupMenuItem(
-                          value: OrderStatus.processing,
-                          child: Text('Processing'),
-                        ),
-                        const PopupMenuItem(
-                          value: OrderStatus.ready,
-                          child: Text('Ready'),
-                        ),
-                        const PopupMenuItem(
-                          value: OrderStatus.shipped,
-                          child: Text('Shipped'),
-                        ),
-                        const PopupMenuItem(
-                          value: OrderStatus.delivered,
-                          child: Text('Delivered'),
-                        ),
-                        const PopupMenuItem(
-                          value: OrderStatus.canceled,
-                          child: Text('Canceled'),
-                        ),
-                      ],
+                      itemBuilder: (_) => nextStatuses
+                          .map(
+                            (status) => PopupMenuItem<OrderStatus>(
+                              value: status,
+                              child: Text(status.displayName),
+                            ),
+                          )
+                          .toList(),
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.edit, size: 16),
-                        label: const Text(
-                          'Change Status',
+                        label: Text(
+                          nextStatuses.isEmpty
+                              ? order.status.displayName
+                              : 'Change Status',
                           overflow: TextOverflow.ellipsis,
                         ),
                         onPressed: null,
@@ -538,11 +545,9 @@ class _OrderCard extends StatelessWidget {
                   OutlinedButton.icon(
                     icon: const Icon(Icons.close, size: 16),
                     label: const Text('Cancel'),
-                    onPressed:
-                        order.status == OrderStatus.canceled ||
-                            order.status == OrderStatus.delivered
-                        ? null
-                        : onCancel,
+                    onPressed: nextStatuses.contains(OrderStatus.canceled)
+                        ? onCancel
+                        : null,
                   ),
                 ],
               ),

@@ -46,7 +46,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 8),
                     Center(
                       child: Column(
-                        children: [const BrandLogo(width: 120, height: 120)],
+                        children: [
+                          const BrandLogo(
+                            width: 120,
+                            height: 120,
+                            animate: true,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 26),

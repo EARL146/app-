@@ -8,17 +8,17 @@
 - On app restart, a stored session is checked through `GET /me` before opening admin home.
 - `AdminRouteGate` checks local session state to prevent accidental navigation to an admin screen.
 - This Flutter guard is not a security boundary. PHP must authenticate every request, check the role from the validated token, authorize the target resource, and record sensitive actions.
-- There is no hard-coded admin email or password in the app. After database setup, an authorized operator can create a new admin with `backend/tools/create_admin.ps1`; it refuses to overwrite an existing email.
+- There is no hard-coded admin email or password in the app. A local development admin (`admin@burgerbites.local`) now exists; its generated password was shared with the user in chat and is not stored in project files. Use `backend/tools/create_admin.ps1` to add an admin with a preferred email; it refuses to overwrite an existing email.
 
 ## Admin screens
 
 | Screen | Current behavior | Status |
 | --- | --- | --- |
-| Dashboard | Shows local sample counts, chart, and orders | Not connected to API |
-| Orders | Search/filter and change sample status | Not persistent; server transition rules absent |
-| Products | Local add/edit/delete/availability toggle | Not persistent; stock/API absent |
-| Customers | Search and toggle sample active status | Not persistent; privacy authorization absent |
-| Profile | Reads server identity fields and sends edits through `PUT /me`; logout calls `/auth/logout` | PHP route exists and DB is configured; admin login/profile journey still needs end-to-end verification |
-| More | Navigation and preview settings | Several operations remain local or unimplemented |
+| Dashboard | Loads totals and a seven-day SQL order-value chart | API-backed code; schema migration 003 and data journey pending |
+| Orders | Reads SQL orders and submits allowed status transitions/cancellation | API-backed code; migration 003 and workflow checks pending |
+| Products | Lists, creates, edits, archives, and changes stock through admin routes | API-backed code; migration 003 and workflow checks pending |
+| Customers | Reads SQL profiles/order summaries and activates/deactivates accounts | API-backed code; migration 003 and workflow checks pending |
+| Profile | Reads server identity, edits name/phone/branch, changes password, and logs out | Admin login, `/me`, system-status authorization, and logout passed HTTP smoke testing; profile edits/password UI not yet tested live |
+| More | Reads API/database/migration readiness and accurately shows payment limits | Readiness endpoint is role-protected; migration 003 currently reports incomplete |
 
-PHP admin management endpoints remain unimplemented. The schema supports admin roles, and the database is configured. No admin account was created in this setup. See [[DATABASE_SCHEMA]], [[API_SPEC]], [[SECURITY]], and [[PRODUCTION_READINESS_AUDIT]].
+PHP admin management endpoints are implemented and role-protected. A local development admin (`admin@burgerbites.local`) exists; its generated password was shared in chat and is not saved in project files. Migration 003 is still required before most admin operations can load their SQL data. See [[DATABASE_SCHEMA]], [[API_SPEC]], [[SECURITY]], and [[PRODUCTION_READINESS_AUDIT]].

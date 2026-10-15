@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../data/demo_data.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/catalog_provider.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/favorite_button.dart';
 
@@ -22,9 +22,10 @@ class _MenuScreenState extends State<MenuScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final catalog = context.watch<CatalogProvider>();
     final filteredProducts = _selectedCategory == 'All'
-        ? DemoData.products
-        : DemoData.products
+        ? catalog.products
+        : catalog.products
               .where((product) => product.category == _selectedCategory)
               .toList();
 
@@ -117,10 +118,10 @@ class _MenuScreenState extends State<MenuScreen> {
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 scrollDirection: Axis.horizontal,
-                itemCount: DemoData.categories.length,
+                itemCount: catalog.categories.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
-                  final category = DemoData.categories[index];
+                  final category = catalog.categories[index];
                   final selected = category == _selectedCategory;
                   return ChoiceChip(
                     label: Text(category),
@@ -170,26 +171,51 @@ class _MenuScreenState extends State<MenuScreen> {
               ),
             ),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final columns = (constraints.maxWidth / 175).floor().clamp(
-                    2,
-                    4,
-                  );
-                  return GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(18, 2, 18, 16),
-                    itemCount: filteredProducts.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: columns,
-                      childAspectRatio: .72,
-                      crossAxisSpacing: 11,
-                      mainAxisSpacing: 11,
+              child: filteredProducts.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            catalog.errorMessage ??
+                                (catalog.isLoading
+                                    ? 'Loading menu…'
+                                    : 'No products are available in this category yet.'),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          if (catalog.errorMessage != null)
+                            TextButton.icon(
+                              onPressed: () =>
+                                  catalog.loadProducts(force: true),
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Try again'),
+                            ),
+                        ],
+                      ),
+                    )
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columns = (constraints.maxWidth / 175)
+                            .floor()
+                            .clamp(2, 4);
+                        return GridView.builder(
+                          padding: const EdgeInsets.fromLTRB(18, 2, 18, 16),
+                          itemCount: filteredProducts.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                childAspectRatio: .72,
+                                crossAxisSpacing: 11,
+                                mainAxisSpacing: 11,
+                              ),
+                          itemBuilder: (context, index) =>
+                              MenuProductCard(product: filteredProducts[index]),
+                        );
+                      },
                     ),
-                    itemBuilder: (context, index) =>
-                        MenuProductCard(product: filteredProducts[index]),
-                  );
-                },
-              ),
             ),
             Consumer<CartProvider>(
               builder: (context, cart, _) {

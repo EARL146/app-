@@ -39,19 +39,19 @@ The reference is the set of BurgerBites customer and admin screen screenshots su
 | Cart / checkout | Editable quantities, delivery details, payment option selection, itemized fees, total, and demo status. |
 | Order history | Active/completed views, status, item summaries, reorder action, and clear tracking limitation. |
 | Profile | Customer identity card, rewards preview, account/settings links, calendar, contact, and about. |
-| Settings / language / theme | Local preference previews with explicit status where persistence or localization is not implemented. |
-| Calendar | Selectable dates and milestone preview, with sample data labeled. |
+| Settings / language / theme | Preferences persist through the API after migration 003; app-wide translations and theme application remain unimplemented. |
+| Calendar | Selectable dates and account-owned reminders with create/edit/delete; explain that alerts are not sent. |
 | Contact / about | Contact options, validated local message form, FAQs, brand story, and clear sample-content labels. |
 
 ### Admin
 
 | Screen | Expected content |
 | --- | --- |
-| Dashboard | Order/revenue/customer/product metrics, sales overview, quick actions, and recent orders. Metrics must be identified as local sample data. |
-| Orders | Search and status filters, order summary, valid status choices, and cancellation controls. |
-| Products | Search, categories, product images, availability, price, add/edit/delete actions. |
-| Add/edit product | Dark editor surface, image path/ID, product fields, category, availability, and save action. |
-| Customers / more / profile | Searchable local customer state, supporting admin options, profile identity/access summary, local profile editing, and logout. Clearly distinguish demo values from live data. |
+| Dashboard | SQL order/revenue/customer/product metrics, seven-day sales overview, quick actions, and recent orders; show loading/error/empty states. |
+| Orders | Search and status filters, SQL order summaries, valid server-approved status choices, and cancellation controls. |
+| Products | SQL product search/categories, images, availability, price, stock, and add/edit/archive actions. |
+| Add/edit product | Dark editor surface, image path/ID, product fields, category, availability, stock, and save action. |
+| Customers / more / profile | Searchable SQL customer state and status actions, provider/readiness limits, server-backed profile editing/password change, and logout. Label any preview-only values. |
 
 ## Local image assets
 
@@ -64,9 +64,9 @@ The reference is the set of BurgerBites customer and admin screen screenshots su
 
 ## Data and interaction limits
 
-- The original Flutter archive contained no PHP API controllers or SQL schema. A PHP API and unapplied SQL schema were added during the 2026-10-14 implementation pass; there is still no live database connection.
-- Catalog, order history, admin metrics, and account details are sample data held in app state.
-- Payment, social login, calendar milestones, profile persistence, message sending, tracking, and global theme/language application are not connected to production services.
+- The original Flutter archive contained no PHP API controllers or SQL schema. The API and migrations were added during the 2026-10-14 implementation pass; migration 001 is installed and the public catalog read was smoke-tested. Migration 003 is still awaiting import.
+- Customer catalog, favorites, cart, order history, admin metrics/management, profile preferences, support messages, and calendar reminders use SQL-backed API routes in code. The database has no menu products or customer/order records; one development admin account exists. Admin login and role authorization were smoke-tested, while migration 003 workflows still await import and verification.
+- Payment, social login, outgoing notifications, tracking, and global theme/language application are not connected to production services. Calendar reminder records do not trigger alerts.
 - The design uses the screenshot references as a direction; exact Figma spacing, type scale, colors, and transitions remain unverified.
 
 ## Related implementation status

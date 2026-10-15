@@ -21,13 +21,36 @@
 
 ## Test coverage limits
 
-The four Flutter tests do not exercise API calls, secure storage, login/register forms, profile editing, favorites persistence, checkout server responses, SQL, admin authorization, or cross-account access. PHP lint checks syntax only. No HTTP/MySQL integration test was run. The Android build did not produce an installable APK.
+The Flutter tests do not exercise API calls, secure storage, login/register forms, profile editing, favorites persistence, checkout server responses, SQL, or cross-account access. The admin auth/session smoke check validates the local admin and readiness route only; it does not cover order, inventory, customer, support, cart, or reminder workflows. PHP lint checks syntax only. The Android build did not produce an installable APK.
+
+## Results from 2026-10-15
+
+| Check | Result | Evidence / scope |
+| --- | --- | --- |
+| `flutter analyze --no-pub` | Passed | No issues found after customer/admin workflow updates. |
+| `flutter test --no-pub` | Passed | 10 tests: startup, admin profile controls, admin store-profile fields, customer address and notification preferences, contact screen details, cart totals/availability, customized cart merging, and customized-line quantity changes. |
+| `flutter build web --no-pub` | Passed | Built `build/web` for Edge. Flutter's Wasm dry run reported `flutter_secure_storage_web` imports unsupported by Wasm; the standard JavaScript Web build succeeded. |
+| `php -l` across `backend/src/*.php` | Passed | No syntax errors in all 5 source files. |
+| Edge-origin PHP API/CORS check | Passed | `http://localhost:5000` preflight returned 204 and catalog returned 200; an unapproved origin returned 403. Catalog is empty until products are added. |
+| Dashboard sales query | Passed | Read-only direct SQL check returned 7 daily buckets; no order details were output. |
+| `git diff --check` | Passed | Git emitted only working-copy LF-to-CRLF notices. |
+| Authenticated admin API smoke test | Passed | Login, `/me`, authorized `/admin/system-status`, and logout succeeded against local MySQL. |
+| Admin password change HTTP flow | Passed | `/me/password` accepted the current credential, kept the current session valid, and allowed a fresh sign-in with the new password; both sessions logged out cleanly. |
+| Customer registration/role boundary HTTP smoke test | Passed | Temporary registration returned role `customer`; `/me` confirmed it; `/admin/system-status` returned 403; logout succeeded and the temporary user row was deleted. |
+| Default-address profile API | Passed | A temporary customer saved an address through `PUT /me`, loaded it through `GET /me`, cleared it, logged out, and was deleted. |
+| Favorites API lifecycle | Passed | Isolated temporary customer/product: list began empty, add returned the product, delete returned to empty; both fixtures were removed. |
+| Profile, fresh login, and logout API | Passed | Isolated temporary customer: `/me`, profile update/read, password sign-in, logout, and revoked-token check passed; temporary account and its rate-limit rows were cleaned. |
+| Smoke-test cleanup | Passed | Direct read-only verification found zero `codex-fav-*` products and zero temporary smoke users. Product catalog remained empty. |
+| Migration 003 workflows | Not run | Current schema readiness response confirms required workflow tables/columns are absent. |
+| Store profile API read | Blocked by schema | Read-only `GET /api/v1/store-profile` returned HTTP 503 because `store_profile` is created by migration 003, which is not installed yet. |
+| Transparent image assets | Passed | Logo and burger cutout PNGs both report zero alpha at their outer corner; both assets are included in `build/web`. |
+| Customer/admin visual update | Passed | `flutter analyze --no-pub`: no issues; all 10 Flutter tests passed; `flutter build web --no-pub` succeeded. Web build emitted the existing `flutter_secure_storage_web` Wasm compatibility dry-run warning; JavaScript build completed. |
 
 ## Environment notes
 
 - Flutter 3.47.6 / Dart 3.13.5 and Android SDK are installed.
 - No Android phone/emulator is connected. Edge is available; Chrome was not detected.
-- After final Flutter tests, C: had about 0.32 GB free, so further builds may fail from disk pressure. Move temp output to D: and free additional C: space before an Android build.
+- The earlier low-disk warning is superseded: C: had 174.18 GB free before the latest Web build, and that build completed successfully. Android APK compilation remains unverified because Gradle previously could not resolve `storage.googleapis.com`.
 - Gradle could not resolve `storage.googleapis.com`; retry the APK build when DNS/network access is available.
 - MySQL database `burger_bites` has the initial schema and a restricted local API account. Optional seed migration `002` is still unapplied.
 - Port `8080` is occupied by local `Tomcat10`; use `8081` for the PHP API.

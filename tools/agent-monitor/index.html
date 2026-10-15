@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>BurgerBites · Agent Monitor</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">BB</span><div><strong>BurgerBites</strong><small>Agent monitor</small></div></div>
+    <div class="top-meta"><span class="local-dot"></span><span>Local read-only view</span><span id="updated">Loading…</span></div>
+  </header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">DEVELOPMENT WORKSPACE</p><h1>Activity, without the guesswork.</h1><p class="muted">Observed Codex session records, this worktree’s Git state, and selected project references.</p></div>
+      <button id="refresh" class="quiet-button" type="button">Refresh now</button>
+    </section>
+    <nav class="tabs" aria-label="Dashboard sections">
+      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="activity">Activity</button>
+      <button class="tab" data-tab="changes">Git changes</button>
+      <button class="tab" data-tab="memory">Project notes</button>
+      <button class="tab" data-tab="images">Images</button>
+    </nav>
+    <div id="error" class="error hidden" role="status"></div>
+    <section id="panel-overview" class="panel active">
+      <div id="summary" class="summary-grid"></div>
+      <div class="two-col">
+        <article class="card"><div class="card-heading"><div><p class="eyebrow">SESSIONS</p><h2>Observed Codex sessions</h2></div><span class="tag">local JSONL</span></div><div id="sessions" class="session-list"></div></article>
+        <article class="card"><div class="card-heading"><div><p class="eyebrow">GIT</p><h2>Worktree snapshot</h2></div><span id="branch" class="tag">—</span></div><div id="git-summary" class="git-summary"></div><p class="fineprint">Remote counts use locally cached refs. This dashboard never fetches, commits, stages, or pushes.</p></article>
+      </div>
+      <div class="two-col">
+        <article class="card"><div class="card-heading"><div><p class="eyebrow">TASK HISTORY</p><h2>Latest task markers</h2></div></div><div id="tasks" class="task-list"></div></article>
+        <article class="card"><div class="card-heading"><div><p class="eyebrow">RECORDED USAGE</p><h2>Codex usage totals</h2></div></div><div id="usage" class="usage-grid"></div><p class="fineprint">Shown only when the local log provides a thread usage record. These are Codex-reported figures, not estimates.</p></article>
+      </div>
+      <article class="card"><div class="card-heading"><div><p class="eyebrow">SCOPE</p><h2>What this dashboard can see</h2></div></div><ul id="limits" class="limit-list"></ul></article>
+    </section>
+    <section id="panel-activity" class="panel">
+      <article class="card"><div class="card-heading"><div><p class="eyebrow">TIMELINE</p><h2>Recorded task and tool events</h2></div><span class="fineprint">Arguments and outputs are hidden</span></div><div id="timeline" class="timeline"></div></article>
+      <article class="card"><div class="card-heading"><div><p class="eyebrow">ERRORS & BLOCKERS</p><h2>Recorded failures</h2></div></div><div id="errors" class="error-list"></div></article>
+    </section>
+    <section id="panel-changes" class="panel">
+      <article class="card"><div class="card-heading"><div><p class="eyebrow">GIT WORKTREE</p><h2>Changed files</h2></div><span id="change-count" class="tag">0 files</span></div><div class="split"><div id="file-list" class="file-list"></div><pre id="diff" class="diff">Select a tracked file to preview its redacted diff.</pre></div></article>
+    </section>
+    <section id="panel-memory" class="panel">
+      <article class="card"><div class="card-heading"><div><p class="eyebrow">OBSIDIAN REMAINS THE MEMORY SOURCE</p><h2>Selected project note preview</h2></div><span class="tag">read-only</span></div><div class="preview-bar"><select id="note-select" aria-label="Choose project note"></select><span class="fineprint">Only selected notes are read for this preview.</span></div><pre id="note-preview" class="markdown-preview">Choose a note…</pre></article>
+    </section>
+    <section id="panel-images" class="panel">
+      <article class="card"><div class="card-heading"><div><p class="eyebrow">ATTACHMENT PREVIEW</p><h2>Open a local image or Markdown note</h2></div><span class="tag">browser-only</span></div><p class="muted">The selected file is previewed in this browser and is not sent to the dashboard server.</p><label class="file-picker" for="attachment-file">Choose a local file</label><input id="attachment-file" type="file" accept="image/*,.md,text/markdown"><div id="attachment-preview" class="attachment-preview"></div></article>
+      <article class="card"><div class="card-heading"><div><p class="eyebrow">PROJECT ASSETS</p><h2>Existing image previews</h2></div><span class="tag">local files</span></div><div id="image-grid" class="image-grid"></div></article>
+    </section>
+    <footer><span>Bound to 127.0.0.1 · no external requests</span><span>Obsidian is not modified or mirrored here.</span></footer>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>

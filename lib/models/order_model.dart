@@ -5,6 +5,7 @@ class OrderItem {
   final double price;
   final int quantity;
   final String? productImage;
+  final Map<String, dynamic> customizations;
 
   OrderItem({
     required this.productId,
@@ -12,17 +13,21 @@ class OrderItem {
     required this.price,
     required this.quantity,
     this.productImage,
+    this.customizations = const {},
   });
 
   double get subtotal => price * quantity;
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
-      productId: json['product_id'] as String,
-      productName: json['product_name'] as String,
-      price: (json['price'] as num).toDouble(),
-      quantity: json['quantity'] as int,
-      productImage: json['product_image'] as String?,
+      productId: json['product_id'].toString(),
+      productName: json['product_name'] as String? ?? 'Product',
+      price: ((json['price'] ?? json['unit_price']) as num).toDouble(),
+      quantity: (json['quantity'] as num).toInt(),
+      productImage: (json['product_image'] ?? json['image_url']) as String?,
+      customizations: json['customizations'] is Map<String, dynamic>
+          ? json['customizations'] as Map<String, dynamic>
+          : const {},
     );
   }
 
@@ -33,6 +38,7 @@ class OrderItem {
       'price': price,
       'quantity': quantity,
       'product_image': productImage,
+      'customizations': customizations,
     };
   }
 }
@@ -100,21 +106,19 @@ class Order {
   }
 
   factory Order.fromJson(Map<String, dynamic> json) {
-    final statusStr = json['status'] as String? ?? 'pending';
-    OrderStatus statusEnum;
-
-    try {
-      statusEnum = OrderStatus.values.firstWhere(
-        (e) => e.name == statusStr.toLowerCase(),
+    final statusStr = (json['status'] as String? ?? 'pending').toLowerCase();
+    final statusEnum = switch (statusStr) {
+      'confirmed' || 'preparing' => OrderStatus.processing,
+      'cancelled' => OrderStatus.canceled,
+      _ => OrderStatus.values.firstWhere(
+        (value) => value.name == statusStr,
         orElse: () => OrderStatus.pending,
-      );
-    } catch (e) {
-      statusEnum = OrderStatus.pending;
-    }
+      ),
+    };
 
     return Order(
-      id: json['id'] as String,
-      userId: json['user_id'] as String,
+      id: json['id'].toString(),
+      userId: json['user_id']?.toString() ?? '',
       items:
           (json['items'] as List<dynamic>?)
               ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
@@ -122,13 +126,19 @@ class Order {
           [],
       subtotal: (json['subtotal'] as num? ?? 0).toDouble(),
       tax: (json['tax'] as num? ?? 0).toDouble(),
-      shippingCost: (json['shipping_cost'] as num? ?? 0).toDouble(),
+      shippingCost:
+          ((json['shipping_cost'] ?? json['delivery_fee']) as num? ?? 0)
+              .toDouble(),
       total: (json['total'] as num? ?? 0).toDouble(),
       status: statusEnum,
       notes: json['notes'] as String?,
       deliveryAddress: json['delivery_address'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String? ?? DateTime.now().toIso8601String()),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      createdAt: DateTime.parse(
+        json['created_at'] as String? ?? DateTime.now().toIso8601String(),
+      ),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : null,
       deliveredAt: json['delivered_at'] != null
           ? DateTime.parse(json['delivered_at'] as String)
           : null,

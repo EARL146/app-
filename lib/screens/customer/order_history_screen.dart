@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../data/demo_data.dart';
 import '../../models/order_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/catalog_provider.dart';
+import '../../providers/customer_orders_provider.dart';
 import '../../widgets/food_image.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
@@ -18,8 +19,19 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   bool _showActive = true;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<CustomerOrdersProvider>().loadOrders(force: true);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final orders = DemoData.customerOrders.where((order) {
+    final history = context.watch<CustomerOrdersProvider>();
+    final orders = history.orders.where((order) {
       final active =
           order.status == OrderStatus.pending ||
           order.status == OrderStatus.processing ||
@@ -34,6 +46,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(17, 5, 17, 22),
         children: [
+          if (history.isLoading) const LinearProgressIndicator(),
+          if (history.errorMessage != null)
+            TextButton.icon(
+              onPressed: () => history.loadOrders(force: true),
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(history.errorMessage!),
+            ),
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
@@ -68,7 +87,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       ),
                       SizedBox(height: 3),
                       Text(
-                        'Order updates shown here use sample data.',
+                        'Your orders and updates come from your BurgerBites account.',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 9,
@@ -301,10 +320,27 @@ class _OrderCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _showTrackingNotice(context),
-                  icon: const Icon(Icons.location_searching_rounded, size: 14),
+                  onPressed: order.status == OrderStatus.pending
+                      ? () async {
+                          final history = context
+                              .read<CustomerOrdersProvider>();
+                          final success = await history.cancelOrder(order.id);
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Order cancelled.'
+                                    : history.errorMessage ??
+                                          'Unable to cancel order.',
+                              ),
+                            ),
+                          );
+                        }
+                      : null,
+                  icon: const Icon(Icons.cancel_outlined, size: 14),
                   label: const Text(
-                    'Track order',
+                    'Cancel order',
                     style: TextStyle(fontSize: 9),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -333,24 +369,19 @@ class _OrderCard extends StatelessWidget {
 
   String _dateLabel(DateTime date) => '${date.month}/${date.day}/${date.year}';
 
-  void _showTrackingNotice(BuildContext context) =>
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Live delivery tracking is not connected in this demo.',
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-
   void _reorder(BuildContext context) {
     final cart = context.read<CartProvider>();
+    final products = context.read<CatalogProvider>().products;
     for (final item in order.items) {
-      final matches = DemoData.products.where(
-        (product) => product.id == item.productId,
-      );
+      final matches = products.where((product) => product.id == item.productId);
       if (matches.isNotEmpty) {
-        cart.addItem(matches.first, quantity: item.quantity);
+        cart.addItem(
+          matches.first,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          displayName: item.productName,
+          customizations: item.customizations,
+        );
       }
     }
     Navigator.of(context).pushNamed('/cart');

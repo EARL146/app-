@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_colors.dart';
+import '../../services/api_service.dart';
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
@@ -14,7 +15,11 @@ class _ContactScreenState extends State<ContactScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _messageController = TextEditingController();
+  final _apiService = ApiService();
   String _topic = 'Order inquiry';
+  bool _isSending = false;
+  bool _storeLoading = true;
+  Map<String, dynamic>? _storeProfile;
 
   @override
   void dispose() {
@@ -22,6 +27,30 @@ class _ContactScreenState extends State<ContactScreen> {
     _emailController.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStoreProfile();
+  }
+
+  Future<void> _loadStoreProfile() async {
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/store-profile',
+      requiresAuth: false,
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid store profile response.'),
+    );
+    if (!mounted) return;
+    setState(() {
+      _storeLoading = false;
+      final value = response.data?['store_profile'];
+      _storeProfile = response.success && value is Map<String, dynamic>
+          ? value
+          : null;
+    });
   }
 
   @override
@@ -34,42 +63,21 @@ class _ContactScreenState extends State<ContactScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(17, 3, 17, 22),
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                  ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'BURGERBITES SUPPORT',
+                style: TextStyle(
+                  color: AppColors.brandOrange,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .5,
                 ),
-                const SizedBox(width: 6),
-                const Expanded(
-                  child: Text(
-                    'Open today · 10:00 AM – 10:00 PM',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: .1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Compostela hub',
-                    style: TextStyle(
-                      color: AppColors.success,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 12),
             const Text(
@@ -78,7 +86,7 @@ class _ContactScreenState extends State<ContactScreen> {
             ),
             const SizedBox(height: 5),
             const Text(
-              'Questions about an order or account? Our sample contact options are below.',
+              'Send a support request about an order, your account, or BurgerBites.',
               style: TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 10,
@@ -86,86 +94,7 @@ class _ContactScreenState extends State<ContactScreen> {
               ),
             ),
             const SizedBox(height: 13),
-            _ContactCard(
-              icon: Icons.mail_outline_rounded,
-              label: 'EMAIL US',
-              value: 'support@burgerbites.app',
-              action: 'Email',
-              onTap: () => _notice('Email support'),
-            ),
-            _ContactCard(
-              icon: Icons.call_outlined,
-              label: 'CALL US',
-              value: '+63 912 345 6789',
-              action: 'Call',
-              onTap: () => _notice('Phone support'),
-            ),
-            _ContactCard(
-              icon: Icons.public_rounded,
-              label: 'OFFICIAL FACEBOOK PAGE',
-              value: 'BurgerBites Compostela',
-              action: 'View page',
-              onTap: () => _notice('Social links'),
-            ),
-            const SizedBox(height: 7),
-            Container(
-              height: 122,
-              padding: const EdgeInsets.all(13),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFE2F3E8), Color(0xFFC6E8D4)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(painter: _MapGridPainter()),
-                  ),
-                  Align(
-                    alignment: Alignment.center,
-                    child: Container(
-                      width: 37,
-                      height: 37,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.location_on_rounded,
-                        color: AppColors.brandOrange,
-                        size: 23,
-                      ),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.bottomLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      child: const Text(
-                        'Compostela, Cebu · map preview',
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Store details shown here are sample project content.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 8),
-            ),
+            _storeDetailsCard(),
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(14),
@@ -183,7 +112,7 @@ class _ContactScreenState extends State<ContactScreen> {
                   ),
                   const SizedBox(height: 5),
                   const Text(
-                    'Messages are validated locally; no support backend is connected yet.',
+                    'Your message is saved to the BurgerBites support inbox for follow-up.',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 9,
@@ -248,9 +177,14 @@ class _ContactScreenState extends State<ContactScreen> {
                     width: double.infinity,
                     height: 44,
                     child: ElevatedButton.icon(
-                      onPressed: _sendMessage,
-                      icon: const Icon(Icons.send_rounded, size: 16),
-                      label: const Text('Send message'),
+                      onPressed: _isSending ? null : _sendMessage,
+                      icon: _isSending
+                          ? const SizedBox.square(
+                              dimension: 15,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.send_rounded, size: 16),
+                      label: Text(_isSending ? 'Sending…' : 'Send message'),
                     ),
                   ),
                 ],
@@ -263,16 +197,16 @@ class _ContactScreenState extends State<ContactScreen> {
             ),
             const SizedBox(height: 7),
             const _FaqTile(
-              question: 'Delivery area in Compostela?',
-              answer: 'The delivery zone shown in this prototype is sample content. Confirm availability when a real service is connected.',
+              question: 'Is my address in the delivery area?',
+              answer: 'Delivery coverage has not been configured yet. Confirm your address with the BurgerBites team before placing an order.',
             ),
             const _FaqTile(
               question: 'What payment options are available?',
-              answer: 'Checkout options are display-only in this demo. No payment provider is connected.',
+              answer: 'Cash on delivery is available. GCash and Maya will be enabled after the payment provider sandbox is configured.',
             ),
             const _FaqTile(
               question: 'How do I check order status?',
-              answer: 'The order history uses local sample data. Live tracking is not connected yet.',
+              answer: 'Open My Orders to see the saved order status. Live GPS tracking is not connected.',
             ),
           ],
         ),
@@ -280,96 +214,130 @@ class _ContactScreenState extends State<ContactScreen> {
     );
   }
 
-  void _sendMessage() {
+  Widget _storeDetailsCard() {
+    final profile = _storeProfile;
+    final details =
+        <(String, IconData)>[
+          ('support_email', Icons.email_outlined),
+          ('support_phone', Icons.phone_outlined),
+          ('street_address', Icons.location_on_outlined),
+          ('opening_hours', Icons.schedule_rounded),
+          ('delivery_coverage', Icons.delivery_dining_rounded),
+          ('facebook_url', Icons.public_rounded),
+        ].where(
+          (entry) => (profile?[entry.$1] as String?)?.trim().isNotEmpty == true,
+        );
+    final visibleDetails = details.toList(growable: false);
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: _storeLoading
+          ? const Row(
+              children: [
+                SizedBox.square(
+                  dimension: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 9),
+                Expanded(child: Text('Loading verified store information…')),
+              ],
+            )
+          : visibleDetails.isEmpty
+          ? const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: AppColors.brandOrange,
+                  size: 17,
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Verified store phone, email, social page, opening hours, and location have not been provided yet. Use the message form below to contact support.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 9,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  (profile?['store_name'] as String?) ?? 'BurgerBites',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 9),
+                for (final (key, icon) in visibleDetails) ...[
+                  if (key != visibleDetails.first.$1) const SizedBox(height: 7),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(icon, size: 15, color: AppColors.brandOrange),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: SelectableText(
+                          (profile![key] as String).trim(),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 10,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+    );
+  }
+
+  Future<void> _sendMessage() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSending = true);
+    final response = await _apiService.post<Map<String, dynamic>>(
+      '/contact',
+      body: {
+        'full_name': _nameController.text.trim(),
+        'email_or_phone': _emailController.text.trim(),
+        'topic': _topic,
+        'message': _messageController.text.trim(),
+      },
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid support response.'),
+    );
+    if (!mounted) return;
+    setState(() => _isSending = false);
+    if (!response.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(response.error ?? 'Message could not be sent.')),
+      );
+      return;
+    }
+    _nameController.clear();
+    _emailController.clear();
+    _messageController.clear();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'Message form validated. Sending is not connected in this demo.',
-        ),
+        content: Text('Your support request was saved.'),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
-
-  void _notice(String feature) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('$feature is a sample contact option.'),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
-}
-
-class _ContactCard extends StatelessWidget {
-  const _ContactCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.action,
-    required this.onTap,
-  });
-  final IconData icon;
-  final String label;
-  final String value;
-  final String action;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 7),
-    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: Row(
-      children: [
-        Container(
-          width: 33,
-          height: 33,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceMuted,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppColors.brandOrange, size: 17),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 7,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .4,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-        TextButton(
-          onPressed: onTap,
-          child: Text(
-            action,
-            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
-          ),
-        ),
-      ],
-    ),
-  );
 }
 
 class _FaqTile extends StatelessWidget {
@@ -378,58 +346,34 @@ class _FaqTile extends StatelessWidget {
   final String answer;
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 6),
-    decoration: BoxDecoration(
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Material(
       color: AppColors.surface,
-      borderRadius: BorderRadius.circular(13),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: ExpansionTile(
-      title: Text(
-        question,
-        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(13),
+        side: const BorderSide(color: AppColors.border),
       ),
-      tilePadding: const EdgeInsets.symmetric(horizontal: 11),
-      childrenPadding: const EdgeInsets.fromLTRB(11, 0, 11, 11),
-      visualDensity: VisualDensity.compact,
-      children: [
-        Text(
-          answer,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 9,
-            height: 1.4,
-          ),
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        title: Text(
+          question,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
         ),
-      ],
+        tilePadding: const EdgeInsets.symmetric(horizontal: 11),
+        childrenPadding: const EdgeInsets.fromLTRB(11, 0, 11, 11),
+        visualDensity: VisualDensity.compact,
+        children: [
+          Text(
+            answer,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 9,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
     ),
   );
-}
-
-class _MapGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: .55)
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    for (var i = 1; i < 5; i++) {
-      final x = size.width * i / 5;
-      final y = size.height * i / 5;
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x + (i.isEven ? 13 : -8), size.height),
-        paint,
-      );
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y + (i.isEven ? -10 : 8)),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

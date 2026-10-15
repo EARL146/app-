@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
 import '../../providers/cart_provider.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/food_image.dart';
 
 class CartScreen extends StatelessWidget {
@@ -15,6 +16,10 @@ class CartScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Your cart')),
       body: Consumer<CartProvider>(
         builder: (context, cart, _) {
+          final savedAddress = context
+              .watch<AuthService>()
+              .currentUserAddress
+              ?.trim();
           if (cart.isEmpty) {
             return Center(
               child: Padding(
@@ -22,6 +27,23 @@ class CartScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (cart.isLoadingRemoteCart)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 10),
+                        child: LinearProgressIndicator(minHeight: 2),
+                      ),
+                    if (cart.syncErrorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Text(
+                          'Unable to load the cart linked to this account yet. ${cart.syncErrorMessage}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
                     Container(
                       width: 86,
                       height: 86,
@@ -36,32 +58,39 @@ class CartScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Your cart is empty',
-                      style: TextStyle(
+                    Text(
+                      cart.isLoadingRemoteCart
+                          ? 'Loading saved cart…'
+                          : 'Your cart is empty',
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Add some burger favorites to get started.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
+                    if (!cart.isLoadingRemoteCart) ...[
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Add some burger favorites to get started.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 18),
-                    ElevatedButton.icon(
-                      onPressed: () => Navigator.of(context)
-                          .pushNamedAndRemoveUntil(
-                            '/customer-home',
-                            (route) => false,
-                          ),
-                      icon: const Icon(Icons.restaurant_menu_rounded, size: 17),
-                      label: const Text('Explore the menu'),
-                    ),
+                      const SizedBox(height: 18),
+                      ElevatedButton.icon(
+                        onPressed: () => Navigator.of(context)
+                            .pushNamedAndRemoveUntil(
+                              '/customer-home',
+                              (route) => false,
+                            ),
+                        icon: const Icon(
+                          Icons.restaurant_menu_rounded,
+                          size: 17,
+                        ),
+                        label: const Text('Explore the menu'),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -74,6 +103,37 @@ class CartScreen extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
                   children: [
+                    if (cart.isLoadingRemoteCart)
+                      const LinearProgressIndicator(minHeight: 2),
+                    if (cart.syncErrorMessage != null) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceMuted,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Cart account sync is unavailable. Your current items remain in this session until the connection is restored.',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (cart.isSyncing)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Saving cart to your account…',
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ),
                     Container(
                       padding: const EdgeInsets.all(13),
                       decoration: BoxDecoration(
@@ -81,30 +141,34 @@ class CartScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(15),
                         border: Border.all(color: AppColors.border),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.location_on_rounded,
                             color: AppColors.brandOrange,
                             size: 19,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'DELIVER TO HOME',
+                                const Text(
+                                  'DELIVERY ADDRESS',
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w900,
                                     color: AppColors.brandOrange,
                                   ),
                                 ),
-                                SizedBox(height: 3),
+                                const SizedBox(height: 3),
                                 Text(
-                                  'Compostela, Cebu',
-                                  style: TextStyle(
+                                  savedAddress == null || savedAddress.isEmpty
+                                      ? 'Add your address at checkout'
+                                      : savedAddress,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -112,7 +176,7 @@ class CartScreen extends StatelessWidget {
                               ],
                             ),
                           ),
-                          Icon(
+                          const Icon(
                             Icons.chevron_right_rounded,
                             color: AppColors.textSecondary,
                           ),
@@ -205,10 +269,11 @@ class CartScreen extends StatelessWidget {
                                 children: [
                                   IconButton(
                                     visualDensity: VisualDensity.compact,
-                                    onPressed: () => cart.updateQuantity(
-                                      item.productId,
-                                      item.quantity - 1,
-                                    ),
+                                    onPressed: () =>
+                                        cart.updateCartItemQuantity(
+                                          item,
+                                          item.quantity - 1,
+                                        ),
                                     icon: const Icon(
                                       Icons.remove_rounded,
                                       size: 16,
@@ -223,10 +288,11 @@ class CartScreen extends StatelessWidget {
                                   ),
                                   IconButton(
                                     visualDensity: VisualDensity.compact,
-                                    onPressed: () => cart.updateQuantity(
-                                      item.productId,
-                                      item.quantity + 1,
-                                    ),
+                                    onPressed: () =>
+                                        cart.updateCartItemQuantity(
+                                          item,
+                                          item.quantity + 1,
+                                        ),
                                     icon: const Icon(
                                       Icons.add_rounded,
                                       color: AppColors.brandOrange,
@@ -250,7 +316,7 @@ class CartScreen extends StatelessWidget {
                     const SizedBox(height: 10),
                     const Center(
                       child: Text(
-                        'Taxes and delivery are estimated for this demo order.',
+                        'The server confirms tax, delivery, and the final total at checkout.',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 9,

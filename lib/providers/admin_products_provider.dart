@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 
-import '../data/demo_data.dart';
 import '../models/product_model.dart';
+import '../services/api_service.dart';
 
 class AdminProductsProvider extends ChangeNotifier {
-  final List<Product> _products = List.from(DemoData.products);
+  AdminProductsProvider({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
+
+  final ApiService _apiService;
+  final List<Product> _products = [];
   String? _errorMessage;
   bool _isLoading = false;
   String? _successMessage;
@@ -15,9 +19,39 @@ class AdminProductsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get successMessage => _successMessage;
   Product? get selectedProduct => _selectedProduct;
-
   int get totalProducts => _products.length;
-  int get availableProducts => _products.where((p) => p.available).length;
+  int get availableProducts =>
+      _products.where((product) => product.available).length;
+
+  Future<void> loadProducts({bool force = false}) async {
+    if (_isLoading || (!force && _products.isNotEmpty)) return;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/admin/products',
+      fromJson: _asMap,
+    );
+    if (!response.success || response.data == null) {
+      _errorMessage = response.error ?? 'Unable to load products.';
+    } else {
+      try {
+        final rows = response.data!['products'];
+        if (rows is! List) {
+          throw const FormatException('Invalid products list.');
+        }
+        _products
+          ..clear()
+          ..addAll(
+            rows.whereType<Map<String, dynamic>>().map(Product.fromJson),
+          );
+      } catch (_) {
+        _errorMessage = 'The server returned an invalid product list.';
+      }
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
 
   void clearMessages() {
     _errorMessage = null;
@@ -41,66 +75,23 @@ class AdminProductsProvider extends ChangeNotifier {
     required double price,
     required String category,
     required String imageUrl,
+    int stockQuantity = 0,
     bool available = true,
   }) async {
-    if (name.trim().isEmpty) {
-      _errorMessage = 'Product name is required.';
-      notifyListeners();
+    if (!_validate(name, description, price, category, stockQuantity)) {
       return false;
     }
-
-    if (description.trim().isEmpty) {
-      _errorMessage = 'Product description is required.';
-      notifyListeners();
-      return false;
-    }
-
-    if (price <= 0) {
-      _errorMessage = 'Price must be greater than zero.';
-      notifyListeners();
-      return false;
-    }
-
-    if (category.trim().isEmpty) {
-      _errorMessage = 'Category is required.';
-      notifyListeners();
-      return false;
-    }
-
-    _isLoading = true;
-    _errorMessage = null;
-    _successMessage = null;
-    notifyListeners();
-
-    // Simulate API call
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-
-    // Check for duplicate
-    if (_products.any((p) => p.name.toLowerCase() == name.toLowerCase())) {
-      _isLoading = false;
-      _errorMessage = 'A product with this name already exists.';
-      notifyListeners();
-      return false;
-    }
-
-    final newProduct = Product(
-      id: name.toLowerCase().replaceAll(' ', '-'),
+    return _saveProduct(
+      '/admin/products',
+      create: true,
       name: name,
       description: description,
       price: price,
-      imageUrl: imageUrl,
       category: category,
-      rating: 4.5,
-      reviewCount: 0,
+      imageUrl: imageUrl,
+      stockQuantity: stockQuantity,
       available: available,
-      createdAt: DateTime.now(),
     );
-
-    _products.add(newProduct);
-    _isLoading = false;
-    _successMessage = 'Product "$name" added successfully!';
-    notifyListeners();
-    return true;
   }
 
   Future<bool> updateProduct({
@@ -110,65 +101,101 @@ class AdminProductsProvider extends ChangeNotifier {
     required double price,
     required String category,
     required String imageUrl,
+    int? stockQuantity,
     bool available = true,
   }) async {
-    if (name.trim().isEmpty) {
+    final matches = _products.where((product) => product.id == productId);
+    final old = matches.isEmpty ? null : matches.first;
+    final stock = stockQuantity ?? old?.stockQuantity ?? 0;
+    if (!_validate(name, description, price, category, stock)) return false;
+    return _saveProduct(
+      '/admin/products/${Uri.encodeComponent(productId)}',
+      create: false,
+      name: name,
+      description: description,
+      price: price,
+      category: category,
+      imageUrl: imageUrl,
+      stockQuantity: stock,
+      available: available,
+    );
+  }
+
+  bool _validate(
+    String name,
+    String description,
+    double price,
+    String category,
+    int stock,
+  ) {
+    _errorMessage = null;
+    if (name.trim().length < 2) {
       _errorMessage = 'Product name is required.';
-      notifyListeners();
-      return false;
-    }
-
-    if (description.trim().isEmpty) {
+    } else if (description.trim().isEmpty) {
       _errorMessage = 'Product description is required.';
-      notifyListeners();
-      return false;
-    }
-
-    if (price <= 0) {
+    } else if (price <= 0 || !price.isFinite) {
       _errorMessage = 'Price must be greater than zero.';
-      notifyListeners();
-      return false;
-    }
-
-    if (category.trim().isEmpty) {
+    } else if (category.trim().isEmpty) {
       _errorMessage = 'Category is required.';
-      notifyListeners();
-      return false;
+    } else if (stock < 0) {
+      _errorMessage = 'Stock cannot be below zero.';
     }
+    if (_errorMessage != null) notifyListeners();
+    return _errorMessage == null;
+  }
 
+  Future<bool> _saveProduct(
+    String endpoint, {
+    required bool create,
+    required String name,
+    required String description,
+    required double price,
+    required String category,
+    required String imageUrl,
+    required int stockQuantity,
+    required bool available,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     _successMessage = null;
     notifyListeners();
-
-    // Simulate API call
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-
-    final index = _products.indexWhere((p) => p.id == productId);
-    if (index == -1) {
+    final body = {
+      'name': name.trim(),
+      'description': description.trim(),
+      'price': price,
+      'category': category.trim(),
+      'image_url': imageUrl.trim(),
+      'stock_quantity': stockQuantity,
+      'available': available,
+    };
+    final response = create
+        ? await _apiService.post<Map<String, dynamic>>(
+            endpoint,
+            body: body,
+            fromJson: _asMap,
+          )
+        : await _apiService.put<Map<String, dynamic>>(
+            endpoint,
+            body: body,
+            fromJson: _asMap,
+          );
+    final raw = response.data?['product'];
+    if (!response.success || raw is! Map<String, dynamic>) {
+      _errorMessage = response.error ?? 'The product was not saved.';
       _isLoading = false;
-      _errorMessage = 'Product not found.';
       notifyListeners();
       return false;
     }
-
-    final oldProduct = _products[index];
-    _products[index] = Product(
-      id: oldProduct.id,
-      name: name,
-      description: description,
-      price: price,
-      imageUrl: imageUrl,
-      category: category,
-      rating: oldProduct.rating,
-      reviewCount: oldProduct.reviewCount,
-      available: available,
-      createdAt: oldProduct.createdAt,
-    );
-
+    final product = Product.fromJson(raw);
+    final index = _products.indexWhere((item) => item.id == product.id);
+    if (index < 0) {
+      _products.insert(0, product);
+    } else {
+      _products[index] = product;
+    }
+    _selectedProduct = product;
+    _successMessage = create ? 'Product added.' : 'Product updated.';
     _isLoading = false;
-    _successMessage = 'Product "$name" updated successfully!';
-    _selectedProduct = _products[index];
     notifyListeners();
     return true;
   }
@@ -178,61 +205,72 @@ class AdminProductsProvider extends ChangeNotifier {
     _errorMessage = null;
     _successMessage = null;
     notifyListeners();
-
-    // Simulate API call
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-
-    final product = _products.firstWhere(
-      (p) => p.id == productId,
-      orElse: () => throw Exception('Product not found'),
+    final response = await _apiService.delete<Map<String, dynamic>>(
+      '/admin/products/${Uri.encodeComponent(productId)}',
+      fromJson: _asMap,
     );
-
-    _products.removeWhere((p) => p.id == productId);
     _isLoading = false;
-    _successMessage = 'Product "${product.name}" deleted successfully!';
-    _selectedProduct = null;
+    if (!response.success) {
+      _errorMessage = response.error ?? 'Unable to remove the product.';
+      notifyListeners();
+      return false;
+    }
+    final index = _products.indexWhere((item) => item.id == productId);
+    if (index >= 0) {
+      _products[index] = Product(
+        id: _products[index].id,
+        name: _products[index].name,
+        description: _products[index].description,
+        price: _products[index].price,
+        imageUrl: _products[index].imageUrl,
+        category: _products[index].category,
+        rating: _products[index].rating,
+        reviewCount: _products[index].reviewCount,
+        stockQuantity: _products[index].stockQuantity,
+        available: false,
+        createdAt: _products[index].createdAt,
+      );
+      _selectedProduct = null;
+    }
+    _successMessage = 'Product removed from the menu.';
     notifyListeners();
     return true;
   }
 
   Future<bool> toggleProductAvailability(String productId) async {
-    final index = _products.indexWhere((p) => p.id == productId);
-    if (index == -1) return false;
-
-    final product = _products[index];
-    _products[index] = Product(
-      id: product.id,
+    final matches = _products.where((item) => item.id == productId);
+    final product = matches.isEmpty ? null : matches.first;
+    if (product == null) return false;
+    return updateProduct(
+      productId: product.id,
       name: product.name,
       description: product.description,
       price: product.price,
-      imageUrl: product.imageUrl,
-      category: product.category,
-      rating: product.rating,
-      reviewCount: product.reviewCount,
+      category: product.category ?? 'Burgers',
+      imageUrl: product.imageUrl ?? '',
+      stockQuantity: product.stockQuantity,
       available: !product.available,
-      createdAt: product.createdAt,
     );
-
-    _successMessage =
-        'Product availability updated to ${!product.available ? 'Available' : 'Unavailable'}.';
-    notifyListeners();
-    return true;
   }
 
   List<Product> searchProducts(String query) {
-    if (query.isEmpty) return _products;
-    final lowerQuery = query.toLowerCase();
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return products;
     return _products
         .where(
-          (p) =>
-              p.name.toLowerCase().contains(lowerQuery) ||
-              (p.category ?? '').toLowerCase().contains(lowerQuery),
+          (product) =>
+              product.name.toLowerCase().contains(normalized) ||
+              (product.category ?? '').toLowerCase().contains(normalized),
         )
         .toList();
   }
 
-  List<Product> getProductsByCategory(String category) {
-    if (category == 'All') return _products;
-    return _products.where((p) => p.category == category).toList();
-  }
+  List<Product> getProductsByCategory(String category) => category == 'All'
+      ? products
+      : _products.where((product) => product.category == category).toList();
+
+  static Map<String, dynamic> _asMap(dynamic json) =>
+      json is Map<String, dynamic>
+      ? json
+      : throw const FormatException('Invalid product response.');
 }

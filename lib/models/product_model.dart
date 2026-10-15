@@ -8,6 +8,7 @@ class Product {
   final String? category;
   final double? rating;
   final int? reviewCount;
+  final int stockQuantity;
   final bool available;
   final DateTime createdAt;
 
@@ -20,13 +21,14 @@ class Product {
     this.category,
     this.rating,
     this.reviewCount,
+    this.stockQuantity = 0,
     this.available = true,
     required this.createdAt,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'] as String,
+      id: json['id'].toString(),
       name: json['name'] as String,
       description: json['description'] as String? ?? '',
       price: (json['price'] as num).toDouble(),
@@ -34,8 +36,11 @@ class Product {
       category: json['category'] as String?,
       rating: (json['rating'] as num?)?.toDouble(),
       reviewCount: json['review_count'] as int?,
+      stockQuantity: (json['stock_quantity'] as num?)?.toInt() ?? 0,
       available: json['available'] as bool? ?? true,
-      createdAt: DateTime.parse(json['created_at'] as String? ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['created_at'] as String? ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 
@@ -49,6 +54,7 @@ class Product {
       'category': category,
       'rating': rating,
       'review_count': reviewCount,
+      'stock_quantity': stockQuantity,
       'available': available,
       'created_at': createdAt.toIso8601String(),
     };

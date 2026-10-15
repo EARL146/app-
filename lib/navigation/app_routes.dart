@@ -23,4 +23,6 @@ class AppRoutes {
   static const String adminEditProduct = '/admin-edit-product';
   static const String adminCustomers = '/admin-customers';
   static const String adminMore = '/admin-more';
+  static const String adminSupport = '/admin-support';
+  static const String adminStoreProfile = '/admin-store-profile';
 }

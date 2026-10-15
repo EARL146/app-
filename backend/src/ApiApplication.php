@@ -60,6 +60,12 @@ final class ApiApplication
         if ($method === 'GET' && ($path === '/products' || preg_match('#^/products/[A-Za-z0-9_-]{1,64}$#', $path))) {
             self::products($db, $path);
         }
+        if ($method === 'GET' && $path === '/store-profile') {
+            Http::json(['store_profile' => self::readStoreProfile($db)]);
+        }
+        if ($method === 'POST' && $path === '/contact') {
+            self::createContactMessage($db, $pepper, Http::body());
+        }
 
         $user = self::requireUser($db, $pepper);
         if ($method === 'GET' && $path === '/me') {
@@ -67,6 +73,9 @@ final class ApiApplication
         }
         if ($method === 'PUT' && $path === '/me') {
             self::updateProfile($db, $user, Http::body());
+        }
+        if ($method === 'PUT' && $path === '/me/password') {
+            self::changePassword($db, $pepper, $user, Http::body());
         }
         if ($method === 'POST' && $path === '/auth/logout') {
             $delete = $db->prepare('DELETE FROM api_tokens WHERE family_id = ?');
@@ -84,14 +93,64 @@ final class ApiApplication
             $delete->execute([$user['id'], $match[1]]);
             Http::json(['success' => true]);
         }
+        if ($method === 'GET' && $path === '/me/cart') self::cart($db, $user);
+        if ($method === 'PUT' && $path === '/me/cart') self::updateCart($db, $user, Http::body());
+        if ($method === 'DELETE' && $path === '/me/cart') self::clearCart($db, $user);
         if ($method === 'POST' && $path === '/orders') {
             self::createOrder($db, $user, Http::body());
+        }
+        if ($method === 'GET' && $path === '/me/orders') {
+            self::orders($db, (string)$user['id']);
+        }
+        if ($method === 'PUT' && preg_match('#^/me/orders/(\d+)/cancel$#', $path, $match)) {
+            self::cancelCustomerOrder($db, (string)$user['id'], $match[1]);
+        }
+        if ($method === 'GET' && $path === '/me/preferences') {
+            self::preferences($db, (string)$user['id']);
+        }
+        if ($method === 'PUT' && $path === '/me/preferences') {
+            self::updatePreferences($db, (string)$user['id'], Http::body());
+        }
+        if ($method === 'GET' && $path === '/me/calendar-reminders') self::calendarReminders($db, $user);
+        if ($method === 'POST' && $path === '/me/calendar-reminders') self::createCalendarReminder($db, $user, Http::body());
+        if ($method === 'PUT' && preg_match('#^/me/calendar-reminders/(\d+)$#', $path, $match)) {
+            self::updateCalendarReminder($db, $user, $match[1], Http::body());
+        }
+        if ($method === 'DELETE' && preg_match('#^/me/calendar-reminders/(\d+)$#', $path, $match)) {
+            self::deleteCalendarReminder($db, $user, $match[1]);
         }
         if (str_starts_with($path, '/admin/')) {
             if ($user['role'] !== 'admin') {
                 throw new ApiException(403, 'You do not have permission to perform this action.');
             }
-            throw new ApiException(501, 'This admin API operation is not available yet.');
+            if ($method === 'GET' && $path === '/admin/system-status') self::adminSystemStatus($db);
+            if ($method === 'GET' && $path === '/admin/store-profile') {
+                Http::json(['store_profile' => self::readStoreProfile($db)]);
+            }
+            if ($method === 'PUT' && $path === '/admin/store-profile') {
+                self::updateStoreProfile($db, Http::body());
+            }
+            if ($method === 'GET' && $path === '/admin/dashboard') self::adminDashboard($db);
+            if ($method === 'GET' && $path === '/admin/orders') self::orders($db, null);
+            if ($method === 'PUT' && preg_match('#^/admin/orders/(\d+)$#', $path, $match)) {
+                self::updateOrderStatus($db, $match[1], Http::body());
+            }
+            if ($method === 'GET' && $path === '/admin/products') self::adminProducts($db);
+            if ($method === 'POST' && $path === '/admin/products') self::createProduct($db, Http::body());
+            if ($method === 'PUT' && preg_match('#^/admin/products/([A-Za-z0-9_-]{1,64})$#', $path, $match)) {
+                self::updateProduct($db, $match[1], Http::body());
+            }
+            if ($method === 'DELETE' && preg_match('#^/admin/products/([A-Za-z0-9_-]{1,64})$#', $path, $match)) {
+                self::archiveProduct($db, $match[1]);
+            }
+            if ($method === 'GET' && $path === '/admin/customers') self::adminCustomers($db);
+            if ($method === 'PUT' && preg_match('#^/admin/customers/(\d+)$#', $path, $match)) {
+                self::updateCustomerStatus($db, $match[1], Http::body());
+            }
+            if ($method === 'GET' && $path === '/admin/contact-messages') self::adminContactMessages($db);
+            if ($method === 'PUT' && preg_match('#^/admin/contact-messages/(\d+)$#', $path, $match)) {
+                self::updateContactMessageStatus($db, $match[1], Http::body());
+            }
         }
         throw new ApiException(404, 'Route not found.');
     }
@@ -150,6 +209,9 @@ final class ApiApplication
         if (!$user || !password_verify($password, (string)$user['password_hash'])) {
             throw new ApiException(401, 'Email or password is incorrect.');
         }
+        if (array_key_exists('is_active', $user) && !(bool)$user['is_active']) {
+            throw new ApiException(401, 'This account is inactive. Contact BurgerBites support.');
+        }
         if (password_needs_rehash((string)$user['password_hash'], PASSWORD_ARGON2ID)) {
             $update = $db->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
             $update->execute([password_hash($password, PASSWORD_ARGON2ID), $user['id']]);
@@ -180,6 +242,10 @@ final class ApiApplication
                 $db->rollBack();
                 throw new ApiException(401, 'Your session has expired. Sign in again.');
             }
+            if (array_key_exists('is_active', $row) && !(bool)$row['is_active']) {
+                $db->rollBack();
+                throw new ApiException(401, 'This account is inactive. Contact BurgerBites support.');
+            }
             $delete = $db->prepare('DELETE FROM api_tokens WHERE family_id = ?');
             $delete->execute([$row['family_id']]);
             $user = self::findUser($db, (string)$row['user_id']);
@@ -207,6 +273,9 @@ final class ApiApplication
         $query->execute([Auth::tokenHash($match[1], $pepper)]);
         $user = $query->fetch();
         if (!$user) throw new ApiException(401, 'Your session has expired. Sign in again.');
+        if (array_key_exists('is_active', $user) && !(bool)$user['is_active']) {
+            throw new ApiException(401, 'This account is inactive. Contact BurgerBites support.');
+        }
         return $user;
     }
 
@@ -234,10 +303,42 @@ final class ApiApplication
         Http::json(['user' => Auth::publicUser(self::findUser($db, (string)$user['id']))]);
     }
 
+    private static function changePassword(PDO $db, string $pepper, array $user, array $body): never
+    {
+        self::applyAuthLimits($db, $pepper, 'password', (string)$user['email'], 10, 900, 5, 900);
+        $current = $body['current_password'] ?? null;
+        $next = $body['new_password'] ?? null;
+        if (!is_string($current) || !is_string($next) || strlen($current) > 200 || mb_strlen($next) < 12 || mb_strlen($next) > 200) {
+            throw new ApiException(422, 'Enter your current password and a new password of at least 12 characters.');
+        }
+        $query = $db->prepare('SELECT password_hash FROM users WHERE id = ? LIMIT 1');
+        $query->execute([$user['id']]);
+        $hash = $query->fetchColumn();
+        if (!is_string($hash) || !password_verify($current, $hash)) throw new ApiException(422, 'Your current password is incorrect.');
+        $emailName = explode('@', (string)$user['email'], 2)[0];
+        $commonPasswords = ['password123!', 'password123456', 'qwerty123456', 'letmein123456', '123456789012', 'welcome123456', 'adminadmin123', 'iloveyou12345', 'changeme12345', 'p@ssword12345'];
+        if ((strlen($emailName) >= 4 && stripos($next, $emailName) !== false) || in_array(strtolower($next), $commonPasswords, true)) {
+            throw new ApiException(422, 'Choose a password that is not based on your email or a common password.');
+        }
+        if (!defined('PASSWORD_ARGON2ID')) throw new ApiException(503, 'Secure password hashing is unavailable on this server.');
+        $db->beginTransaction();
+        try {
+            $update = $db->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+            $update->execute([password_hash($next, PASSWORD_ARGON2ID), $user['id']]);
+            $revokeOtherSessions = $db->prepare('DELETE FROM api_tokens WHERE user_id = ? AND family_id <> ?');
+            $revokeOtherSessions->execute([$user['id'], $user['_token_family']]);
+            $db->commit();
+        } catch (Throwable $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            throw $error;
+        }
+        Http::json(['success' => true]);
+    }
+
     private static function products(PDO $db, string $path): never
     {
         if (preg_match('#^/products/([A-Za-z0-9_-]{1,64})$#', $path, $match)) {
-            $query = $db->prepare('SELECT id, name, description, price, image_url, category, rating, review_count, is_available, created_at FROM products WHERE id = ? LIMIT 1');
+            $query = $db->prepare('SELECT id, name, description, price, image_url, category, rating, review_count, stock_quantity, is_available, created_at FROM products WHERE id = ? LIMIT 1');
             $query->execute([$match[1]]);
             $product = $query->fetch();
             if (!$product) throw new ApiException(404, 'Product not found.');
@@ -245,7 +346,7 @@ final class ApiApplication
         }
         $limit = min(50, max(1, (int)($_GET['limit'] ?? 20)));
         $offset = min(10000, max(0, (int)($_GET['offset'] ?? 0)));
-        $filters = ['is_available = 1']; $values = [];
+        $filters = ['is_available = 1', 'stock_quantity > 0']; $values = [];
         $category = trim((string)($_GET['category'] ?? ''));
         $search = trim((string)($_GET['q'] ?? ''));
         if ($category !== '' && mb_strlen($category) <= 80) { $filters[] = 'category = ?'; $values[] = $category; }
@@ -267,7 +368,7 @@ final class ApiApplication
 
     private static function favorites(PDO $db, string $userId): never
     {
-        $query = $db->prepare('SELECT p.id, p.name, p.description, p.price, p.image_url, p.category, p.rating, p.review_count, p.is_available, p.created_at FROM favorites f JOIN products p ON p.id = f.product_id WHERE f.user_id = ? ORDER BY f.created_at DESC');
+        $query = $db->prepare('SELECT p.id, p.name, p.description, p.price, p.image_url, p.category, p.rating, p.review_count, p.stock_quantity, p.is_available, p.created_at FROM favorites f JOIN products p ON p.id = f.product_id WHERE f.user_id = ? ORDER BY f.created_at DESC');
         $query->execute([$userId]);
         Http::json(['favorites' => array_map([self::class, 'productJson'], $query->fetchAll())]);
     }
@@ -281,6 +382,117 @@ final class ApiApplication
         if (!$check->fetchColumn()) throw new ApiException(404, 'Product not found.');
         $insert = $db->prepare('INSERT IGNORE INTO favorites (user_id, product_id) VALUES (?, ?)');
         $insert->execute([$userId, $id]);
+        Http::json(['success' => true]);
+    }
+
+    private static function cart(PDO $db, array $user): never
+    {
+        if ($user['role'] !== 'customer') throw new ApiException(403, 'Only customer accounts can use a shopping cart.');
+        $query = $db->prepare(
+            'SELECT ci.product_id, ci.quantity, ci.customizations_json,
+                    p.name, p.price, p.image_url, p.category
+             FROM cart_items ci
+             INNER JOIN products p ON p.id = ci.product_id
+             WHERE ci.user_id = ?
+             ORDER BY ci.created_at, p.name'
+        );
+        $query->execute([$user['id']]);
+        $items = [];
+        foreach ($query->fetchAll() as $row) {
+            $customizations = self::normalizeCustomizations(
+                json_decode((string)$row['customizations_json'], true, 16, JSON_THROW_ON_ERROR)
+            );
+            $items[] = [
+                'product_id' => (string)$row['product_id'],
+                'product_name' => self::customizedProductName((string)$row['name'], (string)$row['category'], $customizations),
+                'price' => self::customizedUnitPrice((string)$row['price'], (string)$row['category'], $customizations) / 100,
+                'quantity' => (int)$row['quantity'],
+                'product_image' => $row['image_url'],
+                'customizations' => $customizations,
+            ];
+        }
+        Http::json(['items' => $items]);
+    }
+
+    private static function updateCart(PDO $db, array $user, array $body): never
+    {
+        if ($user['role'] !== 'customer') throw new ApiException(403, 'Only customer accounts can use a shopping cart.');
+        $items = $body['items'] ?? null;
+        if (!is_array($items) || !array_is_list($items) || count($items) > 50) {
+            throw new ApiException(422, 'A cart can contain up to 50 item configurations.');
+        }
+
+        $normalized = [];
+        foreach ($items as $item) {
+            $id = is_array($item) ? ($item['product_id'] ?? null) : null;
+            $quantity = is_array($item) ? filter_var($item['quantity'] ?? null, FILTER_VALIDATE_INT) : false;
+            if (!is_string($id) || !preg_match('/^[A-Za-z0-9_-]{1,64}$/', $id) || $quantity === false || $quantity < 1 || $quantity > 99) {
+                throw new ApiException(422, 'One of the cart items is invalid.');
+            }
+            if (array_key_exists('customizations', $item) && !is_array($item['customizations'])) {
+                throw new ApiException(422, 'One of the product customizations is invalid.');
+            }
+            $customizations = self::normalizeCustomizations($item['customizations'] ?? []);
+            $configurationJson = json_encode($customizations, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+            $hash = hash('sha256', $configurationJson);
+            $key = $id . ':' . $hash;
+            if (!isset($normalized[$key])) {
+                $normalized[$key] = [
+                    'product_id' => $id,
+                    'configuration_hash' => $hash,
+                    'configuration_json' => $configurationJson,
+                    'customizations' => $customizations,
+                    'quantity' => 0,
+                ];
+            }
+            $normalized[$key]['quantity'] += $quantity;
+            if ($normalized[$key]['quantity'] > 99) throw new ApiException(422, 'An item quantity cannot exceed 99.');
+        }
+        ksort($normalized, SORT_STRING);
+
+        $db->beginTransaction();
+        try {
+            $productQuery = $db->prepare('SELECT category, is_available, stock_quantity FROM products WHERE id = ? FOR UPDATE');
+            foreach ($normalized as $item) {
+                $productQuery->execute([$item['product_id']]);
+                $product = $productQuery->fetch();
+                if (!$product || !(bool)$product['is_available'] || (int)$product['stock_quantity'] < 1) {
+                    throw new ApiException(409, 'An item in your cart is no longer available.');
+                }
+                $isBurger = strtolower((string)$product['category']) === 'burgers';
+                if (!$isBurger && ($item['customizations']['size'] !== 'Regular' || $item['customizations']['toppings'] !== [])) {
+                    throw new ApiException(422, 'Size and topping options are only available for burgers.');
+                }
+            }
+
+            $delete = $db->prepare('DELETE FROM cart_items WHERE user_id = ?');
+            $delete->execute([$user['id']]);
+            $insert = $db->prepare(
+                'INSERT INTO cart_items (user_id, product_id, configuration_hash, customizations_json, quantity)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            foreach ($normalized as $item) {
+                $insert->execute([
+                    $user['id'],
+                    $item['product_id'],
+                    $item['configuration_hash'],
+                    $item['configuration_json'],
+                    $item['quantity'],
+                ]);
+            }
+            $db->commit();
+        } catch (Throwable $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            throw $error;
+        }
+        Http::json(['success' => true, 'item_count' => count($normalized)]);
+    }
+
+    private static function clearCart(PDO $db, array $user): never
+    {
+        if ($user['role'] !== 'customer') throw new ApiException(403, 'Only customer accounts can use a shopping cart.');
+        $delete = $db->prepare('DELETE FROM cart_items WHERE user_id = ?');
+        $delete->execute([$user['id']]);
         Http::json(['success' => true]);
     }
 
@@ -304,8 +516,14 @@ final class ApiApplication
             if (!is_string($id) || !preg_match('/^[A-Za-z0-9_-]{1,64}$/', $id) || $quantity === false || $quantity < 1 || $quantity > 99) {
                 throw new ApiException(422, 'One of the order items is invalid.');
             }
-            $quantities[$id] = ($quantities[$id] ?? 0) + $quantity;
-            if ($quantities[$id] > 99) throw new ApiException(422, 'An item quantity cannot exceed 99.');
+            if (array_key_exists('customizations', $item) && !is_array($item['customizations'])) {
+                throw new ApiException(422, 'One of the product customizations is invalid.');
+            }
+            $configuration = self::normalizeCustomizations($item['customizations'] ?? []);
+            $key = $id . ':' . hash('sha256', json_encode($configuration, JSON_UNESCAPED_SLASHES));
+            if (!isset($quantities[$key])) $quantities[$key] = ['product_id' => $id, 'quantity' => 0, 'customizations' => $configuration];
+            $quantities[$key]['quantity'] += $quantity;
+            if ($quantities[$key]['quantity'] > 99) throw new ApiException(422, 'An item quantity cannot exceed 99.');
         }
         ksort($quantities, SORT_STRING);
         if (mb_strlen($notes) > 500) throw new ApiException(422, 'Order notes must be 500 characters or fewer.');
@@ -318,37 +536,569 @@ final class ApiApplication
 
         $db->beginTransaction();
         try {
-            $productQuery = $db->prepare('SELECT id, name, price, image_url, is_available, stock_quantity FROM products WHERE id = ? FOR UPDATE');
+            $productQuery = $db->prepare('SELECT id, name, price, image_url, category, is_available, stock_quantity FROM products WHERE id = ? FOR UPDATE');
             $subtotal = 0;
             $orderLines = [];
-            foreach ($quantities as $id => $quantity) {
+            $remainingStock = [];
+            foreach ($quantities as $requested) {
+                $id = $requested['product_id'];
+                $quantity = $requested['quantity'];
+                $customizations = $requested['customizations'];
                 $productQuery->execute([$id]);
                 $product = $productQuery->fetch();
                 if (!$product || !(bool)$product['is_available']) throw new ApiException(409, 'An item in your cart is no longer available.');
-                if ((int)$product['stock_quantity'] < $quantity) throw new ApiException(409, 'There is not enough stock for ' . $product['name'] . '.');
-                $unitPrice = self::moneyCents((string)$product['price']);
+                $remainingStock[$id] ??= (int)$product['stock_quantity'];
+                if ($remainingStock[$id] < $quantity) throw new ApiException(409, 'There is not enough stock for ' . $product['name'] . '.');
+                $remainingStock[$id] -= $quantity;
+                $isBurger = strtolower((string)$product['category']) === 'burgers';
+                if (!$isBurger && ($customizations['size'] !== 'Regular' || $customizations['toppings'] !== [])) {
+                    throw new ApiException(422, 'Size and topping options are only available for burgers.');
+                }
+                $unitPrice = self::customizedUnitPrice((string)$product['price'], (string)$product['category'], $customizations);
                 $subtotal += $unitPrice * $quantity;
-                $orderLines[] = ['product' => $product, 'quantity' => $quantity, 'unit_price' => $unitPrice];
+                $customName = self::customizedProductName((string)$product['name'], (string)$product['category'], $customizations);
+                $orderLines[] = [
+                    'product' => $product, 'quantity' => $quantity, 'unit_price' => $unitPrice,
+                    'product_name' => $customName,
+                    'customizations' => $isBurger ? $customizations : null,
+                ];
             }
             $tax = (int)round($subtotal * $taxPercent / 100);
             $total = $subtotal + $tax + $deliveryFee;
             $insert = $db->prepare('INSERT INTO orders (user_id, customer_name, delivery_address, phone, payment_method, status, notes, subtotal, tax, delivery_fee, total) VALUES (?, ?, ?, ?, \'cod\', \'pending\', ?, ?, ?, ?, ?)');
             $insert->execute([$user['id'], $name, $address, $phone, $notes === '' ? null : $notes, self::decimal($subtotal), self::decimal($tax), self::decimal($deliveryFee), self::decimal($total)]);
             $orderId = (string)$db->lastInsertId();
-            $lineInsert = $db->prepare('INSERT INTO order_items (order_id, product_id, product_name, image_url, quantity, unit_price, line_total) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            $lineInsert = $db->prepare('INSERT INTO order_items (order_id, product_id, product_name, image_url, customizations_json, quantity, unit_price, line_total) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
             $stockUpdate = $db->prepare('UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?');
             foreach ($orderLines as $line) {
                 $product = $line['product']; $quantity = $line['quantity']; $unit = $line['unit_price'];
                 $stockUpdate->execute([$quantity, $product['id'], $quantity]);
                 if ($stockUpdate->rowCount() !== 1) throw new ApiException(409, 'Stock changed while placing your order. Please try again.');
-                $lineInsert->execute([$orderId, $product['id'], $product['name'], $product['image_url'], $quantity, self::decimal($unit), self::decimal($unit * $quantity)]);
+                $customizationsJson = $line['customizations'] === null ? null : json_encode($line['customizations'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                $lineInsert->execute([$orderId, $product['id'], $line['product_name'], $product['image_url'], $customizationsJson, $quantity, self::decimal($unit), self::decimal($unit * $quantity)]);
             }
+            $clearCart = $db->prepare('DELETE FROM cart_items WHERE user_id = ?');
+            $clearCart->execute([$user['id']]);
             $db->commit();
         } catch (Throwable $error) {
             if ($db->inTransaction()) $db->rollBack();
             throw $error;
         }
         Http::json(['order_id' => $orderId, 'status' => 'pending', 'total' => self::decimal($total)], 201);
+    }
+
+    private static function orders(PDO $db, ?string $userId): never
+    {
+        $sql = 'SELECT o.*, CAST(o.id AS CHAR) AS id, CAST(o.user_id AS CHAR) AS user_id FROM orders o';
+        if ($userId !== null) $sql .= ' WHERE o.user_id = ?';
+        $sql .= ' ORDER BY o.created_at DESC LIMIT 200';
+        $query = $db->prepare($sql);
+        $query->execute($userId === null ? [] : [$userId]);
+        $orders = $query->fetchAll();
+        if ($orders === []) Http::json(['orders' => []]);
+
+        $ids = array_map(static fn(array $order): string => (string)$order['id'], $orders);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $itemQuery = $db->prepare("SELECT CAST(order_id AS CHAR) AS order_id, product_id, product_name, unit_price AS price, quantity, image_url AS product_image, customizations_json FROM order_items WHERE order_id IN ($placeholders) ORDER BY id");
+        $itemQuery->execute($ids);
+        $itemsByOrder = [];
+        foreach ($itemQuery->fetchAll() as $item) {
+            $item['price'] = (float)$item['price'];
+            $item['quantity'] = (int)$item['quantity'];
+            $item['customizations'] = $item['customizations_json'] === null ? null : json_decode((string)$item['customizations_json'], true);
+            unset($item['customizations_json']);
+            $itemsByOrder[(string)$item['order_id']][] = $item;
+        }
+        $result = [];
+        foreach ($orders as $order) {
+            $order['status'] = self::orderStatusForClient((string)$order['status']);
+            $order['subtotal'] = (float)$order['subtotal'];
+            $order['tax'] = (float)$order['tax'];
+            $order['shipping_cost'] = (float)$order['delivery_fee'];
+            $order['total'] = (float)$order['total'];
+            $order['items'] = $itemsByOrder[(string)$order['id']] ?? [];
+            $order['created_at'] = self::isoDate((string)$order['created_at']);
+            $order['updated_at'] = self::isoDate((string)$order['updated_at']);
+            $result[] = $order;
+        }
+        Http::json(['orders' => $result]);
+    }
+
+    private static function cancelCustomerOrder(PDO $db, string $userId, string $orderId): never
+    {
+        $db->beginTransaction();
+        try {
+            $query = $db->prepare('SELECT status FROM orders WHERE id = ? AND user_id = ? FOR UPDATE');
+            $query->execute([$orderId, $userId]);
+            $status = $query->fetchColumn();
+            if ($status === false) throw new ApiException(404, 'Order not found.');
+            if ($status !== 'pending') throw new ApiException(409, 'Only pending orders can be cancelled from your account.');
+            $update = $db->prepare("UPDATE orders SET status = 'cancelled' WHERE id = ?");
+            $update->execute([$orderId]);
+            self::restoreOrderStock($db, $orderId);
+            $db->commit();
+        } catch (Throwable $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            throw $error;
+        }
+        Http::json(['success' => true, 'status' => 'cancelled']);
+    }
+
+    private static function updateOrderStatus(PDO $db, string $orderId, array $body): never
+    {
+        $status = $body['status'] ?? null;
+        $allowed = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled'];
+        if (!is_string($status) || !in_array($status, $allowed, true)) {
+            throw new ApiException(422, 'Choose a valid order status.');
+        }
+        $db->beginTransaction();
+        try {
+            $query = $db->prepare('SELECT status FROM orders WHERE id = ? FOR UPDATE');
+            $query->execute([$orderId]);
+            $current = $query->fetchColumn();
+            if ($current === false) throw new ApiException(404, 'Order not found.');
+            $next = [
+                'pending' => ['confirmed', 'preparing', 'cancelled'],
+                'confirmed' => ['preparing', 'cancelled'],
+                'preparing' => ['ready', 'cancelled'],
+                'ready' => ['out_for_delivery', 'cancelled'],
+                'out_for_delivery' => ['delivered'],
+                'delivered' => [],
+                'cancelled' => [],
+            ];
+            if ($current !== $status && !in_array($status, $next[(string)$current] ?? [], true)) {
+                throw new ApiException(409, 'That order status change is not allowed. Refresh the order and try again.');
+            }
+            if ($current !== $status) {
+                $update = $db->prepare('UPDATE orders SET status = ? WHERE id = ?');
+                $update->execute([$status, $orderId]);
+                if ($status === 'cancelled') self::restoreOrderStock($db, $orderId);
+            }
+            $db->commit();
+        } catch (Throwable $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            throw $error;
+        }
+        Http::json(['success' => true, 'status' => $status]);
+    }
+
+    private static function restoreOrderStock(PDO $db, string $orderId): void
+    {
+        $query = $db->prepare('UPDATE products p JOIN (SELECT product_id, SUM(quantity) AS quantity FROM order_items WHERE order_id = ? GROUP BY product_id) i ON i.product_id = p.id SET p.stock_quantity = p.stock_quantity + i.quantity');
+        $query->execute([$orderId]);
+    }
+
+    private static function adminProducts(PDO $db): never
+    {
+        $query = $db->query('SELECT id, name, description, price, image_url, category, rating, review_count, stock_quantity, is_available, created_at FROM products ORDER BY created_at DESC, id');
+        Http::json(['products' => array_map(static fn(array $product): array => self::productJson($product, true), $query->fetchAll())]);
+    }
+
+    private static function createProduct(PDO $db, array $body): never
+    {
+        $product = self::validatedProduct($body);
+        $baseId = strtolower(trim((string)preg_replace('/[^A-Za-z0-9]+/', '-', $product['name']), '-'));
+        $baseId = substr($baseId === '' ? 'product' : $baseId, 0, 52);
+        $id = $baseId;
+        $check = $db->prepare('SELECT 1 FROM products WHERE id = ?');
+        for ($attempt = 0; $attempt < 8; $attempt++) {
+            $check->execute([$id]);
+            if (!$check->fetchColumn()) break;
+            $id = substr($baseId, 0, 44) . '-' . bin2hex(random_bytes(4));
+        }
+        $insert = $db->prepare('INSERT INTO products (id, name, description, price, image_url, category, stock_quantity, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        try {
+            $insert->execute([$id, $product['name'], $product['description'], $product['price'], $product['image_url'], $product['category'], $product['stock_quantity'], $product['available'] ? 1 : 0]);
+        } catch (\PDOException $error) {
+            if ($error->getCode() === '23000') throw new ApiException(409, 'A product with that identifier already exists.');
+            throw $error;
+        }
+        $query = $db->prepare('SELECT id, name, description, price, image_url, category, rating, review_count, stock_quantity, is_available, created_at FROM products WHERE id = ?');
+        $query->execute([$id]);
+        Http::json(['product' => self::productJson($query->fetch(), true)], 201);
+    }
+
+    private static function updateProduct(PDO $db, string $id, array $body): never
+    {
+        $product = self::validatedProduct($body);
+        $update = $db->prepare('UPDATE products SET name = ?, description = ?, price = ?, image_url = ?, category = ?, stock_quantity = ?, is_available = ? WHERE id = ?');
+        $update->execute([$product['name'], $product['description'], $product['price'], $product['image_url'], $product['category'], $product['stock_quantity'], $product['available'] ? 1 : 0, $id]);
+        if ($update->rowCount() === 0) {
+            $exists = $db->prepare('SELECT 1 FROM products WHERE id = ?');
+            $exists->execute([$id]);
+            if (!$exists->fetchColumn()) throw new ApiException(404, 'Product not found.');
+        }
+        $query = $db->prepare('SELECT id, name, description, price, image_url, category, rating, review_count, stock_quantity, is_available, created_at FROM products WHERE id = ?');
+        $query->execute([$id]);
+        Http::json(['product' => self::productJson($query->fetch(), true)]);
+    }
+
+    private static function archiveProduct(PDO $db, string $id): never
+    {
+        $query = $db->prepare('UPDATE products SET is_available = 0 WHERE id = ?');
+        $query->execute([$id]);
+        if ($query->rowCount() === 0) {
+            $exists = $db->prepare('SELECT 1 FROM products WHERE id = ?');
+            $exists->execute([$id]);
+            if (!$exists->fetchColumn()) throw new ApiException(404, 'Product not found.');
+        }
+        Http::json(['success' => true]);
+    }
+
+    private static function validatedProduct(array $body): array
+    {
+        $name = trim((string)($body['name'] ?? ''));
+        $description = trim((string)($body['description'] ?? ''));
+        $category = trim((string)($body['category'] ?? ''));
+        $image = trim((string)($body['image_url'] ?? ''));
+        $price = $body['price'] ?? null;
+        $stock = filter_var($body['stock_quantity'] ?? 0, FILTER_VALIDATE_INT);
+        if (mb_strlen($name) < 2 || mb_strlen($name) > 160 || mb_strlen($description) > 5000 ||
+            mb_strlen($category) < 2 || mb_strlen($category) > 80 || mb_strlen($image) > 1000 ||
+            ($image !== '' && !preg_match('#^(https?://|assets/|[A-Za-z0-9_-]{1,80}$)#i', $image)) ||
+            (!is_int($price) && !is_float($price) && !is_string($price)) ||
+            !is_numeric($price) || (float)$price <= 0 || (float)$price > 99999999.99 ||
+            $stock === false || $stock < 0 || $stock > 100000 ||
+            (isset($body['available']) && !is_bool($body['available']))) {
+            throw new ApiException(422, 'Check the product name, description, price, category, image, and stock.');
+        }
+        return [
+            'name' => $name, 'description' => $description, 'category' => $category,
+            'image_url' => $image === '' ? null : $image,
+            'price' => number_format((float)$price, 2, '.', ''), 'stock_quantity' => $stock,
+            'available' => $body['available'] ?? true,
+        ];
+    }
+
+    private static function adminCustomers(PDO $db): never
+    {
+        $query = $db->query("SELECT CAST(u.id AS CHAR) AS id, u.full_name AS name, u.email, COALESCE(u.phone, '') AS phone, COALESCE(u.default_address, '') AS address, u.created_at AS joined_at, u.is_active, COUNT(DISTINCT o.id) AS order_count, COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN o.total ELSE 0 END), 0) AS total_spent FROM users u LEFT JOIN orders o ON o.user_id = u.id WHERE u.role = 'customer' GROUP BY u.id ORDER BY u.created_at DESC LIMIT 500");
+        $customers = $query->fetchAll();
+        foreach ($customers as &$customer) {
+            $customer['order_count'] = (int)$customer['order_count'];
+            $customer['total_spent'] = (float)$customer['total_spent'];
+            $customer['is_active'] = (bool)$customer['is_active'];
+            $customer['joined_at'] = self::isoDate((string)$customer['joined_at']);
+        }
+        unset($customer);
+        Http::json(['customers' => $customers]);
+    }
+
+    private static function updateCustomerStatus(PDO $db, string $id, array $body): never
+    {
+        if (!isset($body['is_active']) || !is_bool($body['is_active'])) throw new ApiException(422, 'Choose an active or inactive account status.');
+        $query = $db->prepare("UPDATE users SET is_active = ? WHERE id = ? AND role = 'customer'");
+        $query->execute([$body['is_active'] ? 1 : 0, $id]);
+        if ($query->rowCount() === 0) {
+            $exists = $db->prepare("SELECT 1 FROM users WHERE id = ? AND role = 'customer'");
+            $exists->execute([$id]);
+            if (!$exists->fetchColumn()) throw new ApiException(404, 'Customer not found.');
+        }
+        if (!$body['is_active']) {
+            $delete = $db->prepare('DELETE FROM api_tokens WHERE user_id = ?');
+            $delete->execute([$id]);
+        }
+        Http::json(['success' => true, 'is_active' => $body['is_active']]);
+    }
+
+    private static function adminDashboard(PDO $db): never
+    {
+        $stats = $db->query("SELECT (SELECT COUNT(*) FROM orders) AS total_orders, (SELECT COUNT(*) FROM orders WHERE status = 'pending') AS pending_orders, (SELECT COUNT(*) FROM orders WHERE status IN ('confirmed', 'preparing', 'ready', 'out_for_delivery')) AS processing_orders, (SELECT COUNT(*) FROM orders WHERE status = 'delivered') AS delivered_orders, (SELECT COUNT(*) FROM orders WHERE status = 'cancelled') AS cancelled_orders, (SELECT COALESCE(SUM(total), 0) FROM orders WHERE status = 'delivered') AS delivered_revenue, (SELECT COUNT(*) FROM users WHERE role = 'customer') AS total_customers, (SELECT COUNT(*) FROM users WHERE role = 'customer' AND is_active = 1) AS active_customers, (SELECT COUNT(*) FROM products) AS total_products, (SELECT COUNT(*) FROM products WHERE is_available = 1 AND stock_quantity > 0) AS available_products")->fetch();
+        foreach ($stats as $key => $value) $stats[$key] = str_ends_with((string)$key, 'revenue') ? (float)$value : (int)$value;
+        $dailyRevenue = $db->query(
+            "SELECT DATE_FORMAT(calendar.day_value, '%Y-%m-%d') AS day,
+                    COALESCE(SUM(orders.total), 0) AS revenue
+             FROM (
+                 SELECT CURRENT_DATE - INTERVAL 6 DAY AS day_value UNION ALL
+                 SELECT CURRENT_DATE - INTERVAL 5 DAY UNION ALL
+                 SELECT CURRENT_DATE - INTERVAL 4 DAY UNION ALL
+                 SELECT CURRENT_DATE - INTERVAL 3 DAY UNION ALL
+                 SELECT CURRENT_DATE - INTERVAL 2 DAY UNION ALL
+                 SELECT CURRENT_DATE - INTERVAL 1 DAY UNION ALL
+                 SELECT CURRENT_DATE
+             ) AS calendar
+             LEFT JOIN orders
+               ON DATE(orders.created_at) = calendar.day_value
+              AND orders.status <> 'cancelled'
+             GROUP BY calendar.day_value
+             ORDER BY calendar.day_value"
+        )->fetchAll();
+        $stats['daily_revenue'] = array_map(
+            static fn(array $day): array => [
+                'day' => (string)$day['day'],
+                'revenue' => (float)$day['revenue'],
+            ],
+            $dailyRevenue
+        );
+        Http::json(['dashboard' => $stats]);
+    }
+
+    private static function adminSystemStatus(PDO $db): never
+    {
+        $columns = [];
+        $columnQuery = $db->prepare(
+            'SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND ((TABLE_NAME = \'users\' AND COLUMN_NAME = \'is_active\')
+                 OR (TABLE_NAME = \'order_items\' AND COLUMN_NAME = \'customizations_json\')
+                 OR (TABLE_NAME = \'orders\' AND COLUMN_NAME = \'status\'))'
+        );
+        $columnQuery->execute();
+        foreach ($columnQuery->fetchAll() as $column) {
+            $columns[$column['TABLE_NAME'] . '.' . $column['COLUMN_NAME']] = (string)$column['COLUMN_TYPE'];
+        }
+
+        $tableQuery = $db->prepare(
+            'SELECT TABLE_NAME
+             FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME IN (\'user_preferences\', \'contact_messages\', \'cart_items\', \'user_calendar_reminders\', \'store_profile\')'
+        );
+        $tableQuery->execute();
+        $tables = array_fill_keys(array_map('strval', $tableQuery->fetchAll(PDO::FETCH_COLUMN)), true);
+
+        $requirements = [
+            'users.is_active' => isset($columns['users.is_active']),
+            'order_items.customizations_json' => isset($columns['order_items.customizations_json']),
+            'orders.status.out_for_delivery' => isset($columns['orders.status']) && str_contains($columns['orders.status'], 'out_for_delivery'),
+            'user_preferences' => isset($tables['user_preferences']),
+            'contact_messages' => isset($tables['contact_messages']),
+            'cart_items' => isset($tables['cart_items']),
+            'user_calendar_reminders' => isset($tables['user_calendar_reminders']),
+            'store_profile' => isset($tables['store_profile']),
+        ];
+        $missing = array_keys(array_filter($requirements, static fn(bool $ready): bool => !$ready));
+
+        Http::json([
+            'database_connected' => true,
+            'workflow_schema_ready' => $missing === [],
+            'missing_requirements' => $missing,
+        ]);
+    }
+
+    private static function readStoreProfile(PDO $db): array
+    {
+        $query = $db->query(
+            'SELECT store_name, support_email, support_phone, facebook_url, street_address, opening_hours, delivery_coverage
+             FROM store_profile WHERE id = 1'
+        );
+        return $query->fetch() ?: [
+            'store_name' => 'BurgerBites',
+            'support_email' => null,
+            'support_phone' => null,
+            'facebook_url' => null,
+            'street_address' => null,
+            'opening_hours' => null,
+            'delivery_coverage' => null,
+        ];
+    }
+
+    private static function updateStoreProfile(PDO $db, array $body): never
+    {
+        $storeName = $body['store_name'] ?? null;
+        if (!is_string($storeName) || mb_strlen(trim($storeName)) < 2 || mb_strlen(trim($storeName)) > 120) {
+            throw new ApiException(422, 'Enter a store name between 2 and 120 characters.');
+        }
+        $storeName = trim($storeName);
+        $email = self::optionalStoreField($body, 'support_email', 254, 'Support email');
+        if ($email !== null && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new ApiException(422, 'Enter a valid support email address.');
+        }
+        $phone = self::optionalStoreField($body, 'support_phone', 32, 'Support phone');
+        $facebook = self::optionalStoreField($body, 'facebook_url', 500, 'Facebook URL');
+        if ($facebook !== null) {
+            $url = filter_var($facebook, FILTER_VALIDATE_URL);
+            if ($url === false || strtolower((string)parse_url($facebook, PHP_URL_SCHEME)) !== 'https') {
+                throw new ApiException(422, 'Enter a valid HTTPS Facebook page URL.');
+            }
+        }
+        $address = self::optionalStoreField($body, 'street_address', 500, 'Store address');
+        $hours = self::optionalStoreField($body, 'opening_hours', 160, 'Opening hours');
+        $coverage = self::optionalStoreField($body, 'delivery_coverage', 500, 'Delivery coverage');
+
+        $query = $db->prepare(
+            'INSERT INTO store_profile (id, store_name, support_email, support_phone, facebook_url, street_address, opening_hours, delivery_coverage)
+             VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE store_name = VALUES(store_name), support_email = VALUES(support_email),
+                 support_phone = VALUES(support_phone), facebook_url = VALUES(facebook_url),
+                 street_address = VALUES(street_address), opening_hours = VALUES(opening_hours),
+                 delivery_coverage = VALUES(delivery_coverage)'
+        );
+        $query->execute([$storeName, $email, $phone, $facebook, $address, $hours, $coverage]);
+        Http::json(['store_profile' => self::readStoreProfile($db)]);
+    }
+
+    private static function optionalStoreField(array $body, string $key, int $maxLength, string $label): ?string
+    {
+        $value = $body[$key] ?? '';
+        if (!is_string($value)) {
+            throw new ApiException(422, $label . ' must be text.');
+        }
+        $value = trim($value);
+        if (mb_strlen($value) > $maxLength) {
+            throw new ApiException(422, $label . ' is too long.');
+        }
+        return $value === '' ? null : $value;
+    }
+
+    private static function preferences(PDO $db, string $userId): never
+    {
+        $insert = $db->prepare('INSERT IGNORE INTO user_preferences (user_id) VALUES (?)');
+        $insert->execute([$userId]);
+        $query = $db->prepare('SELECT language, theme_mode, theme_palette, order_updates, digital_receipt, promotional_alerts FROM user_preferences WHERE user_id = ?');
+        $query->execute([$userId]);
+        $data = $query->fetch();
+        foreach (['order_updates', 'digital_receipt', 'promotional_alerts'] as $key) $data[$key] = (bool)$data[$key];
+        Http::json(['preferences' => $data]);
+    }
+
+    private static function updatePreferences(PDO $db, string $userId, array $body): never
+    {
+        $current = ['language' => 'en', 'theme_mode' => 'light', 'theme_palette' => 'Burger Bites', 'order_updates' => true, 'digital_receipt' => true, 'promotional_alerts' => false];
+        $query = $db->prepare('SELECT language, theme_mode, theme_palette, order_updates, digital_receipt, promotional_alerts FROM user_preferences WHERE user_id = ?');
+        $query->execute([$userId]);
+        $stored = $query->fetch();
+        if ($stored) foreach ($current as $key => $value) $current[$key] = $stored[$key];
+        foreach (['language', 'theme_mode', 'theme_palette', 'order_updates', 'digital_receipt', 'promotional_alerts'] as $key) if (array_key_exists($key, $body)) $current[$key] = $body[$key];
+        $languages = ['en', 'fil', 'ceb', 'ilo', 'war', 'es', 'ja', 'ko'];
+        $palettes = ['Burger Bites', 'Sizzling Crimson', 'Golden Mustard Cheddar', 'Emerald Mint Fresh', 'Midnight Smoke Black', 'Sweet Berry Bloom'];
+        if (!is_string($current['language']) || !in_array($current['language'], $languages, true) ||
+            !is_string($current['theme_mode']) || !in_array($current['theme_mode'], ['light', 'dark', 'system'], true) ||
+            !is_string($current['theme_palette']) || !in_array($current['theme_palette'], $palettes, true)) {
+            throw new ApiException(422, 'Choose a supported language and display mode.');
+        }
+        foreach (['order_updates', 'digital_receipt', 'promotional_alerts'] as $key) if (!is_bool($current[$key])) throw new ApiException(422, 'Notification preferences must be on or off.');
+        $save = $db->prepare('INSERT INTO user_preferences (user_id, language, theme_mode, theme_palette, order_updates, digital_receipt, promotional_alerts) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE language = VALUES(language), theme_mode = VALUES(theme_mode), theme_palette = VALUES(theme_palette), order_updates = VALUES(order_updates), digital_receipt = VALUES(digital_receipt), promotional_alerts = VALUES(promotional_alerts)');
+        $save->execute([$userId, $current['language'], $current['theme_mode'], $current['theme_palette'], (int)$current['order_updates'], (int)$current['digital_receipt'], (int)$current['promotional_alerts']]);
+        Http::json(['preferences' => $current]);
+    }
+
+    private static function calendarReminders(PDO $db, array $user): never
+    {
+        if ($user['role'] !== 'customer') throw new ApiException(403, 'Only customer accounts can use the calendar.');
+        $query = $db->prepare(
+            'SELECT CAST(id AS CHAR) AS id, DATE_FORMAT(reminder_date, \'%Y-%m-%d\') AS reminder_date,
+                    title, notes, created_at
+             FROM user_calendar_reminders
+             WHERE user_id = ?
+             ORDER BY reminder_date, id
+             LIMIT 200'
+        );
+        $query->execute([$user['id']]);
+        $reminders = $query->fetchAll();
+        foreach ($reminders as &$reminder) $reminder['created_at'] = self::isoDate((string)$reminder['created_at']);
+        unset($reminder);
+        Http::json(['reminders' => $reminders]);
+    }
+
+    private static function createCalendarReminder(PDO $db, array $user, array $body): never
+    {
+        if ($user['role'] !== 'customer') throw new ApiException(403, 'Only customer accounts can use the calendar.');
+        [$date, $title, $notes] = self::calendarReminderFields($body);
+        $insert = $db->prepare('INSERT INTO user_calendar_reminders (user_id, reminder_date, title, notes) VALUES (?, ?, ?, ?)');
+        $insert->execute([$user['id'], $date, $title, $notes]);
+        Http::json(['success' => true, 'id' => (string)$db->lastInsertId()], 201);
+    }
+
+    private static function updateCalendarReminder(PDO $db, array $user, string $id, array $body): never
+    {
+        if ($user['role'] !== 'customer') throw new ApiException(403, 'Only customer accounts can use the calendar.');
+        [$date, $title, $notes] = self::calendarReminderFields($body);
+        $update = $db->prepare('UPDATE user_calendar_reminders SET reminder_date = ?, title = ?, notes = ? WHERE id = ? AND user_id = ?');
+        $update->execute([$date, $title, $notes, $id, $user['id']]);
+        if ($update->rowCount() === 0) {
+            $exists = $db->prepare('SELECT 1 FROM user_calendar_reminders WHERE id = ? AND user_id = ?');
+            $exists->execute([$id, $user['id']]);
+            if (!$exists->fetchColumn()) throw new ApiException(404, 'Reminder not found.');
+        }
+        Http::json(['success' => true]);
+    }
+
+    private static function deleteCalendarReminder(PDO $db, array $user, string $id): never
+    {
+        if ($user['role'] !== 'customer') throw new ApiException(403, 'Only customer accounts can use the calendar.');
+        $delete = $db->prepare('DELETE FROM user_calendar_reminders WHERE id = ? AND user_id = ?');
+        $delete->execute([$id, $user['id']]);
+        if ($delete->rowCount() === 0) throw new ApiException(404, 'Reminder not found.');
+        Http::json(['success' => true]);
+    }
+
+    private static function calendarReminderFields(array $body): array
+    {
+        $date = $body['reminder_date'] ?? null;
+        $title = $body['title'] ?? null;
+        $notes = $body['notes'] ?? '';
+        if (!is_string($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            throw new ApiException(422, 'Choose a valid reminder date.');
+        }
+        $parsedDate = \DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+        if (!$parsedDate || $parsedDate->format('Y-m-d') !== $date) {
+            throw new ApiException(422, 'Choose a valid reminder date.');
+        }
+        if (!is_string($title) || mb_strlen(trim($title)) < 2 || mb_strlen(trim($title)) > 100 ||
+            !is_string($notes) || mb_strlen(trim($notes)) > 500) {
+            throw new ApiException(422, 'Enter a reminder title and keep notes under 500 characters.');
+        }
+        $notes = trim($notes);
+        return [$date, trim($title), $notes === '' ? null : $notes];
+    }
+
+    private static function createContactMessage(PDO $db, string $pepper, array $body): never
+    {
+        $name = trim((string)($body['full_name'] ?? ''));
+        $contact = trim((string)($body['email_or_phone'] ?? ''));
+        $topic = trim((string)($body['topic'] ?? ''));
+        $message = trim((string)($body['message'] ?? ''));
+        if (mb_strlen($name) < 2 || mb_strlen($name) > 120 || mb_strlen($contact) < 5 || mb_strlen($contact) > 254 ||
+            mb_strlen($topic) < 2 || mb_strlen($topic) > 80 || mb_strlen($message) < 5 || mb_strlen($message) > 2000) {
+            throw new ApiException(422, 'Check your name, contact information, topic, and message.');
+        }
+        self::applyAuthLimits($db, $pepper, 'contact', $contact, 10, 3600, 3, 3600);
+        $insert = $db->prepare('INSERT INTO contact_messages (full_name, email_or_phone, topic, message) VALUES (?, ?, ?, ?)');
+        $insert->execute([$name, $contact, $topic, $message]);
+        Http::json(['success' => true, 'message_id' => (string)$db->lastInsertId()], 201);
+    }
+
+    private static function adminContactMessages(PDO $db): never
+    {
+        $query = $db->query('SELECT CAST(id AS CHAR) AS id, CAST(user_id AS CHAR) AS user_id, full_name, email_or_phone, topic, message, status, created_at FROM contact_messages ORDER BY created_at DESC LIMIT 200');
+        $messages = $query->fetchAll();
+        foreach ($messages as &$message) $message['created_at'] = self::isoDate((string)$message['created_at']);
+        unset($message);
+        Http::json(['messages' => $messages]);
+    }
+
+    private static function updateContactMessageStatus(PDO $db, string $id, array $body): never
+    {
+        $status = $body['status'] ?? null;
+        if (!is_string($status) || !in_array($status, ['new', 'in_progress', 'resolved'], true)) {
+            throw new ApiException(422, 'Choose a valid support message status.');
+        }
+        $query = $db->prepare('UPDATE contact_messages SET status = ? WHERE id = ?');
+        $query->execute([$status, $id]);
+        if ($query->rowCount() === 0) {
+            $exists = $db->prepare('SELECT 1 FROM contact_messages WHERE id = ?');
+            $exists->execute([$id]);
+            if (!$exists->fetchColumn()) throw new ApiException(404, 'Support message not found.');
+        }
+        Http::json(['success' => true, 'status' => $status]);
+    }
+
+    private static function orderStatusForClient(string $status): string
+    {
+        return match ($status) {
+            'confirmed', 'preparing' => 'processing',
+            'out_for_delivery' => 'shipped',
+            'cancelled' => 'canceled',
+            default => $status,
+        };
+    }
+
+    private static function isoDate(string $value): string
+    {
+        $timestamp = strtotime($value . ' UTC');
+        return gmdate('Y-m-d\TH:i:s\Z', $timestamp === false ? time() : $timestamp);
     }
 
     private static function findUser(PDO $db, string $id): array
@@ -360,17 +1110,56 @@ final class ApiApplication
         return $user;
     }
 
-    private static function productJson(array $product): array
+    private static function productJson(array $product, bool $includeStock = false): array
     {
-        return [
+        $result = [
             'id' => (string)$product['id'], 'name' => (string)$product['name'],
             'description' => (string)($product['description'] ?? ''),
             'price' => (float)$product['price'], 'image_url' => $product['image_url'],
             'category' => $product['category'], 'rating' => $product['rating'] === null ? null : (float)$product['rating'],
             'review_count' => $product['review_count'] === null ? null : (int)$product['review_count'],
-            'available' => (bool)$product['is_available'],
+            'available' => (bool)$product['is_available'] && (!isset($product['stock_quantity']) || (int)$product['stock_quantity'] > 0),
             'created_at' => gmdate('Y-m-d\TH:i:s\Z', strtotime((string)$product['created_at'] . ' UTC')),
         ];
+        if ($includeStock && isset($product['stock_quantity'])) $result['stock_quantity'] = (int)$product['stock_quantity'];
+        return $result;
+    }
+
+    private static function normalizeCustomizations(mixed $customizations): array
+    {
+        if (!is_array($customizations) || array_diff(array_keys($customizations), ['size', 'toppings']) !== []) {
+            throw new ApiException(422, 'One of the product customizations is invalid.');
+        }
+        $size = $customizations['size'] ?? 'Regular';
+        $toppings = $customizations['toppings'] ?? [];
+        $allowedToppings = ['Extra cheese', 'Crispy bacon'];
+        if (!is_string($size) || !in_array($size, ['Regular', 'Large', 'Double'], true) || !is_array($toppings) || !array_is_list($toppings) ||
+            count(array_filter($toppings, static fn($topping): bool => is_string($topping) && in_array($topping, $allowedToppings, true))) !== count($toppings) ||
+            count(array_unique($toppings)) !== count($toppings)) {
+            throw new ApiException(422, 'One of the product customizations is invalid.');
+        }
+        sort($toppings, SORT_STRING);
+        return ['size' => $size, 'toppings' => $toppings];
+    }
+
+    private static function customizedUnitPrice(string $basePrice, string $category, array $customizations): int
+    {
+        $unitPrice = self::moneyCents($basePrice);
+        if (strtolower($category) !== 'burgers') return $unitPrice;
+        $unitPrice += match ($customizations['size']) {
+            'Large' => 8000,
+            'Double' => 12000,
+            default => 0,
+        };
+        foreach ($customizations['toppings'] as $topping) $unitPrice += $topping === 'Extra cheese' ? 2500 : 4500;
+        return $unitPrice;
+    }
+
+    private static function customizedProductName(string $name, string $category, array $customizations): string
+    {
+        if (strtolower($category) !== 'burgers') return $name;
+        return ($customizations['size'] === 'Regular' ? '' : $customizations['size'] . ' ') .
+            $name . ($customizations['toppings'] === [] ? '' : ' + ' . implode(', ', $customizations['toppings']));
     }
 
     private static function moneyCents(string $value): int

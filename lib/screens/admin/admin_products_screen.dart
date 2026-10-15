@@ -19,6 +19,14 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
   String _selectedCategory = 'All';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AdminProductsProvider>().loadProducts();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -57,6 +65,13 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
         builder: (context, provider, _) {
           return Column(
             children: [
+              if (provider.isLoading) const LinearProgressIndicator(),
+              if (provider.errorMessage != null)
+                TextButton.icon(
+                  onPressed: () => provider.loadProducts(force: true),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(provider.errorMessage!),
+                ),
               // Stats Cards Row
               Padding(
                 padding: const EdgeInsets.all(16),

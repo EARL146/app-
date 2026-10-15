@@ -4,9 +4,8 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../models/order_model.dart';
 import '../../navigation/app_routes.dart';
-import '../../providers/admin_customers_provider.dart';
+import '../../providers/admin_dashboard_provider.dart';
 import '../../providers/admin_orders_provider.dart';
-import '../../providers/admin_products_provider.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -17,6 +16,16 @@ class AdminHomeScreen extends StatefulWidget {
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AdminOrdersProvider>().loadOrders();
+      context.read<AdminDashboardProvider>().load();
+    });
+  }
 
   void _onNavItemTapped(int index) {
     switch (index) {
@@ -42,405 +51,364 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       body: SafeArea(
-        child:
-            Consumer3<
-              AdminOrdersProvider,
-              AdminProductsProvider,
-              AdminCustomersProvider
-            >(
-              builder: (context, orderProvider, productProvider, customerProvider, _) {
-                final recentOrders = orderProvider.orders.take(3).toList();
-                return CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(17, 10, 17, 24),
-                      sliver: SliverList.list(
+        child: Consumer2<AdminOrdersProvider, AdminDashboardProvider>(
+          builder: (context, orderProvider, dashboardProvider, _) {
+            final recentOrders = orderProvider.orders.take(3).toList();
+            return CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(17, 10, 17, 24),
+                  sliver: SliverList.list(
+                    children: [
+                      Row(
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 37,
-                                height: 37,
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: AppColors.border),
-                                ),
-                                child: const Icon(Icons.menu_rounded, size: 19),
-                              ),
-                              const SizedBox(width: 9),
-                              const Text(
-                                'Burger',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 17,
-                                ),
-                              ),
-                              const Text(
-                                'Bites',
-                                style: TextStyle(
-                                  color: AppColors.brandOrange,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 17,
-                                ),
-                              ),
-                              const Spacer(),
-                              IconButton(
-                                onPressed: () =>
-                                    _demoNotice(context, 'Notifications'),
-                                icon: const Icon(
-                                  Icons.notifications_none_rounded,
-                                ),
-                              ),
-                              IconButton(
-                                tooltip: 'Admin profile',
-                                onPressed: () => Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.adminProfile,
-                                ),
-                                icon: const CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: AppColors.surfaceMuted,
-                                  child: Icon(
-                                    Icons.person_rounded,
-                                    color: AppColors.brandOrange,
-                                    size: 19,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
                           Container(
-                            padding: const EdgeInsets.all(15),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFE4D7),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Good morning, Admin 👋',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      const Text(
-                                        'Here’s your restaurant overview for today.',
-                                        style: TextStyle(
-                                          color: AppColors.textSecondary,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 5,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(
-                                            alpha: .7,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Today · Local demo data',
-                                          style: TextStyle(
-                                            fontSize: 8,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.fastfood_rounded,
-                                  color: AppColors.brandOrange,
-                                  size: 39,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 13),
-                          GridView.count(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 9,
-                            mainAxisSpacing: 9,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            childAspectRatio: 1.55,
-                            children: [
-                              _MetricCard(
-                                label: 'Total orders',
-                                value: '${orderProvider.totalOrders}',
-                                icon: Icons.receipt_long_rounded,
-                                color: const Color(0xFFFF7C38),
-                                trend: '+12.4%',
-                              ),
-                              _MetricCard(
-                                label: 'Revenue',
-                                value:
-                                    '₱${orderProvider.totalRevenue.toStringAsFixed(0)}',
-                                icon: Icons.payments_outlined,
-                                color: const Color(0xFF1EAD8B),
-                                trend: '+8.2%',
-                              ),
-                              _MetricCard(
-                                label: 'Customers',
-                                value: '${customerProvider.totalCustomers}',
-                                icon: Icons.people_outline_rounded,
-                                color: const Color(0xFF4387F5),
-                                trend: '+5.8%',
-                              ),
-                              _MetricCard(
-                                label: 'Products',
-                                value: '${productProvider.totalProducts}',
-                                icon: Icons.lunch_dining_rounded,
-                                color: const Color(0xFF8963E8),
-                                trend: 'Active',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          _SectionHeader(
-                            title: 'Sales overview',
-                            trailing: 'Demo data',
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(13, 12, 13, 8),
+                            width: 37,
+                            height: 37,
                             decoration: BoxDecoration(
                               color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(17),
+                              borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: AppColors.border),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      '₱${orderProvider.totalRevenue.toStringAsFixed(0)}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 21,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 7),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE6F7ED),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: const Text(
-                                        '+8.2%',
-                                        style: TextStyle(
-                                          color: AppColors.success,
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    const Text(
-                                      'This week',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 9,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 7),
-                                SizedBox(
-                                  height: 105,
-                                  width: double.infinity,
-                                  child: CustomPaint(
-                                    painter: _RevenueChartPainter(),
-                                  ),
-                                ),
-                                const Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Mon',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 8,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Tue',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 8,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Wed',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 8,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Thu',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 8,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Fri',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 8,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Sat',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 8,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Sun',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 8,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                            child: const Icon(Icons.menu_rounded, size: 19),
+                          ),
+                          const SizedBox(width: 9),
+                          const Text(
+                            'Burger',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 17,
                             ),
                           ),
-                          const SizedBox(height: 14),
-                          _SectionHeader(title: 'Quick actions', trailing: ''),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _QuickAction(
-                                  icon: Icons.add_box_outlined,
-                                  label: 'Add product',
-                                  color: AppColors.brandOrange,
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.adminAddProduct,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _QuickAction(
-                                  icon: Icons.receipt_long_outlined,
-                                  label: 'View orders',
-                                  color: AppColors.info,
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.adminOrders,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _QuickAction(
-                                  icon: Icons.people_outline_rounded,
-                                  label: 'Customers',
-                                  color: AppColors.success,
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.adminCustomers,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          const Text(
+                            'Bites',
+                            style: TextStyle(
+                              color: AppColors.brandOrange,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 17,
+                            ),
                           ),
-                          const SizedBox(height: 15),
-                          _SectionHeader(
-                            title: 'Recent orders',
-                            trailing: 'See all',
-                            onTap: () => Navigator.pushNamed(
+                          const Spacer(),
+                          IconButton(
+                            tooltip: 'Open pending orders',
+                            onPressed: () => Navigator.pushNamed(
                               context,
                               AppRoutes.adminOrders,
                             ),
+                            icon: Badge(
+                              isLabelVisible:
+                                  dashboardProvider.pendingOrders > 0,
+                              label: Text(
+                                dashboardProvider.pendingOrders > 99
+                                    ? '99+'
+                                    : dashboardProvider.pendingOrders
+                                          .toString(),
+                              ),
+                              child: const Icon(
+                                Icons.notifications_none_rounded,
+                              ),
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          if (recentOrders.isEmpty)
-                            Container(
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'No orders yet',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                            )
-                          else
-                            ...recentOrders.map(
-                              (order) => _LatestOrderRow(order: order),
+                          IconButton(
+                            tooltip: 'Admin profile',
+                            onPressed: () => Navigator.pushNamed(
+                              context,
+                              AppRoutes.adminProfile,
                             ),
-                          const SizedBox(height: 13),
-                          Container(
-                            padding: const EdgeInsets.all(11),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceMuted,
-                              borderRadius: BorderRadius.circular(13),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline_rounded,
-                                  color: AppColors.brandOrange,
-                                  size: 15,
-                                ),
-                                SizedBox(width: 7),
-                                Expanded(
-                                  child: Text(
-                                    'Dashboard metrics use in-memory sample data. No live sales or customer database is connected.',
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 9,
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            icon: const CircleAvatar(
+                              radius: 16,
+                              backgroundColor: AppColors.surfaceMuted,
+                              child: Icon(
+                                Icons.person_rounded,
+                                color: AppColors.brandOrange,
+                                size: 19,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                );
-              },
-            ),
+                      if (dashboardProvider.errorMessage != null)
+                        TextButton.icon(
+                          onPressed: dashboardProvider.load,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: Text(dashboardProvider.errorMessage!),
+                        ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFE4D7),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Good morning, Admin 👋',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Here’s your restaurant overview for today.',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: .7),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Text(
+                                      'Live account totals',
+                                      style: TextStyle(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.fastfood_rounded,
+                              color: AppColors.brandOrange,
+                              size: 39,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 13),
+                      GridView.count(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 9,
+                        mainAxisSpacing: 9,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        childAspectRatio: 1.55,
+                        children: [
+                          _MetricCard(
+                            label: 'Total orders',
+                            value: '${dashboardProvider.totalOrders}',
+                            icon: Icons.receipt_long_rounded,
+                            color: const Color(0xFFFF7C38),
+                            trend: 'All time',
+                          ),
+                          _MetricCard(
+                            label: 'Revenue',
+                            value:
+                                '₱${dashboardProvider.deliveredRevenue.toStringAsFixed(0)}',
+                            icon: Icons.payments_outlined,
+                            color: const Color(0xFF1EAD8B),
+                            trend: 'Delivered',
+                          ),
+                          _MetricCard(
+                            label: 'Customers',
+                            value: '${dashboardProvider.totalCustomers}',
+                            icon: Icons.people_outline_rounded,
+                            color: const Color(0xFF4387F5),
+                            trend: 'Registered',
+                          ),
+                          _MetricCard(
+                            label: 'Products',
+                            value: '${dashboardProvider.totalProducts}',
+                            icon: Icons.lunch_dining_rounded,
+                            color: const Color(0xFF8963E8),
+                            trend: 'Catalog',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      _SectionHeader(
+                        title: 'Sales overview',
+                        trailing: 'Last 7 days',
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(13, 12, 13, 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(17),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  '₱${dashboardProvider.deliveredRevenue.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 21,
+                                  ),
+                                ),
+                                const SizedBox(width: 7),
+                                const Spacer(),
+                                const Text(
+                                  'Order value',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 7),
+                            SizedBox(
+                              height: 105,
+                              width: double.infinity,
+                              child: CustomPaint(
+                                painter: _RevenueChartPainter(
+                                  dashboardProvider.dailyRevenue,
+                                ),
+                              ),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: dashboardProvider.dailyRevenueLabels
+                                  .map(
+                                    (label) => Text(
+                                      label,
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 8,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(growable: false),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _SectionHeader(title: 'Quick actions', trailing: ''),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _QuickAction(
+                              icon: Icons.add_box_outlined,
+                              label: 'Add product',
+                              color: AppColors.brandOrange,
+                              onTap: () => Navigator.pushNamed(
+                                context,
+                                AppRoutes.adminAddProduct,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _QuickAction(
+                              icon: Icons.receipt_long_outlined,
+                              label: 'View orders',
+                              color: AppColors.info,
+                              onTap: () => Navigator.pushNamed(
+                                context,
+                                AppRoutes.adminOrders,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _QuickAction(
+                              icon: Icons.people_outline_rounded,
+                              label: 'Customers',
+                              color: AppColors.success,
+                              onTap: () => Navigator.pushNamed(
+                                context,
+                                AppRoutes.adminCustomers,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      _SectionHeader(
+                        title: 'Recent orders',
+                        trailing: 'See all',
+                        onTap: () =>
+                            Navigator.pushNamed(context, AppRoutes.adminOrders),
+                      ),
+                      const SizedBox(height: 8),
+                      if (recentOrders.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'No orders yet',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        ...recentOrders.map(
+                          (order) => _LatestOrderRow(order: order),
+                        ),
+                      const SizedBox(height: 13),
+                      Container(
+                        padding: const EdgeInsets.all(11),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceMuted,
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              color: AppColors.brandOrange,
+                              size: 15,
+                            ),
+                            const SizedBox(width: 7),
+                            Expanded(
+                              child: Text(
+                                dashboardProvider.errorMessage ?? 'Order, product and customer totals plus the seven-day order value chart are loaded from SQL.',
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 9,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                            if (dashboardProvider.errorMessage != null)
+                              IconButton(
+                                tooltip: 'Retry dashboard load',
+                                visualDensity: VisualDensity.compact,
+                                onPressed: dashboardProvider.isLoading
+                                    ? null
+                                    : dashboardProvider.load,
+                                icon: const Icon(Icons.refresh_rounded),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
@@ -698,6 +666,10 @@ class _LatestOrderRow extends StatelessWidget {
 }
 
 class _RevenueChartPainter extends CustomPainter {
+  final List<double> values;
+
+  _RevenueChartPainter(this.values);
+
   @override
   void paint(Canvas canvas, Size size) {
     final gridPaint = Paint()
@@ -722,15 +694,17 @@ class _RevenueChartPainter extends CustomPainter {
       final y = size.height * i / 3;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
-    final points = [
-      Offset(.02 * size.width, .78 * size.height),
-      Offset(.17 * size.width, .66 * size.height),
-      Offset(.33 * size.width, .72 * size.height),
-      Offset(.49 * size.width, .25 * size.height),
-      Offset(.66 * size.width, .54 * size.height),
-      Offset(.82 * size.width, .42 * size.height),
-      Offset(.98 * size.width, .08 * size.height),
-    ];
+    final chartValues = values.length == 7 ? values : List<double>.filled(7, 0);
+    final maximum = chartValues.fold<double>(
+      0,
+      (max, value) => value > max ? value : max,
+    );
+    final points = List<Offset>.generate(7, (index) {
+      final x = size.width * (index / 6);
+      final normalized = maximum <= 0 ? 0 : chartValues[index] / maximum;
+      final y = size.height * (.88 - normalized * .76);
+      return Offset(x, y);
+    });
     final path = Path()..moveTo(points.first.dx, points.first.dy);
     for (final point in points.skip(1)) {
       path.lineTo(point.dx, point.dy);
@@ -755,13 +729,6 @@ class _RevenueChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _RevenueChartPainter oldDelegate) =>
+      oldDelegate.values != values;
 }
-
-void _demoNotice(BuildContext context, String feature) =>
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature are a demo option.'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );

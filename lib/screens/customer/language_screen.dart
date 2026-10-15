@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_colors.dart';
+import '../../services/api_service.dart';
 
 class LanguageScreen extends StatefulWidget {
   const LanguageScreen({super.key});
@@ -12,6 +13,69 @@ class LanguageScreen extends StatefulWidget {
 class _LanguageScreenState extends State<LanguageScreen> {
   final _searchController = TextEditingController();
   String _selected = 'Bisaya (Cebuano)';
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLanguage();
+  }
+
+  Future<void> _loadLanguage() async {
+    final response = await ApiService().get<Map<String, dynamic>>(
+      '/me/preferences',
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid preferences response.'),
+    );
+    if (!mounted || !response.success) return;
+    final preference = response.data?['preferences'];
+    if (preference is! Map<String, dynamic>) return;
+    const names = {
+      'ceb': 'Bisaya (Cebuano)',
+      'en': 'English (US / PH)',
+      'fil': 'Tagalog (Filipino)',
+      'ilo': 'Ilonggo (Hiligaynon)',
+      'war': 'Waray-Waray',
+      'es': 'Español',
+      'ja': '日本語 (Japanese)',
+      'ko': '한국어 (Korean)',
+    };
+    final name = names[preference['language']];
+    if (name != null) setState(() => _selected = name);
+  }
+
+  Future<void> _saveLanguage() async {
+    const codes = {
+      'Bisaya (Cebuano)': 'ceb',
+      'English (US / PH)': 'en',
+      'Tagalog (Filipino)': 'fil',
+      'Ilonggo (Hiligaynon)': 'ilo',
+      'Waray-Waray': 'war',
+      'Español': 'es',
+      '日本語 (Japanese)': 'ja',
+      '한국어 (Korean)': 'ko',
+    };
+    setState(() => _isSaving = true);
+    final response = await ApiService().put<Map<String, dynamic>>(
+      '/me/preferences',
+      body: {'language': codes[_selected] ?? 'en'},
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid preferences response.'),
+    );
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          response.success
+              ? 'Language preference saved. App-wide translations are not yet available.'
+              : response.error ?? 'Unable to save language preference.',
+        ),
+      ),
+    );
+  }
 
   static const _languages = [
     _Language(
@@ -74,7 +138,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
-                    'APP PREFERENCES · COMPOSTELA HUB',
+                    'APP PREFERENCES',
                     style: TextStyle(
                       color: AppColors.brandOrange,
                       fontSize: 8,
@@ -204,7 +268,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Live menu preview',
+                              'LANGUAGE PREFERENCE',
                               style: TextStyle(
                                 color: AppColors.brandOrange,
                                 fontSize: 8,
@@ -213,7 +277,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Double Patty Smash Burger  ·  ₱189',
+                              _selected,
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w900,
@@ -221,7 +285,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                             ),
                             const SizedBox(height: 2),
                             const Text(
-                              'Lab-as nga baka, init nga crispy nga fries.',
+                              'This preference is saved to your account. Most app screens remain in English.',
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 9,
@@ -246,17 +310,13 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     width: double.infinity,
                     height: 47,
                     child: ElevatedButton.icon(
-                      onPressed: () => ScaffoldMessenger.of(context)
-                          .showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Language preference saved for this preview; app translations are not connected.',
-                              ),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          ),
+                      onPressed: _isSaving ? null : _saveLanguage,
                       icon: const Icon(Icons.save_outlined, size: 17),
-                      label: Text('Save ${_selected.split(' ').first} preview'),
+                      label: Text(
+                        _isSaving
+                            ? 'Saving…'
+                            : 'Save ${_selected.split(' ').first}',
+                      ),
                     ),
                   ),
                   const SizedBox(height: 6),

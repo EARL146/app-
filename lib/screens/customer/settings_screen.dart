@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -10,21 +13,35 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _nameController = TextEditingController(text: 'Juan Dela Cruz');
-  final _emailController = TextEditingController(
-    text: 'juan.delacruz@example.com',
-  );
-  final _phoneController = TextEditingController(text: '+63 912 345 6789');
-  bool _twoStep = true;
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  bool _twoStep = false;
   bool _orderUpdates = true;
   bool _digitalReceipt = true;
   bool _promotions = false;
+  bool _isLoading = true;
+  bool _isSaving = false;
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthService>();
+    _nameController.text = auth.currentUserName ?? '';
+    _emailController.text = auth.currentUserEmail ?? '';
+    _phoneController.text = auth.currentUserPhone ?? '';
+    _addressController.text = auth.currentUserAddress ?? '';
+    _loadPreferences();
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -36,6 +53,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(17, 4, 17, 22),
         children: [
+          if (_isLoading) const LinearProgressIndicator(),
+          if (_loadError != null)
+            TextButton.icon(
+              onPressed: _loadPreferences,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(_loadError!),
+            ),
           const Text(
             'Manage your account details, contact options and security preferences.',
             style: TextStyle(
@@ -59,6 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: _emailController,
+                  readOnly: true,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email address',
@@ -74,6 +99,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     prefixIcon: Icon(Icons.phone_outlined),
                   ),
                 ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _addressController,
+                  keyboardType: TextInputType.streetAddress,
+                  textCapitalization: TextCapitalization.sentences,
+                  minLines: 2,
+                  maxLines: 3,
+                  maxLength: 500,
+                  decoration: const InputDecoration(
+                    labelText: 'Default delivery address',
+                    hintText: 'House/building, street, barangay, city',
+                    prefixIcon: Icon(Icons.location_on_outlined),
+                    alignLabelWithHint: true,
+                  ),
+                ),
               ],
             ),
           ),
@@ -85,9 +125,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _SettingsAction(
                   icon: Icons.lock_outline_rounded,
                   title: 'Password',
-                  subtitle: 'Last updated: not available',
+                  subtitle: 'Change the password used to sign in.',
                   action: 'Change',
-                  onTap: () => _notice('Password changes'),
+                  onTap: _changePassword,
                 ),
                 const Divider(height: 15),
                 SwitchListTile.adaptive(
@@ -100,13 +140,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
                   ),
                   subtitle: const Text(
-                    'Account verification preview',
+                    'Two-step sign-in is not configured.',
                     style: TextStyle(
                       fontSize: 8,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  onChanged: (value) => setState(() => _twoStep = value),
+                  onChanged: null,
                 ),
                 const Divider(height: 15),
                 _SettingsAction(
@@ -132,20 +172,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 _PreferenceSwitch(
-                  title: 'Order updates via SMS',
-                  subtitle: 'Delivery status updates',
+                  title: 'SMS order update preference',
+                  subtitle:
+                      'Saved to your account; SMS messages are not sent yet.',
                   value: _orderUpdates,
                   onChanged: (value) => setState(() => _orderUpdates = value),
                 ),
                 _PreferenceSwitch(
-                  title: 'Digital e-receipt',
-                  subtitle: 'Send order receipts to email',
+                  title: 'Email receipt preference',
+                  subtitle: 'Saved to your account; email delivery is not configured.',
                   value: _digitalReceipt,
                   onChanged: (value) => setState(() => _digitalReceipt = value),
                 ),
                 _PreferenceSwitch(
-                  title: 'Promotional alerts',
-                  subtitle: 'Offers, launches and coupons',
+                  title: 'Promotional alert preference',
+                  subtitle: 'Saved to your account; promotional messages are not sent yet.',
                   value: _promotions,
                   onChanged: (value) => setState(() => _promotions = value),
                 ),
@@ -169,7 +210,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 SizedBox(width: 7),
                 Expanded(
                   child: Text(
-                    'Settings are saved only in this screen preview. Authentication and notification services are not connected.',
+                    'Your profile and notification preferences save to your account. SMS and email delivery, two-step sign-in, and social login need provider configuration.',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 9,
@@ -184,29 +225,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           SizedBox(
             height: 46,
             child: ElevatedButton.icon(
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Account preferences saved for this preview only.',
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              ),
+              onPressed: _isSaving ? null : _saveChanges,
               icon: const Icon(Icons.check_rounded, size: 17),
-              label: const Text('Save changes'),
+              label: Text(_isSaving ? 'Saving…' : 'Save changes'),
             ),
           ),
           const SizedBox(height: 5),
           Center(
             child: TextButton(
               onPressed: () => setState(() {
-                _twoStep = true;
+                _twoStep = false;
                 _orderUpdates = true;
                 _digitalReceipt = true;
                 _promotions = false;
               }),
               child: const Text(
-                'Cancel reset',
+                'Reset preferences',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
               ),
             ),
@@ -216,9 +250,144 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _loadPreferences() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+    final response = await ApiService().get<Map<String, dynamic>>(
+      '/me/preferences',
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid preferences response.'),
+    );
+    if (!mounted) return;
+    final preferences = response.data?['preferences'];
+    if (!response.success || preferences is! Map<String, dynamic>) {
+      setState(() {
+        _isLoading = false;
+        _loadError = response.error ?? 'Unable to load account preferences.';
+      });
+      return;
+    }
+    setState(() {
+      _orderUpdates = preferences['order_updates'] as bool? ?? true;
+      _digitalReceipt = preferences['digital_receipt'] as bool? ?? true;
+      _promotions = preferences['promotional_alerts'] as bool? ?? false;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _saveChanges() async {
+    FocusScope.of(context).unfocus();
+    setState(() => _isSaving = true);
+    final auth = context.read<AuthService>();
+    final profileSaved = await auth.updateProfile(
+      name: _nameController.text,
+      phone: _phoneController.text,
+      address: _addressController.text,
+    );
+    if (!mounted) return;
+    if (!profileSaved) {
+      setState(() => _isSaving = false);
+      _showMessage(auth.errorMessage ?? 'Unable to save your profile.');
+      return;
+    }
+    final response = await ApiService().put<Map<String, dynamic>>(
+      '/me/preferences',
+      body: {
+        'order_updates': _orderUpdates,
+        'digital_receipt': _digitalReceipt,
+        'promotional_alerts': _promotions,
+      },
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid preferences response.'),
+    );
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    _showMessage(
+      response.success
+          ? 'Profile and preferences saved.'
+          : 'Profile saved, but preferences were not saved: ${response.error ?? 'try again.'}',
+    );
+    if (response.success) await _loadPreferences();
+  }
+
+  Future<void> _changePassword() async {
+    final current = TextEditingController();
+    final next = TextEditingController();
+    final confirmation = TextEditingController();
+    final passwords = await showDialog<(String, String)?>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Change password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: current,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Current password'),
+            ),
+            TextField(
+              controller: next,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'New password'),
+            ),
+            TextField(
+              controller: confirmation,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Confirm new password',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (next.text != confirmation.text || next.text.length < 12) {
+                return;
+              }
+              Navigator.pop(dialogContext, (current.text, next.text));
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+    current.dispose();
+    next.dispose();
+    confirmation.dispose();
+    if (passwords == null || !mounted) return;
+    final response = await ApiService().put<Map<String, dynamic>>(
+      '/me/password',
+      body: {'current_password': passwords.$1, 'new_password': passwords.$2},
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid password response.'),
+    );
+    if (!mounted) return;
+    _showMessage(
+      response.success
+          ? 'Password changed. Other signed-in sessions were ended.'
+          : response.error ?? 'Unable to change your password.',
+    );
+  }
+
+  void _showMessage(String message) => ScaffoldMessenger.of(context)
+      .showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
+
   void _notice(String feature) => ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Text('$feature are not connected in this demo.'),
+      content: Text('$feature is not configured yet.'),
       behavior: SnackBarBehavior.floating,
     ),
   );
@@ -230,28 +399,31 @@ class _SettingsSection extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
+  Widget build(BuildContext context) => Material(
+    color: AppColors.surface,
+    shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(15),
-      border: Border.all(color: AppColors.border),
+      side: const BorderSide(color: AppColors.border),
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 8,
-            fontWeight: FontWeight.w900,
-            letterSpacing: .5,
+    clipBehavior: Clip.antiAlias,
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .5,
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        child,
-      ],
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
     ),
   );
 }

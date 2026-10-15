@@ -105,132 +105,134 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          product.name,
-                          style: const TextStyle(
-                            fontSize: 23,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                      const Icon(
-                        Icons.star_rounded,
-                        size: 17,
-                        color: AppColors.warning,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        '${product.rating ?? 4.8}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                      ),
-                      Text(
-                        ' (${product.reviewCount ?? 0})',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    product.description,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const _FieldHeading(
-                    title: 'Burger size',
-                    trailing: 'Size guide ›',
-                  ),
-                  const SizedBox(height: 9),
-                  Row(
-                    children: [
-                      _SizeOption(
-                        label: 'Regular',
-                        detail: '1/4 lb',
-                        selected: _size == 'Regular',
-                        onTap: () => setState(() => _size = 'Regular'),
-                      ),
-                      const SizedBox(width: 8),
-                      _SizeOption(
-                        label: 'Large',
-                        detail: '+ ₱80',
-                        selected: _size == 'Large',
-                        onTap: () => setState(() => _size = 'Large'),
-                      ),
-                      const SizedBox(width: 8),
-                      _SizeOption(
-                        label: 'Double',
-                        detail: '+ ₱120',
-                        selected: _size == 'Double',
-                        onTap: () => setState(() => _size = 'Double'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  const _FieldHeading(
-                    title: 'Extra toppings',
-                    trailing: 'Optional',
-                  ),
-                  const SizedBox(height: 6),
-                  _ExtraOption(
-                    label: 'Extra cheese',
-                    detail: '+ ₱25',
-                    selected: _extras.contains('Extra cheese'),
-                    onChanged: (value) => setState(
-                      () => value
-                          ? _extras.add('Extra cheese')
-                          : _extras.remove('Extra cheese'),
-                    ),
-                  ),
-                  _ExtraOption(
-                    label: 'Crispy bacon',
-                    detail: '+ ₱45',
-                    selected: _extras.contains('Crispy bacon'),
-                    onChanged: (value) => setState(
-                      () => value
-                          ? _extras.add('Crispy bacon')
-                          : _extras.remove('Crispy bacon'),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceMuted,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Row(
+                  if (product.category == 'Burgers') ...[
+                    const SizedBox(height: 18),
+                    Row(
                       children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          color: AppColors.brandOrange,
-                          size: 17,
-                        ),
-                        SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Customization and pricing are stored locally for this demo.',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: AppColors.textSecondary,
+                            product.name,
+                            style: const TextStyle(
+                              fontSize: 23,
+                              fontWeight: FontWeight.w900,
                             ),
+                          ),
+                        ),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 17,
+                          color: AppColors.warning,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${product.rating ?? 4.8}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          ' (${product.reviewCount ?? 0})',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 10,
                           ),
                         ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    Text(
+                      product.description,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const _FieldHeading(
+                      title: 'Burger size',
+                      trailing: 'Size guide ›',
+                    ),
+                    const SizedBox(height: 9),
+                    Row(
+                      children: [
+                        _SizeOption(
+                          label: 'Regular',
+                          detail: '1/4 lb',
+                          selected: _size == 'Regular',
+                          onTap: () => setState(() => _size = 'Regular'),
+                        ),
+                        const SizedBox(width: 8),
+                        _SizeOption(
+                          label: 'Large',
+                          detail: '+ ₱80',
+                          selected: _size == 'Large',
+                          onTap: () => setState(() => _size = 'Large'),
+                        ),
+                        const SizedBox(width: 8),
+                        _SizeOption(
+                          label: 'Double',
+                          detail: '+ ₱120',
+                          selected: _size == 'Double',
+                          onTap: () => setState(() => _size = 'Double'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    const _FieldHeading(
+                      title: 'Extra toppings',
+                      trailing: 'Optional',
+                    ),
+                    const SizedBox(height: 6),
+                    _ExtraOption(
+                      label: 'Extra cheese',
+                      detail: '+ ₱25',
+                      selected: _extras.contains('Extra cheese'),
+                      onChanged: (value) => setState(
+                        () => value
+                            ? _extras.add('Extra cheese')
+                            : _extras.remove('Extra cheese'),
+                      ),
+                    ),
+                    _ExtraOption(
+                      label: 'Crispy bacon',
+                      detail: '+ ₱45',
+                      selected: _extras.contains('Crispy bacon'),
+                      onChanged: (value) => setState(
+                        () => value
+                            ? _extras.add('Crispy bacon')
+                            : _extras.remove('Crispy bacon'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceMuted,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            color: AppColors.brandOrange,
+                            size: 17,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Selected size and toppings are saved with your order. Final prices are checked at checkout.',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -276,25 +278,23 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         child: Consumer<CartProvider>(
                           builder: (context, cart, _) => ElevatedButton(
                             onPressed: () {
-                              final customProduct = Product(
-                                id: '${product.id}-${_size.toLowerCase()}-${_extras.length}',
-                                name:
-                                    '${_size == 'Regular' ? '' : '$_size '}${product.name}${_extras.isEmpty ? '' : ' + ${_extras.join(', ')}'}',
-                                description: product.description,
-                                price: _unitPrice,
-                                imageUrl: product.imageUrl,
-                                category: product.category,
-                                rating: product.rating,
-                                reviewCount: product.reviewCount,
-                                available: product.available,
-                                createdAt: product.createdAt,
+                              final toppings = _extras.toList()..sort();
+                              final displayName =
+                                  '${product.category == 'Burgers' && _size != 'Regular' ? '$_size ' : ''}${product.name}${toppings.isEmpty ? '' : ' + ${toppings.join(', ')}'}';
+                              cart.addItem(
+                                product,
+                                quantity: _quantity,
+                                unitPrice: product.category == 'Burgers'
+                                    ? _unitPrice
+                                    : product.price,
+                                displayName: displayName,
+                                customizations: product.category == 'Burgers'
+                                    ? {'size': _size, 'toppings': toppings}
+                                    : const {},
                               );
-                              cart.addItem(customProduct, quantity: _quantity);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(
-                                    '${customProduct.name} added to cart',
-                                  ),
+                                  content: Text('$displayName added to cart'),
                                   behavior: SnackBarBehavior.floating,
                                   duration: const Duration(seconds: 1),
                                 ),

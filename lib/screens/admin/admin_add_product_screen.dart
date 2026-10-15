@@ -15,6 +15,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
+  late TextEditingController _stockController;
   late TextEditingController _imageController;
 
   String _selectedCategory = 'Burgers';
@@ -26,6 +27,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     _nameController = TextEditingController();
     _descriptionController = TextEditingController();
     _priceController = TextEditingController();
+    _stockController = TextEditingController(text: '0');
     _imageController = TextEditingController();
   }
 
@@ -34,6 +36,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
+    _stockController.dispose();
     _imageController.dispose();
     super.dispose();
   }
@@ -163,6 +166,13 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
+                  _buildField(
+                    label: 'Stock quantity',
+                    controller: _stockController,
+                    hint: 'Enter available units',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
                   _buildCategoryDropdown(),
                   const SizedBox(height: 16),
                   _buildField(
@@ -276,7 +286,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
             isExpanded: true,
             underline: const SizedBox(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            items: ['Burgers', 'Chicken', 'Sides', 'Drinks']
+            items: {'Burgers', 'Chicken', 'Sides', 'Drinks', _selectedCategory}
                 .map(
                   (category) =>
                       DropdownMenuItem(value: category, child: Text(category)),
@@ -319,6 +329,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       name: _nameController.text,
       description: _descriptionController.text,
       price: double.tryParse(_priceController.text) ?? 0,
+      stockQuantity: int.tryParse(_stockController.text) ?? -1,
       category: _selectedCategory,
       imageUrl: _imageController.text,
       available: _isAvailable,

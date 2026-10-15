@@ -4,14 +4,14 @@
 
 ## Current outcome
 
-The current source contains an administrator UI (dashboard, orders, products, customers, More, and profile). These screens use local demo providers. Admin profile details and profile edits are not backed by an account service. No production backend, database integration, server authorization, payment integration, or release candidate was verified during this work.
+The current source contains customer and administrator UI backed by PHP/PDO API providers for supported SQL workflows. Admin dashboard, order, product, customer, support, and profile screens use API-backed code paths. Migration 003 is still pending in phpMyAdmin; admin login, `/me`, role authorization on system status, and logout were smoke-tested, but the remaining workflows and payment/provider integration are not verified.
 
 ## Verified record
 
 - `flutter analyze --no-pub`: previously recorded pass on 2026-10-14 after the admin profile work.
 - `flutter build web --no-pub`: previously recorded pass on 2026-10-14.
 - Latest user `flutter run -d edge`: failed writing Dart `app.dill` because C: was out of space; see [[TESTING]].
-- No API integration, schema migration, authorization, device, release-build, performance, or full workflow tests are claimed.
+- The current local PHP/MySQL setup has migration 001 and one development admin account. Migration 003, device/release-build, performance, and full workflow tests are still outstanding.
 
 ## Remaining work
 

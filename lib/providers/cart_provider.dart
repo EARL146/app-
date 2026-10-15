@@ -1,28 +1,66 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import '../models/order_model.dart';
 import '../models/product_model.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 
 class CartProvider extends ChangeNotifier {
+  CartProvider({this.authService}) {
+    final auth = authService;
+    if (auth != null) {
+      auth.addListener(_handleAuthChange);
+      unawaited(auth.initialization.then((_) => _handleAuthChange()));
+    }
+  }
+
   final ApiService _apiService = ApiService();
+  final AuthService? authService;
   final List<OrderItem> _items = [];
+  Timer? _syncDebounce;
+  Future<void> _saveQueue = Future<void>.value();
+  String? _activeUserId;
   String? _errorMessage;
+  String? _syncErrorMessage;
   bool _isSubmitting = false;
+  bool _isLoadingRemoteCart = false;
+  bool _isSyncing = false;
+  bool _hasLoadedRemoteCart = false;
+  bool _disposed = false;
   String? _lastOrderId;
 
   List<OrderItem> get items => List.unmodifiable(_items);
   String? get errorMessage => _errorMessage;
+  String? get syncErrorMessage => _syncErrorMessage;
   bool get isSubmitting => _isSubmitting;
+  bool get isLoadingRemoteCart => _isLoadingRemoteCart;
+  bool get isSyncing => _isSyncing;
   bool get isEmpty => _items.isEmpty;
   String? get lastOrderId => _lastOrderId;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _syncDebounce?.cancel();
+    authService?.removeListener(_handleAuthChange);
+    super.dispose();
+  }
 
   double get subtotal => _items.fold(0, (sum, item) => sum + item.subtotal);
   double get deliveryFee => _items.isEmpty ? 0 : 25;
   double get tax => subtotal * 0.12;
   double get total => subtotal + deliveryFee + tax;
 
-  void addItem(Product product, {int quantity = 1}) {
+  void addItem(
+    Product product, {
+    int quantity = 1,
+    double? unitPrice,
+    String? displayName,
+    Map<String, dynamic> customizations = const {},
+  }) {
     if (!product.available) {
       _errorMessage = 'This item is currently unavailable.';
       notifyListeners();
@@ -35,7 +73,12 @@ class CartProvider extends ChangeNotifier {
       return;
     }
 
-    final index = _items.indexWhere((item) => item.productId == product.id);
+    final customizationKey = _customizationsKey(customizations);
+    final index = _items.indexWhere(
+      (item) =>
+          item.productId == product.id &&
+          _customizationsKey(item.customizations) == customizationKey,
+    );
     if (index >= 0) {
       final item = _items[index];
       _items[index] = OrderItem(
@@ -44,31 +87,45 @@ class CartProvider extends ChangeNotifier {
         price: item.price,
         quantity: item.quantity + quantity,
         productImage: item.productImage,
+        customizations: item.customizations,
       );
     } else {
       _items.add(
         OrderItem(
           productId: product.id,
-          productName: product.name,
-          price: product.price,
+          productName: displayName ?? product.name,
+          price: unitPrice ?? product.price,
           quantity: quantity,
           productImage: product.imageUrl,
+          customizations: customizations,
         ),
       );
     }
 
     _errorMessage = null;
     notifyListeners();
+    _scheduleRemoteSave();
   }
 
   void updateQuantity(String productId, int quantity) {
+    final index = _items.indexWhere((item) => item.productId == productId);
+    _updateItemAt(index, quantity);
+  }
+
+  void updateCartItemQuantity(OrderItem target, int quantity) {
+    final index = _items.indexWhere((item) => identical(item, target));
+    _updateItemAt(index, quantity);
+  }
+
+  void _updateItemAt(int index, int quantity) {
+    if (index == -1) return;
     if (quantity <= 0) {
-      removeItem(productId);
+      _items.removeAt(index);
+      _errorMessage = null;
+      notifyListeners();
+      _scheduleRemoteSave();
       return;
     }
-
-    final index = _items.indexWhere((item) => item.productId == productId);
-    if (index == -1) return;
 
     final item = _items[index];
     _items[index] = OrderItem(
@@ -77,15 +134,18 @@ class CartProvider extends ChangeNotifier {
       price: item.price,
       quantity: quantity,
       productImage: item.productImage,
+      customizations: item.customizations,
     );
     _errorMessage = null;
     notifyListeners();
+    _scheduleRemoteSave();
   }
 
   void removeItem(String productId) {
     _items.removeWhere((item) => item.productId == productId);
     _errorMessage = null;
     notifyListeners();
+    _scheduleRemoteSave();
   }
 
   void clear() {
@@ -93,6 +153,168 @@ class CartProvider extends ChangeNotifier {
     _lastOrderId = null;
     _errorMessage = null;
     notifyListeners();
+  }
+
+  void _handleAuthChange() {
+    final auth = authService;
+    if (_disposed || auth == null) return;
+    final userId = auth.isAuthenticated && auth.currentUserRole == 'customer'
+        ? auth.currentUserId
+        : null;
+    if (userId == _activeUserId) {
+      if (auth.isAuthenticated &&
+          auth.currentUserRole != 'customer' &&
+          _items.isNotEmpty) {
+        _items.clear();
+        notifyListeners();
+      }
+      return;
+    }
+
+    _syncDebounce?.cancel();
+    if (userId == null) {
+      _activeUserId = null;
+      _hasLoadedRemoteCart = false;
+      _isLoadingRemoteCart = false;
+      _isSyncing = false;
+      _syncErrorMessage = null;
+      _items.clear();
+      notifyListeners();
+      return;
+    }
+
+    final guestItems = _activeUserId == null
+        ? List<OrderItem>.of(_items)
+        : <OrderItem>[];
+    if (_activeUserId != null) _items.clear();
+    _activeUserId = userId;
+    _hasLoadedRemoteCart = false;
+    _isSyncing = false;
+    _syncErrorMessage = null;
+    unawaited(_loadRemoteCart(userId, guestItems));
+  }
+
+  Future<void> _loadRemoteCart(
+    String userId,
+    List<OrderItem> guestItems,
+  ) async {
+    _isLoadingRemoteCart = true;
+    _syncErrorMessage = null;
+    notifyListeners();
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/me/cart',
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid saved cart response.'),
+    );
+    if (_disposed || userId != _activeUserId) return;
+
+    _isLoadingRemoteCart = false;
+    final rawItems = response.data?['items'];
+    if (!response.success || rawItems is! List) {
+      _syncErrorMessage = response.error ?? 'Unable to load your saved cart.';
+      notifyListeners();
+      return;
+    }
+
+    final localItems = [...guestItems, ..._items];
+    _items
+      ..clear()
+      ..addAll(
+        rawItems.whereType<Map<String, dynamic>>().map(OrderItem.fromJson),
+      );
+    for (final item in localItems) {
+      _mergeItem(item);
+    }
+    _hasLoadedRemoteCart = true;
+    _syncErrorMessage = null;
+    notifyListeners();
+    if (localItems.isNotEmpty) _scheduleRemoteSave();
+  }
+
+  void _mergeItem(OrderItem incoming) {
+    final key = _itemKey(incoming);
+    final index = _items.indexWhere((item) => _itemKey(item) == key);
+    if (index < 0) {
+      _items.add(incoming);
+      return;
+    }
+    final current = _items[index];
+    _items[index] = OrderItem(
+      productId: current.productId,
+      productName: current.productName,
+      price: current.price,
+      quantity: (current.quantity + incoming.quantity).clamp(1, 99).toInt(),
+      productImage: current.productImage,
+      customizations: current.customizations,
+    );
+  }
+
+  String _itemKey(OrderItem item) =>
+      '${item.productId}:${_customizationsKey(item.customizations)}';
+
+  String _customizationsKey(Map<String, dynamic> customizations) {
+    final toppings =
+        (customizations['toppings'] as List<dynamic>? ?? [])
+            .map((value) => value.toString())
+            .toList()
+          ..sort();
+    return jsonEncode({
+      'size': customizations['size']?.toString() ?? 'Regular',
+      'toppings': toppings,
+    });
+  }
+
+  void _scheduleRemoteSave() {
+    if (_activeUserId == null || !_hasLoadedRemoteCart) return;
+    _syncDebounce?.cancel();
+    _syncDebounce = Timer(const Duration(milliseconds: 400), () {
+      unawaited(_saveRemoteCart());
+    });
+  }
+
+  Future<void> _saveRemoteCart() {
+    final userId = _activeUserId;
+    if (userId == null || !_hasLoadedRemoteCart) return Future<void>.value();
+    final snapshot = _items
+        .map(
+          (item) => {
+            'product_id': item.productId,
+            'quantity': item.quantity,
+            if (item.customizations.isNotEmpty)
+              'customizations': item.customizations,
+          },
+        )
+        .toList(growable: false);
+
+    final request = _saveQueue.then((_) async {
+      if (_disposed || userId != _activeUserId) return;
+      _isSyncing = true;
+      notifyListeners();
+      final response = await _apiService.put<Map<String, dynamic>>(
+        '/me/cart',
+        body: {'items': snapshot},
+        fromJson: (json) => json is Map<String, dynamic>
+            ? json
+            : throw const FormatException('Invalid saved cart response.'),
+      );
+      if (_disposed || userId != _activeUserId) return;
+      _isSyncing = false;
+      _syncErrorMessage = response.success
+          ? null
+          : response.error ?? 'Unable to sync your cart.';
+      notifyListeners();
+    });
+    _saveQueue = request.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return request;
+  }
+
+  Future<void> _waitForRemoteWrites() async {
+    _syncDebounce?.cancel();
+    await _saveQueue;
   }
 
   Future<String?> submitOrder({
@@ -134,6 +356,7 @@ class CartProvider extends ChangeNotifier {
     _isSubmitting = true;
     _errorMessage = null;
     notifyListeners();
+    await _waitForRemoteWrites();
 
     final response = await _apiService.post<Map<String, dynamic>>(
       '/orders',
@@ -151,6 +374,8 @@ class CartProvider extends ChangeNotifier {
               (item) => {
                 'product_id': item.productId,
                 'quantity': item.quantity,
+                if (item.customizations.isNotEmpty)
+                  'customizations': item.customizations,
               },
             )
             .toList(),
@@ -165,13 +390,16 @@ class CartProvider extends ChangeNotifier {
           response.error ??
           'The server did not confirm the order. Your cart is unchanged.';
       notifyListeners();
+      _scheduleRemoteSave();
       return null;
     }
 
     final orderId = id.toString();
     _lastOrderId = orderId;
     _isSubmitting = false;
+    _syncDebounce?.cancel();
     _items.clear();
+    _syncErrorMessage = null;
     notifyListeners();
 
     return orderId;

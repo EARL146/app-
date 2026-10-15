@@ -1,0 +1,114 @@
+import json
+import subprocess
+import threading
+import tempfile
+import unittest
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+import server
+
+
+class MonitorTests(unittest.TestCase):
+    def test_session_parser_keeps_metadata_and_omits_private_content(self):
+        records = [
+            {"type": "session_meta", "timestamp": "2026-10-15T10:00:00Z", "payload": {"session_id": "12345678-secret", "cli_version": "1.2.3", "cwd": "C:/private"}},
+            {"type": "event_msg", "timestamp": "2026-10-15T10:01:00Z", "payload": {"type": "task_started"}},
+            {"type": "response_item", "timestamp": "2026-10-15T10:01:01Z", "payload": {"type": "custom_tool_call", "name": "exec", "input": "PASSWORD=hunter2"}},
+            {"type": "event_msg", "timestamp": "2026-10-15T10:01:02Z", "payload": {"type": "item_completed", "item": {"type": "CommandExecution", "exit_code": 1, "command": "echo SECRET=abc", "aggregated_output": "private output"}}},
+            {"type": "token_usage_record", "timestamp": "2026-10-15T10:01:03Z", "payload": {"thread_token_usage": {"input_tokens": 10, "output_tokens": 3, "total_tokens": 13}}},
+        ]
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "session.jsonl"
+            path.write_text("\n".join(json.dumps(item) for item in records) + "\n", encoding="utf-8")
+            result = server.parse_session_file(path)
+        encoded = json.dumps(result)
+        self.assertEqual(result["session_id"], "12345678")
+        self.assertEqual(result["task_started"], 1)
+        self.assertEqual(result["usage"]["total_tokens"], 13)
+        self.assertTrue(result["errors"])
+        for private in ("hunter2", "SECRET=abc", "private output", "C:/private", "12345678-secret"):
+            self.assertNotIn(private, encoded)
+
+    def test_path_guard_rejects_parent_traversal_and_accepts_project_image(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "assets").mkdir()
+            (root / "assets" / "actual.png").write_bytes(b"image")
+            path = server._safe_repo_file(root, "assets/actual.png", ("assets",), server.IMAGE_EXTENSIONS)
+            self.assertEqual(path.name, "actual.png")
+            with self.assertRaises(ValueError):
+                server._safe_repo_file(root, "../outside.png", ("assets",), server.IMAGE_EXTENSIONS)
+
+    def test_diff_redacts_common_secret_fields(self):
+        text = "+password = example-password\n+Authorization: Bearer abcdef\n+safe = true"
+        result = server._redact_diff(text)
+        self.assertNotIn("example-password", result)
+        self.assertNotIn("abcdef", result)
+        self.assertIn("safe = true", result)
+
+    def test_git_diff_preview_redacts_secret_assignment(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            (root / "settings.txt").write_text("password = local-example-secret\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(root), "add", "--", "settings.txt"], check=True)
+            result = server.file_diff(root, "settings.txt")["diff"]
+            self.assertNotIn("local-example-secret", result)
+            self.assertIn("[redacted]", result)
+
+    def test_incremental_reader_waits_for_a_complete_record(self):
+        first = {"type": "event_msg", "timestamp": "2026-10-15T10:00:00Z", "payload": {"type": "task_started"}}
+        second = {"type": "event_msg", "timestamp": "2026-10-15T10:01:00Z", "payload": {"type": "task_complete"}}
+        encoded_second = json.dumps(second).encode("utf-8")
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "incremental.jsonl"
+            path.write_bytes(json.dumps(first).encode("utf-8") + b"\n" + encoded_second[:30])
+            state, offset = server.read_session_records(path)
+            self.assertEqual(state["task_started"], 1)
+            self.assertEqual(state["task_completed"], 0)
+            with path.open("ab") as stream:
+                stream.write(encoded_second[30:] + b"\n")
+            state, offset = server.read_session_records(path, state, offset)
+            self.assertEqual(state["task_completed"], 1)
+            self.assertGreater(offset, 0)
+
+    def test_local_http_preview_routes_and_path_rejection(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "project"
+            (root / "docs").mkdir(parents=True)
+            (root / "assets").mkdir()
+            (root / ".git").mkdir()
+            (root / "docs" / "NEXT_SESSION.md").write_text("# Memory note\nSafe preview", encoding="utf-8")
+            (root / "assets" / "sample.png").write_bytes(b"actual image bytes")
+            srv = server.MonitorServer(("127.0.0.1", 0), root, Path(temp) / "codex")
+            thread = threading.Thread(target=srv.serve_forever, daemon=True)
+            thread.start()
+            base = f"http://127.0.0.1:{srv.server_address[1]}"
+            try:
+                with urllib.request.urlopen(base + "/api/overview") as response:
+                    overview = json.load(response)
+                self.assertEqual(overview["notes"], ["docs/NEXT_SESSION.md"])
+                self.assertEqual(overview["images"][0]["path"], "assets/sample.png")
+                with urllib.request.urlopen(base + "/api/note?path=docs%2FNEXT_SESSION.md") as response:
+                    self.assertIn("Safe preview", json.load(response)["content"])
+                with urllib.request.urlopen(base + "/api/image?path=assets%2Fsample.png") as response:
+                    self.assertEqual(response.read(), b"actual image bytes")
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    urllib.request.urlopen(base + "/api/note?path=..%2Foutside.md")
+                self.assertEqual(error.exception.code, 400)
+                error.exception.close()
+                request = urllib.request.Request(base + "/api/overview", headers={"Host": "example.com"})
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    urllib.request.urlopen(request)
+                self.assertEqual(error.exception.code, 403)
+                error.exception.close()
+            finally:
+                srv.shutdown()
+                srv.server_close()
+                thread.join(timeout=2)
+
+
+if __name__ == "__main__":
+    unittest.main()

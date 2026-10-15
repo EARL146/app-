@@ -261,6 +261,7 @@ class AuthService extends ChangeNotifier {
     required String name,
     String? phone,
     String? branch,
+    String? address,
   }) async {
     _errorMessage = null;
     final response = await _apiService.put<Map<String, dynamic>>(
@@ -272,6 +273,7 @@ class AuthService extends ChangeNotifier {
         'full_name': name.trim(),
         if (phone != null) 'phone': phone.trim(),
         if (branch != null) 'branch_name': branch.trim(),
+        if (address != null) 'default_address': address.trim(),
       },
     );
     if (!response.success || response.data == null) {
@@ -289,6 +291,8 @@ class AuthService extends ChangeNotifier {
     final savedPhone = user['phone']?.toString() ?? phone ?? _currentUserPhone;
     final savedBranch =
         user['branch_name']?.toString() ?? branch ?? _currentUserBranch;
+    final savedAddress =
+        user['default_address']?.toString() ?? address ?? _currentUserAddress;
 
     try {
       await _storageService.saveUserName(savedName);
@@ -296,6 +300,9 @@ class AuthService extends ChangeNotifier {
       if (savedPhone != null) await _storageService.saveUserPhone(savedPhone);
       if (savedBranch != null) {
         await _storageService.saveUserBranch(savedBranch);
+      }
+      if (savedAddress != null) {
+        await _storageService.saveUserAddress(savedAddress);
       }
     } catch (_) {
       _errorMessage = 'The server saved your profile, but local session data could not be updated.';
@@ -307,6 +314,7 @@ class AuthService extends ChangeNotifier {
     _currentUserEmail = savedEmail;
     _currentUserPhone = savedPhone;
     _currentUserBranch = savedBranch;
+    _currentUserAddress = savedAddress;
     notifyListeners();
     return true;
   }

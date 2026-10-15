@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_colors.dart';
+import '../../services/api_service.dart';
 
 class ThemeScreen extends StatefulWidget {
   const ThemeScreen({super.key});
@@ -12,6 +13,62 @@ class ThemeScreen extends StatefulWidget {
 class _ThemeScreenState extends State<ThemeScreen> {
   String _selected = 'Burger Bites';
   String _displayMode = 'Light';
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppearance();
+  }
+
+  Future<void> _loadAppearance() async {
+    final response = await ApiService().get<Map<String, dynamic>>(
+      '/me/preferences',
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid preferences response.'),
+    );
+    if (!mounted || !response.success) return;
+    final preferences = response.data?['preferences'];
+    if (preferences is! Map<String, dynamic>) return;
+    final palette = preferences['theme_palette'];
+    final mode = preferences['theme_mode'] as String?;
+    setState(() {
+      if (_palettes.any((item) => item.name == palette)) {
+        _selected = palette as String;
+      }
+      _displayMode = switch (mode) {
+        'dark' => 'Dark',
+        'system' => 'System',
+        _ => 'Light',
+      };
+    });
+  }
+
+  Future<void> _saveAppearance() async {
+    setState(() => _isSaving = true);
+    final response = await ApiService().put<Map<String, dynamic>>(
+      '/me/preferences',
+      body: {
+        'theme_palette': _selected,
+        'theme_mode': _displayMode.toLowerCase(),
+      },
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid preferences response.'),
+    );
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          response.success
+              ? 'Appearance preference saved. The palette preview does not yet change every app screen.'
+              : response.error ?? 'Unable to save appearance preference.',
+        ),
+      ),
+    );
+  }
 
   static const _palettes = [
     _Palette(
@@ -178,7 +235,7 @@ class _ThemeScreenState extends State<ThemeScreen> {
                                     ),
                                   ),
                                   Text(
-                                    'Double Smash Burger',
+                                    'Menu item preview',
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 8,
@@ -197,7 +254,7 @@ class _ThemeScreenState extends State<ThemeScreen> {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Text(
-                                '₱189  +',
+                                'Preview',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 8,
@@ -301,7 +358,7 @@ class _ThemeScreenState extends State<ThemeScreen> {
                       SizedBox(width: 7),
                       Expanded(
                         child: Text(
-                          'Palette and display mode selections are preview-only; global theme persistence is not connected.',
+                          'Palette and display mode save to your account; the palette preview does not yet apply across every screen.',
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 9,
@@ -323,16 +380,9 @@ class _ThemeScreenState extends State<ThemeScreen> {
                 width: double.infinity,
                 height: 47,
                 child: ElevatedButton.icon(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${selected.name} is selected for this preview.',
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  ),
+                  onPressed: _isSaving ? null : _saveAppearance,
                   icon: const Icon(Icons.check_rounded, size: 17),
-                  label: const Text('Apply theme preview'),
+                  label: Text(_isSaving ? 'Saving…' : 'Save appearance'),
                 ),
               ),
             ),

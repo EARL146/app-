@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
 import '../../navigation/app_routes.dart';
+import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 
 class AdminProfileScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
 
   bool _editing = false;
   bool _saving = false;
+  bool _changingPassword = false;
 
   @override
   void initState() {
@@ -289,7 +291,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
         ),
         _DetailRow(
           label: 'Permissions',
-          value: 'Dashboard · Orders · Products · Customers',
+          value: 'Dashboard · Orders · Products · Customers · Support',
           icon: Icons.key_outlined,
           showDivider: false,
         ),
@@ -309,9 +311,142 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
           label: 'Account status',
           value: auth.isAuthenticated ? 'Authenticated' : 'Signed out',
           icon: Icons.verified_user_outlined,
-          showDivider: false,
+          showDivider: true,
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _changingPassword ? null : _changePassword,
+              icon: _changingPassword
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.password_rounded, size: 17),
+              label: Text(
+                _changingPassword ? 'Updating password…' : 'Change password',
+              ),
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  Future<void> _changePassword() async {
+    final current = TextEditingController();
+    final next = TextEditingController();
+    final confirmation = TextEditingController();
+    String? validationMessage;
+    final passwords = await showDialog<(String, String)>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Change password'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: current,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Current password',
+                  ),
+                ),
+                TextField(
+                  controller: next,
+                  obscureText: true,
+                  maxLength: 200,
+                  decoration: const InputDecoration(
+                    labelText: 'New password (12+ characters)',
+                  ),
+                ),
+                TextField(
+                  controller: confirmation,
+                  obscureText: true,
+                  maxLength: 200,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm new password',
+                  ),
+                ),
+                if (validationMessage != null)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      validationMessage!,
+                      style: const TextStyle(
+                        color: AppColors.danger,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (current.text.isEmpty) {
+                  setDialogState(
+                    () => validationMessage = 'Enter your current password.',
+                  );
+                  return;
+                }
+                if (next.text.length < 12) {
+                  setDialogState(
+                    () => validationMessage =
+                        'Use at least 12 characters for the new password.',
+                  );
+                  return;
+                }
+                if (next.text != confirmation.text) {
+                  setDialogState(
+                    () => validationMessage = 'The new passwords do not match.',
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext, (current.text, next.text));
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+    final currentPassword = current.text;
+    final nextPassword = next.text;
+    current.dispose();
+    next.dispose();
+    confirmation.dispose();
+    if (passwords == null || !mounted) return;
+
+    setState(() => _changingPassword = true);
+    final response = await ApiService().put<Map<String, dynamic>>(
+      '/me/password',
+      body: {'current_password': currentPassword, 'new_password': nextPassword},
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid password response.'),
+    );
+    if (!mounted) return;
+    setState(() => _changingPassword = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          response.success
+              ? 'Password changed. Other signed-in sessions were ended.'
+              : response.error ?? 'Unable to change your password.',
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 

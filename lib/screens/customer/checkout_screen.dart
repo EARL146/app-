@@ -167,6 +167,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         onTap: _showOnlinePaymentUnavailable,
                       ),
                       _PaymentOption(
+                        title: 'Maya wallet',
+                        subtitle:
+                            'Unavailable: sandbox configuration is pending',
+                        icon: Icons.account_balance_wallet_outlined,
+                        selected: false,
+                        onTap: _showOnlinePaymentUnavailable,
+                      ),
+                      _PaymentOption(
                         title: 'Credit / Debit',
                         subtitle:
                             'Unavailable: no payment provider is configured',

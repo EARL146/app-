@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../data/demo_data.dart';
 import '../models/product_model.dart';
 import 'admin_route_gate.dart';
 import '../screens/customer/about_screen.dart';
@@ -32,6 +31,8 @@ import '../screens/admin/admin_more_screen.dart';
 import '../screens/admin/admin_orders_screen.dart';
 import '../screens/admin/admin_profile_screen.dart';
 import '../screens/admin/admin_products_screen.dart';
+import '../screens/admin/admin_support_screen.dart';
+import '../screens/admin/admin_store_profile_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -59,8 +60,10 @@ class AppRouter {
           builder: (_) => MenuScreen(initialCategory: category),
         );
       case '/product-details':
-        final product =
-            settings.arguments as Product? ?? DemoData.products.first;
+        final product = settings.arguments as Product?;
+        if (product == null) {
+          return _missingRecordRoute('Product was not selected.');
+        }
         return MaterialPageRoute(
           builder: (_) => ProductDetailsScreen(product: product),
         );
@@ -110,8 +113,10 @@ class AppRouter {
           builder: (_) => const AdminRouteGate(child: AdminAddProductScreen()),
         );
       case '/admin-edit-product':
-        final product =
-            settings.arguments as Product? ?? DemoData.products.first;
+        final product = settings.arguments as Product?;
+        if (product == null) {
+          return _missingRecordRoute('Product was not selected.');
+        }
         return MaterialPageRoute(
           builder: (_) =>
               AdminRouteGate(child: AdminEditProductScreen(product: product)),
@@ -124,6 +129,15 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => const AdminRouteGate(child: AdminMoreScreen()),
         );
+      case '/admin-support':
+        return MaterialPageRoute(
+          builder: (_) => const AdminRouteGate(child: AdminSupportScreen()),
+        );
+      case '/admin-store-profile':
+        return MaterialPageRoute(
+          builder: (_) =>
+              const AdminRouteGate(child: AdminStoreProfileScreen()),
+        );
       default:
         return MaterialPageRoute(
           builder: (_) =>
@@ -131,4 +145,9 @@ class AppRouter {
         );
     }
   }
+
+  static Route<dynamic> _missingRecordRoute(String message) =>
+      MaterialPageRoute(
+        builder: (_) => Scaffold(body: Center(child: Text(message))),
+      );
 }

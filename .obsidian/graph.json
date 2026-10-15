@@ -1,14 +1,14 @@
 {
-  "collapse-filter": false,
+  "collapse-filter": true,
   "search": "",
-  "showTags": true,
-  "showAttachments": true,
+  "showTags": false,
+  "showAttachments": false,
   "hideUnresolved": false,
   "showOrphans": true,
   "collapse-color-groups": false,
   "colorGroups": [
     {
-      "query": "android",
+      "query": "backend",
       "color": {
         "a": 1,
         "rgb": 16711680
@@ -18,27 +18,27 @@
       "query": "APPS",
       "color": {
         "a": 1,
-        "rgb": 16708055
+        "rgb": 4452612
       }
     },
     {
-      "query": "",
+      "query": "assests",
       "color": {
         "a": 1,
-        "rgb": 11392604
+        "rgb": 11796250
       }
     }
   ],
   "collapse-display": true,
   "showArrow": false,
-  "textFadeMultiplier": 0,
-  "nodeSizeMultiplier": 1,
-  "lineSizeMultiplier": 1,
+  "textFadeMultiplier": -0.9,
+  "nodeSizeMultiplier": 0.947716821037632,
+  "lineSizeMultiplier": 1.06958999935229,
   "collapse-forces": true,
-  "centerStrength": 0.518713248970312,
-  "repelStrength": 10,
+  "centerStrength": 0.724334477621608,
+  "repelStrength": 10.4212379791413,
   "linkStrength": 1,
-  "linkDistance": 250,
-  "scale": 0.18462326225858056,
-  "close": false
+  "linkDistance": 444,
+  "scale": 0.713275462622434,
+  "close": true
 }

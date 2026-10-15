@@ -17,7 +17,7 @@
 | `pubspec.yaml` | Dependencies and asset declarations | Flutter build |
 | `android/` | Android configuration | Flutter Android build |
 | `backend/public/index.php`, `backend/src/` | PHP API routing, HTTP helpers, PDO, session and order logic | `backend/.env`, SQL schema |
-| `backend/database/migrations/` | Initial schema and optional development catalog seed | phpMyAdmin/MySQL; not yet applied |
+| `backend/database/migrations/` | Initial schema, optional development catalog seed, and workflow schema | Migration 001 applied; 002 optional and 003 awaiting privileged phpMyAdmin import |
 | `backend/tools/create_admin.ps1`, `create_admin.php` | Local administrator bootstrap after database setup | Argon2id, local database config |
 | `backend/README.md` | PHP/MySQL API setup and startup commands | [[SETUP_GUIDE]], [[API_SPEC]] |
 | `test/` | Automated tests | Application code |

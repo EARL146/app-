@@ -16,6 +16,14 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
   bool _showOnlyActive = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AdminCustomersProvider>().loadCustomers();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -38,6 +46,13 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
 
           return Column(
             children: [
+              if (provider.isLoading) const LinearProgressIndicator(),
+              if (provider.errorMessage != null)
+                TextButton.icon(
+                  onPressed: () => provider.loadCustomers(force: true),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(provider.errorMessage!),
+                ),
               // Stats Cards Row
               Padding(
                 padding: const EdgeInsets.all(16),

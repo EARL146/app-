@@ -51,4 +51,48 @@ void main() {
     expect(cart.isEmpty, isTrue);
     expect(cart.errorMessage, 'This item is currently unavailable.');
   });
+
+  test(
+    'customized versions stay separate and merge regardless of topping order',
+    () {
+      cart.addItem(
+        burger,
+        customizations: {
+          'size': 'Large',
+          'toppings': ['Crispy bacon', 'Extra cheese'],
+        },
+      );
+      cart.addItem(
+        burger,
+        customizations: {
+          'toppings': ['Extra cheese', 'Crispy bacon'],
+          'size': 'Large',
+        },
+      );
+      cart.addItem(
+        burger,
+        customizations: {'size': 'Double', 'toppings': <String>[]},
+      );
+
+      expect(cart.items, hasLength(2));
+      expect(cart.items.first.quantity, 2);
+      expect(cart.items.last.customizations['size'], 'Double');
+    },
+  );
+
+  test('quantity changes target the selected customization', () {
+    cart.addItem(
+      burger,
+      customizations: {'size': 'Regular', 'toppings': <String>[]},
+    );
+    cart.addItem(
+      burger,
+      customizations: {'size': 'Large', 'toppings': <String>[]},
+    );
+
+    cart.updateCartItemQuantity(cart.items.last, 3);
+
+    expect(cart.items.first.quantity, 1);
+    expect(cart.items.last.quantity, 3);
+  });
 }

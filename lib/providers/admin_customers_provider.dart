@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../services/api_service.dart';
+
 class Customer {
   final String id;
   final String name;
@@ -11,7 +13,7 @@ class Customer {
   final DateTime joinedDate;
   final bool isActive;
 
-  Customer({
+  const Customer({
     required this.id,
     required this.name,
     required this.email,
@@ -22,67 +24,27 @@ class Customer {
     required this.joinedDate,
     this.isActive = true,
   });
+
+  factory Customer.fromJson(Map<String, dynamic> json) => Customer(
+    id: json['id'].toString(),
+    name: json['name'] as String? ?? '',
+    email: json['email'] as String? ?? '',
+    phone: json['phone'] as String? ?? '',
+    orderCount: (json['order_count'] as num?)?.toInt() ?? 0,
+    totalSpent: (json['total_spent'] as num?)?.toDouble() ?? 0,
+    address: json['address'] as String? ?? '',
+    joinedDate:
+        DateTime.tryParse(json['joined_at'] as String? ?? '') ?? DateTime.now(),
+    isActive: json['is_active'] as bool? ?? true,
+  );
 }
 
 class AdminCustomersProvider extends ChangeNotifier {
-  final List<Customer> _customers = [
-    Customer(
-      id: 'cust-001',
-      name: 'Juan Santos',
-      email: 'juan.santos@email.com',
-      phone: '+63 912 345 6789',
-      orderCount: 12,
-      totalSpent: 3840.00,
-      address: '123 Main St, Manila',
-      joinedDate: DateTime.now().subtract(const Duration(days: 180)),
-      isActive: true,
-    ),
-    Customer(
-      id: 'cust-002',
-      name: 'Maria Cruz',
-      email: 'maria.cruz@email.com',
-      phone: '+63 920 987 6543',
-      orderCount: 8,
-      totalSpent: 2240.00,
-      address: '456 Oak Ave, Cebu',
-      joinedDate: DateTime.now().subtract(const Duration(days: 120)),
-      isActive: true,
-    ),
-    Customer(
-      id: 'cust-003',
-      name: 'Pedro Garcia',
-      email: 'pedro.garcia@email.com',
-      phone: '+63 918 765 4321',
-      orderCount: 3,
-      totalSpent: 840.00,
-      address: '789 Pine Rd, Davao',
-      joinedDate: DateTime.now().subtract(const Duration(days: 30)),
-      isActive: true,
-    ),
-    Customer(
-      id: 'cust-004',
-      name: 'Ana Lopez',
-      email: 'ana.lopez@email.com',
-      phone: '+63 917 654 3210',
-      orderCount: 15,
-      totalSpent: 4560.00,
-      address: '321 Elm St, Quezon City',
-      joinedDate: DateTime.now().subtract(const Duration(days: 270)),
-      isActive: true,
-    ),
-    Customer(
-      id: 'cust-005',
-      name: 'Carlos Reyes',
-      email: 'carlos.reyes@email.com',
-      phone: '+63 919 876 5432',
-      orderCount: 5,
-      totalSpent: 1400.00,
-      address: '654 Birch Ln, Makati',
-      joinedDate: DateTime.now().subtract(const Duration(days: 90)),
-      isActive: false,
-    ),
-  ];
+  AdminCustomersProvider({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
 
+  final ApiService _apiService;
+  final List<Customer> _customers = [];
   String? _errorMessage;
   bool _isLoading = false;
   String? _successMessage;
@@ -93,13 +55,45 @@ class AdminCustomersProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get successMessage => _successMessage;
   Customer? get selectedCustomer => _selectedCustomer;
-
   int get totalCustomers => _customers.length;
-  int get activeCustomers => _customers.where((c) => c.isActive).length;
+  int get activeCustomers =>
+      _customers.where((customer) => customer.isActive).length;
+  int get totalOrderCount =>
+      _customers.fold(0, (sum, customer) => sum + customer.orderCount);
   double get totalCustomerSpent =>
       _customers.fold(0, (sum, customer) => sum + customer.totalSpent);
   double get averageOrderValue =>
-      _customers.isEmpty ? 0 : totalCustomerSpent / totalCustomers;
+      totalOrderCount == 0 ? 0 : totalCustomerSpent / totalOrderCount;
+
+  Future<void> loadCustomers({bool force = false}) async {
+    if (_isLoading || (!force && _customers.isNotEmpty)) return;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/admin/customers',
+      fromJson: _asMap,
+    );
+    if (!response.success || response.data == null) {
+      _errorMessage = response.error ?? 'Unable to load customers.';
+    } else {
+      try {
+        final rows = response.data!['customers'];
+        if (rows is! List) {
+          throw const FormatException('Invalid customer list.');
+        }
+        _customers
+          ..clear()
+          ..addAll(
+            rows.whereType<Map<String, dynamic>>().map(Customer.fromJson),
+          );
+      } catch (_) {
+        _errorMessage = 'The server returned an invalid customer list.';
+      }
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
 
   void clearMessages() {
     _errorMessage = null;
@@ -118,47 +112,57 @@ class AdminCustomersProvider extends ChangeNotifier {
   }
 
   List<Customer> searchCustomers(String query) {
-    if (query.isEmpty) return _customers;
-    final lowerQuery = query.toLowerCase();
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return customers;
     return _customers
-        .where((c) =>
-            c.name.toLowerCase().contains(lowerQuery) ||
-            c.email.toLowerCase().contains(lowerQuery) ||
-            c.phone.contains(query))
+        .where(
+          (customer) =>
+              customer.name.toLowerCase().contains(normalized) ||
+              customer.email.toLowerCase().contains(normalized) ||
+              customer.phone.contains(query),
+        )
         .toList();
   }
 
   List<Customer> getTopCustomers({int limit = 10}) {
-    final sorted = List<Customer>.from(_customers);
-    sorted.sort((a, b) => b.totalSpent.compareTo(a.totalSpent));
+    final sorted = List<Customer>.from(_customers)
+      ..sort((a, b) => b.totalSpent.compareTo(a.totalSpent));
     return sorted.take(limit).toList();
   }
 
   List<Customer> getRecentCustomers({int limit = 10}) {
-    final sorted = List<Customer>.from(_customers);
-    sorted.sort((a, b) => b.joinedDate.compareTo(a.joinedDate));
+    final sorted = List<Customer>.from(_customers)
+      ..sort((a, b) => b.joinedDate.compareTo(a.joinedDate));
     return sorted.take(limit).toList();
   }
 
   Future<bool> toggleCustomerStatus(String customerId) async {
-    _isLoading = true;
-    _errorMessage = null;
-    _successMessage = null;
-    notifyListeners();
-
-    // Simulate API call
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-
-    final index = _customers.indexWhere((c) => c.id == customerId);
-    if (index == -1) {
-      _isLoading = false;
+    final index = _customers.indexWhere(
+      (customer) => customer.id == customerId,
+    );
+    if (index < 0) {
       _errorMessage = 'Customer not found.';
       notifyListeners();
       return false;
     }
-
     final customer = _customers[index];
-    _customers[index] = Customer(
+    _isLoading = true;
+    _errorMessage = null;
+    _successMessage = null;
+    notifyListeners();
+    final response = await _apiService.put<Map<String, dynamic>>(
+      '/admin/customers/${Uri.encodeComponent(customerId)}',
+      body: {'is_active': !customer.isActive},
+      fromJson: _asMap,
+    );
+    _isLoading = false;
+    if (!response.success) {
+      _errorMessage =
+          response.error ?? 'Unable to update the customer account.';
+      notifyListeners();
+      return false;
+    }
+    final updated = Customer(
       id: customer.id,
       name: customer.name,
       email: customer.email,
@@ -169,15 +173,17 @@ class AdminCustomersProvider extends ChangeNotifier {
       joinedDate: customer.joinedDate,
       isActive: !customer.isActive,
     );
-
-    if (_selectedCustomer?.id == customerId) {
-      _selectedCustomer = _customers[index];
-    }
-
-    _isLoading = false;
-    _successMessage =
-        'Customer status updated to ${!customer.isActive ? 'Active' : 'Inactive'}.';
+    _customers[index] = updated;
+    if (_selectedCustomer?.id == customerId) _selectedCustomer = updated;
+    _successMessage = updated.isActive
+        ? 'Customer account activated.'
+        : 'Customer account deactivated.';
     notifyListeners();
     return true;
   }
+
+  static Map<String, dynamic> _asMap(dynamic json) =>
+      json is Map<String, dynamic>
+      ? json
+      : throw const FormatException('Invalid customer response.');
 }

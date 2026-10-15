@@ -6,9 +6,23 @@ import '../../navigation/app_routes.dart';
 import '../../providers/admin_customers_provider.dart';
 import '../../providers/admin_orders_provider.dart';
 import '../../providers/admin_products_provider.dart';
+import '../../providers/admin_system_status_provider.dart';
 
-class AdminMoreScreen extends StatelessWidget {
+class AdminMoreScreen extends StatefulWidget {
   const AdminMoreScreen({super.key});
+
+  @override
+  State<AdminMoreScreen> createState() => _AdminMoreScreenState();
+}
+
+class _AdminMoreScreenState extends State<AdminMoreScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AdminSystemStatusProvider>().load();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,9 +91,9 @@ class AdminMoreScreen extends StatelessWidget {
               const SizedBox(height: 12),
               _AdminSettingsCard(),
               const SizedBox(height: 24),
-              // Payout Information
+              // Payment Setup
               Text(
-                'Payout Information',
+                'Payment Setup',
                 style: Theme.of(context).textTheme.titleLarge!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
@@ -194,16 +208,10 @@ class _BusinessHealthCard extends StatelessWidget {
                 ),
                 const Divider(height: 16),
                 _HealthMetric(
-                  label: 'Customer Satisfaction',
-                  value: '${(4.6).toStringAsFixed(1)}/5.0',
-                  icon: Icons.star,
-                  color: Colors.amber,
-                ),
-                const Divider(height: 16),
-                _HealthMetric(
                   label: 'Product Availability',
-                  value:
-                      '${(productProvider.availableProducts / productProvider.totalProducts * 100).toStringAsFixed(0)}%',
+                  value: productProvider.totalProducts == 0
+                      ? '—'
+                      : '${(productProvider.availableProducts / productProvider.totalProducts * 100).toStringAsFixed(0)}%',
                   icon: Icons.inventory_2,
                   color: AppColors.brandOrange,
                 ),
@@ -266,44 +274,52 @@ class _AdminSettingsCard extends StatelessWidget {
       child: Column(
         children: [
           _SettingsTile(
+            icon: Icons.storefront_rounded,
+            title: 'Store profile',
+            subtitle: 'Manage public contact and delivery information',
+            onTap: () =>
+                Navigator.pushNamed(context, AppRoutes.adminStoreProfile),
+          ),
+          const Divider(height: 0),
+          _SettingsTile(
             icon: Icons.notifications,
             title: 'Notifications',
-            subtitle: 'Manage alert settings',
-            onTap: () => _showComingSoon(context),
+            subtitle: 'Email and SMS delivery need provider setup',
+            onTap: () => _showNotConfigured(
+              context,
+              'Email and SMS providers are not configured yet.',
+            ),
           ),
           const Divider(height: 0),
           _SettingsTile(
             icon: Icons.security,
             title: 'Security',
-            subtitle: 'Update password & permissions',
-            onTap: () => _showComingSoon(context),
+            subtitle: 'Manage your password and sign out from Admin Profile',
+            onTap: () => Navigator.pushNamed(context, AppRoutes.adminProfile),
           ),
           const Divider(height: 0),
           _SettingsTile(
             icon: Icons.language,
             title: 'Language & Region',
-            subtitle: 'Change app language',
-            onTap: () => _showComingSoon(context),
+            subtitle:
+                'Language preference is saved; full translation is pending',
+            onTap: () => Navigator.pushNamed(context, AppRoutes.language),
           ),
           const Divider(height: 0),
           _SettingsTile(
             icon: Icons.help,
             title: 'Help & Support',
-            subtitle: 'Contact support team',
-            onTap: () => _showComingSoon(context),
+            subtitle: 'Review and resolve customer messages',
+            onTap: () => Navigator.pushNamed(context, AppRoutes.adminSupport),
           ),
         ],
       ),
     );
   }
 
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('This feature is coming soon!'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+  void _showNotConfigured(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -342,62 +358,15 @@ class _PayoutCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _PayoutRow('Cash on delivery', 'Active'),
+            const Divider(height: 18),
+            _PayoutRow('GCash', 'Waiting for sandbox setup'),
+            const SizedBox(height: 8),
+            _PayoutRow('Maya', 'Waiting for sandbox setup'),
+            const SizedBox(height: 12),
             Text(
-              'Bank Account Details',
-              style: Theme.of(context).textTheme.titleMedium!
-                  .copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _PayoutRow('Bank Name', 'BDO (Demo - Not Connected)'),
-                  const SizedBox(height: 8),
-                  _PayoutRow('Account Number', '****1234 (Hidden)'),
-                  const SizedBox(height: 8),
-                  _PayoutRow('Account Holder', 'BurgerBites Restaurant'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Backend integration required for payout settings',
-                  ),
-                  backgroundColor: Colors.orange,
-                ),
-              ),
-              child: const Text('Update Payout Settings'),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info, color: Colors.blue),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Payouts are processed weekly on Fridays',
-                      style: Theme.of(context).textTheme.bodySmall!
-                          .copyWith(color: Colors.blue[900]),
-                    ),
-                  ),
-                ],
-              ),
+              'Online payments will stay disabled until payment credentials and callback verification are configured.',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
         ),
@@ -431,43 +400,81 @@ class _PayoutRow extends StatelessWidget {
 class _AppInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _InfoRow('App Name', 'BurgerBites Admin'),
-            const SizedBox(height: 12),
-            _InfoRow('Version', '1.0.0'),
-            const SizedBox(height: 12),
-            _InfoRow('Build', '#2024'),
-            const SizedBox(height: 12),
-            _InfoRow('Environment', 'Demo Mode (No Backend)'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+    return Consumer<AdminSystemStatusProvider>(
+      builder: (context, status, _) => Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _InfoRow('Application', 'BurgerBites Admin'),
+              const SizedBox(height: 12),
+              _InfoRow(
+                'PHP API',
+                status.isLoading
+                    ? 'Checking…'
+                    : status.errorMessage != null
+                    ? 'Unavailable'
+                    : status.hasChecked
+                    ? 'Connected'
+                    : 'Not checked',
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.warning, color: Colors.orange),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Running in demo mode. Changes are not persisted to a backend server.',
-                      style: Theme.of(context).textTheme.bodySmall!
-                          .copyWith(color: Colors.orange[900]),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 12),
+              _InfoRow(
+                'MySQL',
+                status.isLoading
+                    ? 'Checking…'
+                    : status.databaseConnected
+                    ? 'Connected'
+                    : status.hasChecked
+                    ? 'Unavailable'
+                    : 'Not checked',
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              _InfoRow(
+                'Workflow schema',
+                status.isLoading
+                    ? 'Checking…'
+                    : status.errorMessage != null
+                    ? 'Unable to verify'
+                    : status.workflowSchemaReady
+                    ? 'Ready'
+                    : status.hasChecked
+                    ? 'Needs migration 003'
+                    : 'Not checked',
+              ),
+              if (status.missingRequirements.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  'Missing: ${status.missingRequirements.join(', ')}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              if (status.errorMessage != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  status.errorMessage!,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: status.isLoading ? null : status.load,
+                  icon: status.isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh_rounded, size: 17),
+                  label: Text(status.isLoading ? 'Checking…' : 'Check again'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../data/demo_data.dart';
 import '../../providers/favorites_provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/favorite_button.dart';
@@ -67,13 +66,9 @@ class FavoritesScreen extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                     subtitle: Text('₱${product.price.toStringAsFixed(2)}'),
-                    onTap: () => Navigator.of(context).pushNamed(
-                      '/product-details',
-                      arguments: DemoData.products.firstWhere(
-                        (item) => item.id == product.id,
-                        orElse: () => product,
-                      ),
-                    ),
+                    onTap: () =>
+                        Navigator.of(context)
+                            .pushNamed('/product-details', arguments: product),
                     trailing: FavoriteButton(product: product, iconSize: 20),
                   ),
                 );

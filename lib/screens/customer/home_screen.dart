@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../data/demo_data.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/catalog_provider.dart';
+import '../../providers/customer_orders_provider.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/food_image.dart';
 import 'menu_screen.dart';
 import 'order_history_screen.dart';
@@ -65,7 +67,19 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final products = DemoData.products;
+    final catalog = context.watch<CatalogProvider>();
+    final products = catalog.products;
+    final recentOrders = context
+        .watch<CustomerOrdersProvider>()
+        .orders
+        .take(2)
+        .toList();
+    final auth = context.watch<AuthService>();
+    final deliveryAddress = auth.currentUserAddress?.trim().isNotEmpty == true
+        ? auth.currentUserAddress!
+        : auth.currentUserBranch?.trim().isNotEmpty == true
+        ? auth.currentUserBranch!
+        : 'Add your delivery address';
     return CustomScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
@@ -130,10 +144,10 @@ class _HomeTab extends StatelessWidget {
                     size: 17,
                   ),
                   const SizedBox(width: 4),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Compostela, Cebu',
-                      style: TextStyle(
+                      deliveryAddress,
+                      style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
                       ),
@@ -141,7 +155,7 @@ class _HomeTab extends StatelessWidget {
                   ),
                   TextButton.icon(
                     onPressed: () =>
-                        _showDemoNotice(context, 'Location selection'),
+                        Navigator.of(context).pushNamed('/profile'),
                     icon: const Icon(
                       Icons.keyboard_arrow_down_rounded,
                       size: 17,
@@ -199,16 +213,39 @@ class _HomeTab extends StatelessWidget {
                 onTap: () => Navigator.of(context).pushNamed('/menu'),
               ),
               const SizedBox(height: 12),
-              SizedBox(
-                height: 220,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: products.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) =>
-                      _ProductCard(product: products[index]),
+              if (catalog.isLoading && products.isEmpty)
+                const SizedBox(
+                  height: 90,
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (products.isEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      catalog.errorMessage ??
+                          'Our menu is being updated. Please check again soon.',
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                    if (catalog.errorMessage != null)
+                      TextButton.icon(
+                        onPressed: () => catalog.loadProducts(force: true),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Try again'),
+                      ),
+                  ],
+                )
+              else
+                SizedBox(
+                  height: 220,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: products.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) =>
+                        _ProductCard(product: products[index]),
+                  ),
                 ),
-              ),
               const SizedBox(height: 22),
               _SectionHeading(
                 title: 'Your recent orders',
@@ -216,61 +253,67 @@ class _HomeTab extends StatelessWidget {
                 onTap: () => Navigator.of(context).pushNamed('/order-history'),
               ),
               const SizedBox(height: 12),
-              ...DemoData.customerOrders
-                  .take(2)
-                  .map(
-                    (order) => Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(13),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceMuted,
-                              borderRadius: BorderRadius.circular(13),
-                            ),
-                            child: const Icon(
-                              Icons.receipt_long_rounded,
-                              color: AppColors.brandOrange,
-                            ),
-                          ),
-                          const SizedBox(width: 11),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  order.id,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '${order.items.length} item${order.items.length == 1 ? '' : 's'} · ${order.status.displayName}',
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            '₱${order.total.toStringAsFixed(0)}',
-                            style: const TextStyle(fontWeight: FontWeight.w900),
-                          ),
-                        ],
-                      ),
-                    ),
+              if (recentOrders.isEmpty)
+                const Text(
+                  'Your saved orders will appear here.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
                   ),
+                ),
+              ...recentOrders.map(
+                (order) => Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(13),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceMuted,
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: const Icon(
+                          Icons.receipt_long_rounded,
+                          color: AppColors.brandOrange,
+                        ),
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              order.id,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '${order.items.length} item${order.items.length == 1 ? '' : 's'} · ${order.status.displayName}',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '₱${order.total.toStringAsFixed(0)}',
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -619,15 +662,6 @@ class _CartButton extends StatelessWidget {
       ),
     );
   }
-}
-
-void _showDemoNotice(BuildContext context, String feature) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('$feature is a demo option.'),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
 }
 
 class MenuScreenButton extends StatelessWidget {

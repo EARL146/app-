@@ -18,6 +18,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
+  late TextEditingController _stockController;
   late TextEditingController _imageController;
 
   late String _selectedCategory;
@@ -33,6 +34,9 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     _priceController = TextEditingController(
       text: widget.product.price.toString(),
     );
+    _stockController = TextEditingController(
+      text: widget.product.stockQuantity.toString(),
+    );
     _imageController = TextEditingController(
       text: widget.product.imageUrl ?? '',
     );
@@ -45,6 +49,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
+    _stockController.dispose();
     _imageController.dispose();
     super.dispose();
   }
@@ -137,6 +142,13 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
                     label: 'Price (₱)',
                     controller: _priceController,
                     hint: 'Enter price',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    label: 'Stock quantity',
+                    controller: _stockController,
+                    hint: 'Available units',
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 16),
@@ -262,7 +274,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
             isExpanded: true,
             underline: const SizedBox(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            items: ['Burgers', 'Chicken', 'Sides', 'Drinks']
+            items: {'Burgers', 'Chicken', 'Sides', 'Drinks', _selectedCategory}
                 .map(
                   (category) =>
                       DropdownMenuItem(value: category, child: Text(category)),
@@ -306,6 +318,7 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
       name: _nameController.text,
       description: _descriptionController.text,
       price: double.tryParse(_priceController.text) ?? 0,
+      stockQuantity: int.tryParse(_stockController.text) ?? -1,
       category: _selectedCategory,
       imageUrl: _imageController.text,
       available: _isAvailable,
