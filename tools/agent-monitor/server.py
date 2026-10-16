@@ -21,12 +21,16 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+from agent_events import agent_overview
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 STATIC_ROOT = Path(__file__).resolve().parent
 IMAGE_ROOTS = ("assets", "lib/assets", "web/assets", "docs/assets")
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"}
 NOTE_FILES = (
+    "docs/AGENT_TEAM.md",
+    "docs/AGENT_MONITOR.md",
     "docs/NEXT_SESSION.md",
     "docs/KNOWN_ISSUES.md",
     "docs/TESTING.md",
@@ -494,11 +498,13 @@ class MonitorHandler(BaseHTTPRequestHandler):
                     "updated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
                     "git": git_snapshot(self.project_root),
                     "sessions": self.sessions.list(),
+                    "agents": agent_overview(),
                     "notes": [path for path in NOTE_FILES if (self.project_root / path).is_file()],
                     "images": list_images(self.project_root),
                     "limits": [
                         "Codex data is read from local JSONL records; this is not an official live-session API.",
                         "Prompts, tool arguments, command text, and command/tool output are not displayed.",
+                        "Agent role metrics come only from explicit local agent-event records; this is not a live agent API.",
                         "GitHub is not contacted. Ahead/behind counts use cached remote-tracking refs only.",
                     ],
                 })

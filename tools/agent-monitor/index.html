@@ -19,6 +19,7 @@
     </section>
     <nav class="tabs" aria-label="Dashboard sections">
       <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="agents">Agents</button>
       <button class="tab" data-tab="activity">Activity</button>
       <button class="tab" data-tab="changes">Git changes</button>
       <button class="tab" data-tab="memory">Project notes</button>
@@ -36,6 +37,18 @@
         <article class="card"><div class="card-heading"><div><p class="eyebrow">RECORDED USAGE</p><h2>Codex usage totals</h2></div></div><div id="usage" class="usage-grid"></div><p class="fineprint">Shown only when the local log provides a thread usage record. These are Codex-reported figures, not estimates.</p></article>
       </div>
       <article class="card"><div class="card-heading"><div><p class="eyebrow">SCOPE</p><h2>What this dashboard can see</h2></div></div><ul id="limits" class="limit-list"></ul></article>
+    </section>
+    <section id="panel-agents" class="panel">
+      <article class="card">
+        <div class="card-heading"><div><p class="eyebrow">NAMED ROLE ACTIVITY</p><h2>Agent runs and recorded outcomes</h2></div><span class="tag">explicit local log</span></div>
+        <p class="muted">These figures come from task events deliberately recorded in the local agent ledger. They are not a live agent API, a complete view of every Codex session, or an automated quality score. Verification counts include every recorded attempt, including retries.</p>
+        <div id="agents-source" class="agents-source" role="status"></div>
+      </article>
+      <div id="agent-role-grid" class="agent-role-grid"></div>
+      <article class="card">
+        <div class="card-heading"><div><p class="eyebrow">RECENT TASK HISTORY</p><h2>Explicitly recorded runs</h2></div><span id="agent-event-count" class="tag">0 events</span></div>
+        <div id="agent-runs" class="agent-runs"></div>
+      </article>
     </section>
     <section id="panel-activity" class="panel">
       <article class="card"><div class="card-heading"><div><p class="eyebrow">TIMELINE</p><h2>Recorded task and tool events</h2></div><span class="fineprint">Arguments and outputs are hidden</span></div><div id="timeline" class="timeline"></div></article>

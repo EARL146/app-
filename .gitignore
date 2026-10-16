@@ -39,6 +39,9 @@ migrate_working_dir/
 # ICM project memory is local user context, not repository content
 /.icm/
 
+# Local agent run history is private workstation state
+/tools/agent-monitor/.state/
+
 # Local secrets (keep template files such as .env.example trackable)
 .env
 .env.*

@@ -80,6 +80,7 @@ class MonitorTests(unittest.TestCase):
             (root / "docs").mkdir(parents=True)
             (root / "assets").mkdir()
             (root / ".git").mkdir()
+            (root / "docs" / "AGENT_TEAM.md").write_text("# Agent team\nSafe role definitions", encoding="utf-8")
             (root / "docs" / "NEXT_SESSION.md").write_text("# Memory note\nSafe preview", encoding="utf-8")
             (root / "assets" / "sample.png").write_bytes(b"actual image bytes")
             srv = server.MonitorServer(("127.0.0.1", 0), root, Path(temp) / "codex")
@@ -89,8 +90,12 @@ class MonitorTests(unittest.TestCase):
             try:
                 with urllib.request.urlopen(base + "/api/overview") as response:
                     overview = json.load(response)
-                self.assertEqual(overview["notes"], ["docs/NEXT_SESSION.md"])
+                self.assertEqual(overview["notes"], ["docs/AGENT_TEAM.md", "docs/NEXT_SESSION.md"])
+                self.assertEqual(len(overview["agents"]["roles"]), 4)
+                self.assertEqual(overview["agents"]["roles"][1]["role"], "Backend/API Developer")
                 self.assertEqual(overview["images"][0]["path"], "assets/sample.png")
+                with urllib.request.urlopen(base + "/api/note?path=docs%2FAGENT_TEAM.md") as response:
+                    self.assertIn("Safe role definitions", json.load(response)["content"])
                 with urllib.request.urlopen(base + "/api/note?path=docs%2FNEXT_SESSION.md") as response:
                     self.assertIn("Safe preview", json.load(response)["content"])
                 with urllib.request.urlopen(base + "/api/image?path=assets%2Fsample.png") as response:

@@ -91,6 +91,175 @@ function renderUsage(sessions) {
   $("usage").dataset.session = session.session_id;
 }
 
+function metricText(value) {
+  if (value === null || value === undefined || value === "") return "—";
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? number(numeric) : "—";
+}
+
+function durationText(value) {
+  if (value === null || value === undefined || value === "") return "—";
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds < 0) return "—";
+  if (seconds < 60) return String(Math.round(seconds)) + " sec";
+  const minutes = Math.floor(seconds / 60);
+  const remainder = Math.round(seconds % 60);
+  return remainder ? minutes + " min " + remainder + " sec" : minutes + " min";
+}
+
+function statusClass(status) {
+  return ["active", "blocked", "completed", "failed"].includes(status) ? status : "unknown";
+}
+
+function runCheckSummary(checks) {
+  return (Array.isArray(checks) ? checks : []).reduce((sum, check) => {
+    sum.passed += Number(check?.passed) || 0;
+    sum.failed += Number(check?.failed) || 0;
+    return sum;
+  }, { passed: 0, failed: 0 });
+}
+
+function renderAgentRuns(runs) {
+  const container = $("agent-runs");
+  container.replaceChildren();
+  const items = Array.isArray(runs) ? runs : [];
+  if (!items.length) {
+    container.append(el("p", "empty", "No named-agent task runs have been recorded yet. Start and finish work through the local agent event logger to create history."));
+    return;
+  }
+  items.slice(0, 20).forEach((run) => {
+    const card = el("article", "agent-run");
+    const heading = el("div", "agent-run-heading");
+    const identity = el("div", "agent-run-identity");
+    identity.append(el("b", "", run.name || run.agent_id || "Agent name unavailable"));
+    identity.append(el("span", "agent-run-role", run.role || "Role not set"));
+    heading.append(identity, el("span", "agent-run-status " + statusClass(run.status), run.status || "Status not recorded"));
+    card.append(heading);
+
+    card.append(el("p", "agent-run-task", run.task || "Task label not recorded"));
+    const meta = el("div", "agent-run-meta");
+    meta.append(el("span", "", "Started " + dateText(run.started_at)));
+    if (run.finished_at) meta.append(el("span", "", "Finished " + dateText(run.finished_at)));
+    meta.append(el("span", "", "Duration " + durationText(run.duration_seconds)));
+    meta.append(el("span", "", "Blockers " + metricText(run.blocker_count)));
+    card.append(meta);
+
+    const checks = Array.isArray(run.checks) ? run.checks : [];
+    const totals = runCheckSummary(checks);
+    const checksBox = el("div", "agent-run-checks");
+    checksBox.append(el("b", "", "Verification: " + number(totals.passed) + " passed · " + number(totals.failed) + " failed"));
+    if (checks.length) {
+      const list = el("ul", "agent-check-list");
+      checks.forEach((check) => {
+        const item = el("li", "");
+        item.append(el("span", "", check.label || "Check label not recorded"));
+        item.append(el("span", "", metricText(check.passed) + " passed · " + metricText(check.failed) + " failed"));
+        list.append(item);
+      });
+      checksBox.append(list);
+    } else {
+      checksBox.append(el("span", "fineprint", "No verification checks recorded."));
+    }
+    card.append(checksBox);
+
+    const events = Array.isArray(run.events) ? run.events.slice(-20) : [];
+    const activity = el("div", "agent-run-events");
+    activity.append(el("b", "", "Recorded activity (" + number(events.length) + ")"));
+    if (events.length) {
+      const list = el("ol", "agent-event-list");
+      events.forEach((event) => {
+        const item = el("li", "agent-event");
+        const type = ({ started: "Started", blocked: "Blocker", verification: "Verification", finished: "Finished" })[event.event] || "Recorded event";
+        item.append(el("time", "agent-event-time", dateText(event.timestamp)));
+        const description = [type, event.label, event.status].filter(Boolean).join(" · ");
+        item.append(el("span", "", description));
+        list.append(item);
+      });
+      activity.append(list);
+    } else {
+      activity.append(el("span", "fineprint", "No activity events recorded."));
+    }
+    card.append(activity);
+
+    const files = Array.isArray(run.files) ? run.files : [];
+    const changed = el("div", "agent-run-files");
+    changed.append(el("b", "", "Changed paths (" + number(files.length) + ")"));
+    if (files.length) {
+      const list = el("ul", "agent-path-list");
+      files.forEach((path) => list.append(el("li", "", path)));
+      changed.append(list);
+    } else {
+      changed.append(el("span", "fineprint", "No changed paths recorded."));
+    }
+    card.append(changed);
+    container.append(card);
+  });
+}
+
+function renderAgents(agentData) {
+  const data = agentData && typeof agentData === "object" ? agentData : {};
+  const roles = Array.isArray(data.roles) ? data.roles : [];
+  const runs = Array.isArray(data.runs) ? data.runs : [];
+  const available = data.available === true;
+  const source = data.source || (agentData ? "Source label not provided" : "Agent records are not exposed in this overview response.");
+  const sourceBox = $("agents-source");
+  sourceBox.replaceChildren();
+  const sourceStatus = available ? "Recorded run data available" : data.error ? "Agent ledger unavailable" : "No runs recorded yet";
+  sourceBox.append(el("span", "agents-availability" + (available ? " available" : " unavailable"), sourceStatus));
+  sourceBox.append(el("span", "agents-source-text", "Source: " + source));
+  if (!available && data.error) {
+    sourceBox.append(el("p", "fineprint", "The role definitions may still be listed below, but the local event log could not be read safely."));
+  } else if (!available) {
+    sourceBox.append(el("p", "fineprint", "The role definitions are configured. Counts stay at zero until task runs are recorded with the local event logger."));
+  }
+
+  const roleGrid = $("agent-role-grid");
+  roleGrid.replaceChildren();
+  if (!roles.length) {
+    roleGrid.append(el("p", "empty agent-empty", "No named agent roles are configured in the returned data."));
+  }
+  roles.forEach((agent) => {
+    const card = el("article", "card agent-role-card");
+    const heading = el("div", "card-heading agent-role-heading");
+    const identity = el("div", "");
+    identity.append(el("p", "eyebrow", agent.agent_id || "AGENT"));
+    identity.append(el("h2", "", agent.name || "Agent name unavailable"));
+    identity.append(el("p", "agent-role-name", agent.role || "Role not set"));
+    const metrics = agent.metrics && typeof agent.metrics === "object" ? agent.metrics : {};
+    const active = Number(metrics.active) || 0;
+    const blocked = Number(metrics.blocked) || 0;
+    const state = active > 0 ? metricText(metrics.active) + " active record" + (active === 1 ? "" : "s")
+      : blocked > 0 ? metricText(metrics.blocked) + " blocked record" + (blocked === 1 ? "" : "s")
+        : "No active run recorded";
+    heading.append(identity, el("span", "agent-role-state" + (active > 0 ? " active" : blocked > 0 ? " blocked" : ""), state));
+    card.append(heading);
+
+    const grid = el("div", "agent-metrics");
+    const rate = metrics.completion_rate_percent === null || metrics.completion_rate_percent === undefined ? "—" : metricText(metrics.completion_rate_percent) + "%";
+    const entries = [
+      ["Recorded runs", metricText(metrics.recorded_runs)],
+      ["Completed", metricText(metrics.completed)],
+      ["Active", metricText(metrics.active)],
+      ["Blocked", metricText(metrics.blocked)],
+      ["Failed", metricText(metrics.failed)],
+      ["Completion rate", rate],
+      ["Average completion", durationText(metrics.average_completion_seconds)],
+      ["Checks passed / failed", metricText(metrics.verification_passed) + " / " + metricText(metrics.verification_failed)],
+      ["Reported changed files", metricText(metrics.reported_changed_files)]
+    ];
+    entries.forEach(([label, value]) => {
+      const item = el("div", "agent-metric");
+      item.append(el("span", "", label), el("b", "", value));
+      grid.append(item);
+    });
+    card.append(grid);
+    roleGrid.append(card);
+  });
+  const eventCount = metricText(data.event_count);
+  $("agent-event-count").textContent = eventCount + " recorded event" + (Number(data.event_count) === 1 ? "" : "s");
+  renderAgentRuns(runs);
+}
+
 function renderGit(git) {
   $("branch").textContent = git.branch || "Git unavailable";
   const box = $("git-summary");
@@ -233,6 +402,7 @@ async function refresh() {
     renderEvents(overview.sessions);
     renderNotes(overview.notes);
     renderImages(overview.images);
+    renderAgents(overview.agents);
     const limits = $("limits");
     limits.replaceChildren();
     overview.limits.forEach((line) => limits.append(el("li", "", line)));
