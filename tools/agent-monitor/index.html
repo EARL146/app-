@@ -28,8 +28,13 @@
     <div id="error" class="error hidden" role="status"></div>
     <section id="panel-overview" class="panel active">
       <div id="summary" class="summary-grid"></div>
+      <article class="card process-card">
+        <div class="card-heading"><div><p class="eyebrow">OS PROCESS SNAPSHOT</p><h2>Codex processes running now</h2></div><span class="tag process-tag">OS observed</span></div>
+        <p class="muted">This is a point-in-time OS snapshot matched by executable basename (codex.exe or codex). It does not verify the executable path or publisher, identify agent roles, or match processes to JSONL sessions.</p>
+        <div id="codex-processes" class="process-list" aria-live="polite"></div>
+      </article>
       <div class="two-col">
-        <article class="card"><div class="card-heading"><div><p class="eyebrow">SESSIONS</p><h2>Observed Codex sessions</h2></div><span class="tag">local JSONL</span></div><div id="sessions" class="session-list"></div></article>
+        <article class="card"><div class="card-heading"><div><p class="eyebrow">JSONL SESSION ACTIVITY</p><h2>Codex session logs</h2></div><span class="tag">log-derived</span></div><p class="fineprint session-source-note">Activity status is inferred from local JSONL records and file timestamps; it does not confirm a running process.</p><div id="sessions" class="session-list"></div></article>
         <article class="card"><div class="card-heading"><div><p class="eyebrow">GIT</p><h2>Worktree snapshot</h2></div><span id="branch" class="tag">—</span></div><div id="git-summary" class="git-summary"></div><p class="fineprint">Remote counts use locally cached refs. This dashboard never fetches, commits, stages, or pushes.</p></article>
       </div>
       <div class="two-col">

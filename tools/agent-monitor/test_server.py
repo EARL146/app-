@@ -5,12 +5,80 @@ import tempfile
 import unittest
 import urllib.error
 import urllib.request
+from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 import server
 
 
 class MonitorTests(unittest.TestCase):
+    def test_codex_process_filter_keeps_only_safe_codex_metadata(self):
+        entries = [
+            {
+                "pid": 101,
+                "parent_pid": 100,
+                "name": "codex.exe",
+                "started_at": "2026-10-16T08:30:00Z",
+                "executable_path": "C:/Users/private/codex.exe",
+                "command_line": "codex --api-key secret-value",
+            },
+            {
+                "pid": 102,
+                "parent_pid": None,
+                "name": "Codex",
+                "started_at": None,
+                "path": "C:/private/codex",
+                "cmdline": "contains private input",
+            },
+            {"pid": 103, "parent_pid": 100, "name": "node.exe", "started_at": None},
+            {"pid": "invalid", "parent_pid": None, "name": "codex.exe", "started_at": None},
+            {"pid": 104, "parent_pid": None, "name": "codex-helper.exe", "started_at": None},
+        ]
+
+        result = server._filter_codex_processes(entries)
+
+        self.assertEqual({row["pid"] for row in result}, {101, 102})
+        for row in result:
+            self.assertEqual(set(row), {"pid", "parent_pid", "name", "started_at"})
+        encoded = json.dumps(result)
+        for private in ("C:/Users/private", "api-key", "secret-value", "contains private input"):
+            self.assertNotIn(private, encoded)
+
+    def test_codex_process_snapshot_reports_supported_empty_result(self):
+        with patch("server.os.name", "nt"), patch("server._windows_codex_processes", return_value=[]):
+            result = server.codex_process_snapshot()
+
+        self.assertTrue(result["available"])
+        self.assertEqual(result["source"], "Windows Toolhelp32Snapshot")
+        self.assertEqual(result["processes"], [])
+        self.assertIn("observed_at", result)
+        datetime.fromisoformat(result["observed_at"].replace("Z", "+00:00"))
+
+    def test_codex_process_snapshot_reports_unsupported_platform(self):
+        with patch("server.os.name", "posix"), patch("server._windows_codex_processes") as enumerate_processes:
+            result = server.codex_process_snapshot()
+
+        enumerate_processes.assert_not_called()
+        self.assertFalse(result["available"])
+        self.assertEqual(result["source"], "unsupported")
+        self.assertEqual(result["error"], "unsupported_platform")
+        datetime.fromisoformat(result["observed_at"].replace("Z", "+00:00"))
+
+    def test_codex_process_snapshot_normalizes_native_enumeration_errors(self):
+        with patch("server.os.name", "nt"), patch(
+            "server._windows_codex_processes",
+            side_effect=RuntimeError("private native error details"),
+        ):
+            result = server.codex_process_snapshot()
+
+        self.assertFalse(result["available"])
+        self.assertEqual(result["source"], "Windows Toolhelp32Snapshot")
+        self.assertEqual(result["error"], "process_snapshot_unavailable")
+        self.assertEqual(result["processes"], [])
+        self.assertNotIn("private native error details", json.dumps(result))
+        datetime.fromisoformat(result["observed_at"].replace("Z", "+00:00"))
+
     def test_session_parser_keeps_metadata_and_omits_private_content(self):
         records = [
             {"type": "session_meta", "timestamp": "2026-10-15T10:00:00Z", "payload": {"session_id": "12345678-secret", "cli_version": "1.2.3", "cwd": "C:/private"}},

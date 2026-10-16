@@ -56,6 +56,40 @@ function renderSessions(sessions) {
   });
 }
 
+function renderProcesses(snapshot) {
+  const container = $("codex-processes");
+  container.replaceChildren();
+  if (!snapshot || snapshot.available !== true) {
+    container.append(el("p", "empty process-empty", "OS process snapshot unavailable. The monitor could not verify whether a Codex process is running."));
+    return;
+  }
+
+  const source = typeof snapshot.source === "string" && snapshot.source.trim() ? snapshot.source : "OS process snapshot";
+  container.append(el("p", "process-observation fineprint", `Source: ${source} · Observed ${dateText(snapshot.observed_at)}`));
+
+  const processes = Array.isArray(snapshot.processes) ? snapshot.processes : [];
+  if (!processes.length) {
+    container.append(el("p", "empty process-empty", "No Codex processes were found in this OS snapshot."));
+    return;
+  }
+
+  const list = el("div", "process-items");
+  processes.forEach((process) => {
+    const item = el("div", "process-item");
+    const name = typeof process?.name === "string" && process.name.trim() ? process.name : "Unnamed process";
+    item.append(el("b", "process-name", name));
+    const details = el("div", "process-meta");
+    details.append(
+      el("span", "", `PID ${process?.pid ?? "—"}`),
+      el("span", "", `Parent PID ${process?.parent_pid ?? "—"}`),
+      el("span", "", `Started ${dateText(process?.started_at)}`),
+    );
+    item.append(details);
+    list.append(item);
+  });
+  container.append(list);
+}
+
 function renderTasks(sessions) {
   const container = $("tasks");
   container.replaceChildren();
@@ -394,6 +428,7 @@ async function refresh() {
       card.append(el("div", "stat-label", label), el("div", "stat-value", value), el("div", "stat-sub", sub));
       summary.append(card);
     });
+    renderProcesses(overview.codex_processes);
     renderSessions(overview.sessions);
     renderTasks(overview.sessions);
     renderUsage(overview.sessions);

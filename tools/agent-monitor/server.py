@@ -253,6 +253,153 @@ def parse_session_file(path: Path) -> dict:
     return summarize_session(path, state)
 
 
+def _filter_codex_processes(entries: object) -> list[dict]:
+    """Return an allowlisted view of Codex CLI rows from a native process snapshot."""
+    if not isinstance(entries, (list, tuple)):
+        return []
+    result = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        pid = entry.get("pid")
+        parent_pid = entry.get("parent_pid")
+        name = entry.get("name")
+        if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
+            continue
+        if parent_pid is not None and (isinstance(parent_pid, bool) or not isinstance(parent_pid, int)):
+            parent_pid = None
+        if not isinstance(name, str) or name.casefold() not in {"codex.exe", "codex"}:
+            continue
+        started_at = entry.get("started_at")
+        result.append({
+            "pid": pid,
+            "parent_pid": parent_pid,
+            "name": "codex.exe" if name.casefold() == "codex.exe" else "codex",
+            "started_at": started_at if isinstance(started_at, str) else None,
+        })
+    return result
+
+
+def _windows_codex_processes() -> list[dict]:
+    """Read process entries named codex.exe/codex; never inspect paths or command lines."""
+    import ctypes
+    from ctypes import wintypes
+
+    class PROCESSENTRY32W(ctypes.Structure):
+        _fields_ = [
+            ("dwSize", wintypes.DWORD),
+            ("cntUsage", wintypes.DWORD),
+            ("th32ProcessID", wintypes.DWORD),
+            ("th32DefaultHeapID", ctypes.c_size_t),
+            ("th32ModuleID", wintypes.DWORD),
+            ("cntThreads", wintypes.DWORD),
+            ("th32ParentProcessID", wintypes.DWORD),
+            ("pcPriClassBase", wintypes.LONG),
+            ("dwFlags", wintypes.DWORD),
+            ("szExeFile", wintypes.WCHAR * 260),
+        ]
+
+    class FILETIME(ctypes.Structure):
+        _fields_ = [("dwLowDateTime", wintypes.DWORD), ("dwHighDateTime", wintypes.DWORD)]
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateToolhelp32Snapshot.argtypes = (wintypes.DWORD, wintypes.DWORD)
+    kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    kernel32.Process32FirstW.argtypes = (wintypes.HANDLE, ctypes.POINTER(PROCESSENTRY32W))
+    kernel32.Process32FirstW.restype = wintypes.BOOL
+    kernel32.Process32NextW.argtypes = (wintypes.HANDLE, ctypes.POINTER(PROCESSENTRY32W))
+    kernel32.Process32NextW.restype = wintypes.BOOL
+    kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.GetProcessTimes.argtypes = (
+        wintypes.HANDLE,
+        ctypes.POINTER(FILETIME),
+        ctypes.POINTER(FILETIME),
+        ctypes.POINTER(FILETIME),
+        ctypes.POINTER(FILETIME),
+    )
+    kernel32.GetProcessTimes.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+    kernel32.CloseHandle.restype = wintypes.BOOL
+
+    def started_at_for(pid: int) -> str | None:
+        handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return None
+        try:
+            created, exited, kernel_time, user_time = FILETIME(), FILETIME(), FILETIME(), FILETIME()
+            if not kernel32.GetProcessTimes(
+                handle, ctypes.byref(created), ctypes.byref(exited),
+                ctypes.byref(kernel_time), ctypes.byref(user_time),
+            ):
+                return None
+            ticks = (created.dwHighDateTime << 32) | created.dwLowDateTime
+            unix_seconds = ticks / 10_000_000 - 11_644_473_600
+            return dt.datetime.fromtimestamp(unix_seconds, dt.timezone.utc).isoformat(timespec="seconds")
+        except (OverflowError, OSError, ValueError):
+            return None
+        finally:
+            kernel32.CloseHandle(handle)
+
+    snapshot = kernel32.CreateToolhelp32Snapshot(0x00000002, 0)  # TH32CS_SNAPPROCESS
+    invalid_handle = ctypes.c_void_p(-1).value
+    if not snapshot or snapshot == invalid_handle:
+        raise OSError("process snapshot unavailable")
+    try:
+        entry = PROCESSENTRY32W()
+        entry.dwSize = ctypes.sizeof(PROCESSENTRY32W)
+        if not kernel32.Process32FirstW(snapshot, ctypes.byref(entry)):
+            raise OSError("process snapshot enumeration unavailable")
+        rows = []
+        while True:
+            rows.append({
+                "pid": int(entry.th32ProcessID),
+                "parent_pid": int(entry.th32ParentProcessID),
+                "name": str(entry.szExeFile),
+                "started_at": None,
+            })
+            if not kernel32.Process32NextW(snapshot, ctypes.byref(entry)):
+                if ctypes.get_last_error() != 18:  # ERROR_NO_MORE_FILES
+                    raise OSError("process snapshot enumeration unavailable")
+                break
+        codex_rows = _filter_codex_processes(rows)
+        for row in codex_rows:
+            row["started_at"] = started_at_for(row["pid"])
+        return codex_rows
+    finally:
+        kernel32.CloseHandle(snapshot)
+
+
+def codex_process_snapshot() -> dict:
+    """Return a name-matched Windows process snapshot, separate from session logs."""
+    observed_at = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    if os.name != "nt":
+        return {
+            "available": False,
+            "source": "unsupported",
+            "observed_at": observed_at,
+            "processes": [],
+            "error": "unsupported_platform",
+        }
+    source = "Windows Toolhelp32Snapshot"
+    try:
+        processes = _windows_codex_processes()
+    except Exception:
+        return {
+            "available": False,
+            "source": source,
+            "observed_at": observed_at,
+            "processes": [],
+            "error": "process_snapshot_unavailable",
+        }
+    return {
+        "available": True,
+        "source": source,
+        "observed_at": observed_at,
+        "processes": processes,
+    }
+
+
 class SessionIndex:
     def __init__(self, codex_home: Path):
         self.codex_home = codex_home
@@ -498,11 +645,12 @@ class MonitorHandler(BaseHTTPRequestHandler):
                     "updated_at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
                     "git": git_snapshot(self.project_root),
                     "sessions": self.sessions.list(),
+                    "codex_processes": codex_process_snapshot(),
                     "agents": agent_overview(),
                     "notes": [path for path in NOTE_FILES if (self.project_root / path).is_file()],
                     "images": list_images(self.project_root),
                     "limits": [
-                        "Codex data is read from local JSONL records; this is not an official live-session API.",
+                        "Task/session details are local JSONL records; the separate Windows process snapshot is name-matched OS data and is not linked to a session or role.",
                         "Prompts, tool arguments, command text, and command/tool output are not displayed.",
                         "Agent role metrics come only from explicit local agent-event records; this is not a live agent API.",
                         "GitHub is not contacted. Ahead/behind counts use cached remote-tracking refs only.",

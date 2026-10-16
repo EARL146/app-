@@ -46,5 +46,7 @@ Never pass prompts, raw tool output, command text, customer information, secrets
 ## Current connection limits
 
 - The monitor refreshes local Codex JSONL session history and the explicit role ledger. Neither is an official live-session API. The role ledger requires the workflow above. The task history displays recorded run events, verification labels, blocker labels, and parent-verified task-related paths; the path list does not prove authorship.
+- On Windows, the Overview card takes a point-in-time Toolhelp process snapshot and lists executable basenames matching `codex.exe` or `codex`, plus PIDs, parent PIDs, and start times when available. This verifies only a process-name match; it does not inspect the executable path/signature or connect a process to a project, JSONL session, or role. The native path was smoke-tested on this Windows machine.
+- The official [Codex app-server](https://developers.openai.com/codex/app-server) is experimental and designed for clients that start or resume app-server threads. The dashboard does not start one or attach to an existing Codex Desktop session. Official [Codex hook documentation](https://developers.openai.com/codex/hooks) requires non-managed hooks to be reviewed and trusted; no new hooks were configured or trusted for this dashboard.
 - Graphify, ICM, and RTK run locally. No hosted Graphify account or repository upload is configured. RTK and ICM do not send agent performance records to Obsidian or the dashboard.
 - Read `[[AGENT_MONITOR]]` for the privacy boundaries and server setup.
