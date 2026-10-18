@@ -79,7 +79,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "right": {
     "id": "62e10a77a32abb9b",
@@ -167,7 +167,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
+    "width": 200,
     "collapsed": true
   },
   "left-ribbon": {
@@ -183,27 +183,29 @@
   },
   "active": "36d9922904d36f34",
   "lastOpenFiles": [
-    "build/test_cache/build/887949da",
-    "build/test_cache/build/7c060cfa",
-    "build/test_cache/build/72f98105",
-    "build/web/manifest.json",
-    "build/test_cache/build/dff202f",
-    "build/test_cache/build/b832eef3",
-    "build/test_cache/build/eda8ed09",
+    "tools/agent-monitor/city.js",
+    "build/flutter_assets/shaders/stretch_effect.frag",
+    "build/flutter_assets/shaders/ink_sparkle.frag",
+    "build/flutter_assets/shaders",
+    "build/flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf",
+    "build/flutter_assets/packages/cupertino_icons/assets",
+    "build/flutter_assets/packages/cupertino_icons",
+    "build/flutter_assets/packages",
+    "build/flutter_assets/fonts/MaterialIcons-Regular.otf",
+    "build/flutter_assets/fonts",
+    "build/flutter_assets/AssetManifest.bin",
+    "build/flutter_assets/assets/products/smash_burger_cutout.png",
+    "build/flutter_assets/assets/products/smash_burger.jpg",
+    "build/flutter_assets/assets/products/crispy_chicken.jpg",
+    "build/flutter_assets/assets/products/loaded_fries.jpg",
+    "build/flutter_assets/assets/branding/burger_bites_logo_cutout.png",
+    "build/flutter_assets/assets/branding/burger_bites_logo.png",
+    "build/flutter_assets/assets/products/cola.jpg",
+    "graphify-out/2026-10-16/GRAPH_REPORT.md",
+    "docs/AGENT_TEAM.md",
     "assets/products/smash_burger_cutout.png",
     "assets/branding/burger_bites_logo_cutout.png",
-    "lib/screens/admin/admin_store_profile_screen.dart",
-    "build/flutter_assets/assets/products/smash_burger.jpg",
-    "build/flutter_assets/assets/products/loaded_fries.jpg",
-    "build/flutter_assets/assets/products/crispy_chicken.jpg",
-    "build/flutter_assets/assets/products/cola.jpg",
-    "build/flutter_assets/assets/branding/burger_bites_logo.png",
-    "build/flutter_assets/assets/products",
-    "build/flutter_assets/assets/branding",
-    "build/flutter_assets/assets",
     "build/web/favicon.png",
-    "build/web/icons/Icon-maskable-512.png",
-    "build/web/icons/Icon-maskable-192.png",
     "docs/2026-10-15.md",
     "docs/PROJECT_HOME.md",
     "docs/AGENT_MONITOR.md",
@@ -226,8 +228,6 @@
     "docs/SETUP_GUIDE.md",
     "backend/README.md",
     "docs/DATABASE_SCHEMA.md",
-    "docs/API_SPEC.md",
-    "README.md",
-    "docs/KNOWN_ISSUES.md"
+    "docs/API_SPEC.md"
   ]
 }

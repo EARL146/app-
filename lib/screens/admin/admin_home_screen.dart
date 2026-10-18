@@ -63,32 +63,47 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       Row(
                         children: [
                           Container(
-                            width: 37,
-                            height: 37,
+                            width: 48,
+                            height: 48,
                             decoration: BoxDecoration(
                               color: AppColors.surface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: AppColors.border),
                             ),
-                            child: const Icon(Icons.menu_rounded, size: 19),
+                            child: IconButton(
+                              tooltip: 'Open admin tools',
+                              onPressed: () =>
+                                  Navigator.of(context)
+                                      .pushNamed(AppRoutes.adminMore),
+                              icon: const Icon(Icons.menu_rounded, size: 19),
+                            ),
                           ),
                           const SizedBox(width: 9),
-                          const Text(
-                            'Burger',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 17,
+                          const Expanded(
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: 'Burger',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: 'Bites',
+                                    style: TextStyle(
+                                      color: AppColors.brandOrange,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 17),
                             ),
                           ),
-                          const Text(
-                            'Bites',
-                            style: TextStyle(
-                              color: AppColors.brandOrange,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 17,
-                            ),
-                          ),
-                          const Spacer(),
                           IconButton(
                             tooltip: 'Open pending orders',
                             onPressed: () => Navigator.pushNamed(
@@ -197,7 +212,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         mainAxisSpacing: 9,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        childAspectRatio: 1.55,
+                        mainAxisExtent: 104,
                         children: [
                           _MetricCard(
                             label: 'Total orders',

@@ -151,15 +151,21 @@ class MonitorTests(unittest.TestCase):
             (root / "docs" / "AGENT_TEAM.md").write_text("# Agent team\nSafe role definitions", encoding="utf-8")
             (root / "docs" / "NEXT_SESSION.md").write_text("# Memory note\nSafe preview", encoding="utf-8")
             (root / "assets" / "sample.png").write_bytes(b"actual image bytes")
-            srv = server.MonitorServer(("127.0.0.1", 0), root, Path(temp) / "codex")
+            srv = server.MonitorServer(("127.0.0.1", 0), root, Path(temp) / "codex", worker_state_root=Path(temp) / "agent-city")
             thread = threading.Thread(target=srv.serve_forever, daemon=True)
             thread.start()
             base = f"http://127.0.0.1:{srv.server_address[1]}"
             try:
+                with urllib.request.urlopen(base + "/") as response:
+                    page = response.read()
+                for marker in (b"2D open office", b"office-map", b"id=\"pixel-agent-agent-1\"", b"id=\"pixel-agent-agent-3\"", b"id=\"pixel-agent-agent-5\"", b"AGENT 2 \xc2\xb7 API LOG ONLY"):
+                    self.assertIn(marker, page)
+                self.assertNotIn(b"data-city-mode", page)
+                self.assertNotIn(b"city-canvas", page)
                 with urllib.request.urlopen(base + "/api/overview") as response:
                     overview = json.load(response)
                 self.assertEqual(overview["notes"], ["docs/AGENT_TEAM.md", "docs/NEXT_SESSION.md"])
-                self.assertEqual(len(overview["agents"]["roles"]), 4)
+                self.assertEqual(len(overview["agents"]["roles"]), 5)
                 self.assertEqual(overview["agents"]["roles"][1]["role"], "Backend/API Developer")
                 self.assertEqual(overview["images"][0]["path"], "assets/sample.png")
                 with urllib.request.urlopen(base + "/api/note?path=docs%2FAGENT_TEAM.md") as response:
@@ -168,6 +174,9 @@ class MonitorTests(unittest.TestCase):
                     self.assertIn("Safe preview", json.load(response)["content"])
                 with urllib.request.urlopen(base + "/api/image?path=assets%2Fsample.png") as response:
                     self.assertEqual(response.read(), b"actual image bytes")
+                with urllib.request.urlopen(base + "/city.js") as response:
+                    self.assertIn("text/javascript", response.headers["Content-Type"])
+                    self.assertIn(b"monitor:city-visible", response.read())
                 with self.assertRaises(urllib.error.HTTPError) as error:
                     urllib.request.urlopen(base + "/api/note?path=..%2Foutside.md")
                 self.assertEqual(error.exception.code, 400)
@@ -178,6 +187,56 @@ class MonitorTests(unittest.TestCase):
                 self.assertEqual(error.exception.code, 403)
                 error.exception.close()
             finally:
+                srv.shutdown()
+                srv.server_close()
+                thread.join(timeout=2)
+
+    def test_worker_post_requires_loopback_origin_and_explicit_confirmation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / "project"
+            (root / ".git").mkdir(parents=True)
+            srv = server.MonitorServer(("127.0.0.1", 0), root, Path(temp) / "codex", worker_state_root=Path(temp) / "agent-city")
+            start_worker = patch.object(srv.worker_manager, "start_coding_task", return_value={"task_id": "a" * 32}).start()
+            thread = threading.Thread(target=srv.serve_forever, daemon=True)
+            thread.start()
+            base = f"http://127.0.0.1:{srv.server_address[1]}"
+            try:
+                malicious = urllib.request.Request(
+                    base + "/api/tasks",
+                    data=json.dumps({"confirm": True, "agent_id": "agent-1", "label": "test", "prompt": "test"}).encode(),
+                    headers={"Content-Type": "application/json", "Origin": "http://example.com"},
+                    method="POST",
+                )
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    urllib.request.urlopen(malicious)
+                self.assertEqual(error.exception.code, 403)
+                error.exception.close()
+                start_worker.assert_not_called()
+
+                missing_confirmation = urllib.request.Request(
+                    base + "/api/tasks",
+                    data=json.dumps({"agent_id": "agent-1", "label": "test", "prompt": "test"}).encode(),
+                    headers={"Content-Type": "application/json", "Origin": base},
+                    method="POST",
+                )
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    urllib.request.urlopen(missing_confirmation)
+                self.assertEqual(error.exception.code, 400)
+                error.exception.close()
+                start_worker.assert_not_called()
+
+                approved = urllib.request.Request(
+                    base + "/api/tasks",
+                    data=json.dumps({"confirm": True, "agent_id": "agent-1", "label": "task label", "prompt": "task prompt"}).encode(),
+                    headers={"Content-Type": "application/json", "Origin": base},
+                    method="POST",
+                )
+                with urllib.request.urlopen(approved) as response:
+                    self.assertEqual(response.status, 202)
+                    self.assertEqual(json.load(response), {"task_id": "a" * 32})
+                start_worker.assert_called_once_with("agent-1", "task label", "task prompt")
+            finally:
+                patch.stopall()
                 srv.shutdown()
                 srv.server_close()
                 thread.join(timeout=2)

@@ -16,6 +16,18 @@ let lastNotes = "";
 let lastImages = "";
 let lastFiles = "";
 let attachmentUrl = "";
+let cityTasks = null;
+let citySelectedTask = "";
+
+const CITY_AGENT_ROLES = [
+  { id: "agent-1", name: "Agent 1 · Frontend Developer" },
+  { id: "agent-2", name: "Agent 2 · Backend/API Developer" },
+  { id: "agent-3", name: "Agent 3 · QA Tester" },
+  { id: "agent-4", name: "Agent 4 · Code Reviewer" },
+  { id: "agent-5", name: "Agent 5 · Customer/Admin Debugger" },
+];
+const DEBUG_TASK_LABEL = "Debug customer/admin login and registration";
+const DEBUG_TASK_PROMPT = "Inspect the customer and admin sign-in and account-creation flows. Review the relevant code and existing checks. Use any redacted browser console/API error details I paste below as evidence. If no browser console output is included, state that you cannot see my live DevTools and do a code/test investigation instead. Fix a root cause only when supported by evidence, run relevant existing checks without installing dependencies, and report exact results and any manual browser verification I still need. Never use real customer accounts, credentials, or production data.\n\nConsole/API errors or reproduction details (optional):";
 
 async function getJson(url) {
   const response = await fetch(url, { cache: "no-store" });
@@ -24,12 +36,277 @@ async function getJson(url) {
   return body;
 }
 
+async function postJson(url, value) {
+  const response = await fetch(url, {
+    method: "POST",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(value),
+  });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);
+  return body;
+}
+
 function tabSetup() {
   document.querySelectorAll(".tab").forEach((button) => button.addEventListener("click", () => {
+    const currentTab = document.querySelector(".tab.active")?.dataset.tab;
+    if (currentTab === "city" && button.dataset.tab !== "city") document.dispatchEvent(new CustomEvent("monitor:city-hidden"));
     document.querySelectorAll(".tab,.panel").forEach((node) => node.classList.remove("active"));
     button.classList.add("active");
     $(`panel-${button.dataset.tab}`).classList.add("active");
+    if (button.dataset.tab === "city") document.dispatchEvent(new CustomEvent("monitor:city-visible"));
   }));
+}
+
+function cityActivityByAgent() {
+  const timestamp = (value) => {
+    const parsed = Date.parse(value || "");
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  const workerTasks = Array.isArray(cityTasks?.tasks) ? cityTasks.tasks : [];
+  const workerLatest = {};
+  [...workerTasks]
+    .sort((a, b) => timestamp(b.created_at) - timestamp(a.created_at))
+    .forEach((task) => {
+      if (task.agent_id && !workerLatest[task.agent_id]) workerLatest[task.agent_id] = task;
+    });
+
+  const roleLatest = {};
+  const roleRuns = Array.isArray(overview?.agents?.runs) ? overview.agents.runs : [];
+  [...roleRuns]
+    .sort((a, b) => timestamp(b.started_at) - timestamp(a.started_at))
+    .forEach((run) => {
+      if (run.agent_id && !roleLatest[run.agent_id]) roleLatest[run.agent_id] = run;
+    });
+
+  return Object.fromEntries(CITY_AGENT_ROLES.map(({ id }) => {
+    const worker = workerLatest[id];
+    const recorded = roleLatest[id];
+    const workerIsLive = worker && ["preparing", "running", "blocked"].includes(worker.status);
+    const recordedIsNewer = Boolean(recorded && (!worker || timestamp(recorded.started_at) > timestamp(worker.created_at)));
+    const current = workerIsLive ? worker : recordedIsNewer ? recorded : worker || recorded;
+    if (!current) return [id, { status: "idle", source: "No task recorded", task: "" }];
+    return [id, {
+      status: current.status || "unknown",
+      source: current === worker ? "Codex CLI worker record" : "Explicit local role log",
+      task: current.label || current.task || "Task label not recorded",
+      started_at: current.started_at || current.created_at || "",
+    }];
+  }));
+}
+
+function renderCityAgentActivity(latestByAgent) {
+  const list = $("city-agent-live-status");
+  if (!list) return;
+  list.replaceChildren();
+  CITY_AGENT_ROLES.forEach((agent) => {
+    const activity = latestByAgent[agent.id] || { status: "idle", source: "No task recorded", task: "" };
+    const status = activity.status || "unknown";
+    const isWorking = ["preparing", "running", "active"].includes(status);
+    const isAtStation = isWorking || status === "blocked";
+    const row = el("article", `city-agent-live-row ${status}`);
+    const heading = el("div", "city-agent-live-heading");
+    heading.append(el("b", "", agent.name), el("span", `city-state ${status}`, status));
+    row.append(heading);
+    row.append(el("span", "city-agent-location", `Location · ${isAtStation ? "Shared office desk" : "Office floor · available"}`));
+    row.append(el("span", "city-agent-source", `Source · ${activity.source || "Source unavailable"}`));
+    if (activity.task) row.append(el("span", "city-agent-task", `Task · ${activity.task}`));
+    else row.append(el("span", "city-agent-task", "No active task recorded"));
+    list.append(row);
+  });
+}
+
+function renderCityTasks(data) {
+  cityTasks = data && typeof data === "object" ? data : { tasks: [], codex: {} };
+  const codex = cityTasks.codex || {};
+  const availability = $("city-codex-status");
+  const loginText = codex.authenticated ? "Authenticated" : codex.available ? "Login required" : "CLI unavailable";
+  availability.className = `city-availability ${codex.authenticated ? "ready" : "unavailable"}`;
+  availability.textContent = `${loginText}${codex.model ? ` · ${codex.model}` : ""}`;
+  $("city-worker-note").textContent = codex.authenticated
+    ? `${codex.version || "Codex CLI"} · ${codex.model_source === "user-configured model" ? "using configured model" : codex.model_source?.startsWith("catalog fallback") ? `configured model is unavailable; using ${codex.model}` : `using ${codex.model} from the authenticated CLI catalog`}. Workers run one at a time in isolated worktrees based on committed HEAD.`
+    : codex.available
+      ? "Run codex login in PowerShell, then refresh. No worker has been started."
+      : "Codex CLI was not found on PATH. No worker has been started.";
+
+  const tasks = Array.isArray(cityTasks.tasks) ? cityTasks.tasks : [];
+  const selected = tasks.find((task) => task.task_id === citySelectedTask) || tasks[0];
+  citySelectedTask = selected?.task_id || "";
+  renderCityTaskList(tasks);
+  renderCityTaskDetail(selected);
+  refreshQaTargets(tasks);
+  const latestByAgent = cityActivityByAgent();
+  renderCityAgentActivity(latestByAgent);
+  document.dispatchEvent(new CustomEvent("monitor:city-data", { detail: { tasks, latest_by_agent: latestByAgent } }));
+}
+
+function refreshQaTargets(tasks) {
+  const select = $("city-qa-target");
+  const prior = select.value;
+  select.replaceChildren();
+  const candidates = tasks.filter((task) => task.agent_id === "agent-1" && task.status === "completed");
+  candidates.forEach((task) => {
+    const option = document.createElement("option");
+    option.value = task.task_id;
+    option.textContent = `${task.label} · ${task.task_id.slice(0, 8)}`;
+    select.append(option);
+  });
+  if (candidates.some((task) => task.task_id === prior)) select.value = prior;
+  $("city-start-worker").disabled = !cityTasks?.codex?.authenticated || Boolean(cityTasks?.active_task) || ($("city-agent").value === "agent-3" && !candidates.length);
+}
+
+function renderCityTaskList(tasks) {
+  const list = $("city-task-history");
+  list.replaceChildren();
+  if (!tasks.length) {
+    list.append(el("p", "empty", "No Codex worker tasks have run yet. The live roster can still show explicit role-log activity; a role-log entry does not prove a Codex process is running."));
+    return;
+  }
+  tasks.forEach((task) => {
+    const row = el("article", `city-task-row${task.task_id === citySelectedTask ? " selected" : ""}`);
+    const choose = el("button", "city-task-select");
+    choose.type = "button";
+    choose.append(el("b", "", task.label || "Task label unavailable"));
+    choose.append(el("span", "city-task-meta", `${task.role || task.agent_id} · ${task.status} · ${dateText(task.created_at)}`));
+    choose.addEventListener("click", () => { citySelectedTask = task.task_id; renderCityTasks(cityTasks); });
+    row.append(choose);
+    if (task.agent_id === "agent-1" && task.status === "completed") {
+      const qa = el("button", "quiet-button city-qa-button", "Run QA worker");
+      qa.type = "button";
+      qa.addEventListener("click", () => {
+        $("city-agent").value = "agent-3";
+        refreshQaTargets(tasks);
+        $("city-qa-target").value = task.task_id;
+        updateWorkerForm();
+        $("city-confirm").checked = false;
+        $("city-worker-form").scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      row.append(qa);
+    }
+    list.append(row);
+  });
+}
+
+function renderCityTaskDetail(task) {
+  const box = $("city-task-detail");
+  box.replaceChildren();
+  if (!task) {
+    box.append(el("p", "empty", "Select a task to inspect its recorded events, results, and changed files."));
+    return;
+  }
+  const heading = el("div", "row-between");
+  heading.append(el("h3", "", task.label || "Task"), el("span", `city-state ${task.status || "unknown"}`, task.status || "unknown"));
+  box.append(heading);
+  const meta = el("div", "city-detail-meta");
+  meta.append(el("span", "", `${task.role || task.agent_id} · ${task.source || "worker source unavailable"}`));
+  meta.append(el("span", "", `Created ${dateText(task.created_at)}`));
+  if (task.finished_at) meta.append(el("span", "", `Finished ${dateText(task.finished_at)}`));
+  if (task.baseline_commit) meta.append(el("span", "", `Isolated baseline ${task.baseline_commit}`));
+  if (task.worktree) meta.append(el("span", "", `Worktree ${task.worktree}`));
+  if (task.exit_code !== null && task.exit_code !== undefined) meta.append(el("span", "", `Exit code ${task.exit_code}`));
+  box.append(meta);
+  if (task.error) box.append(el("p", task.approval_required ? "city-approval-note" : "city-error-note", task.error));
+  const events = Array.isArray(task.events) ? task.events.slice(-24).reverse() : [];
+  const eventList = el("ol", "city-event-list");
+  events.forEach((event) => {
+    const item = el("li", `city-event ${event.category || "info"}`);
+    item.append(el("time", "", dateText(event.timestamp)), el("span", "", `${event.label || "Recorded event"}${event.exit_code !== undefined ? ` · exit ${event.exit_code}` : ""}`));
+    eventList.append(item);
+  });
+  if (events.length) box.append(eventList);
+  const files = Array.isArray(task.changed_files) ? task.changed_files : [];
+  box.append(el("h4", "", `Changed files observed (${files.length})`));
+  if (!files.length) box.append(el("p", "fineprint", "No changed paths were observed in this isolated worktree."));
+  files.forEach((path) => {
+    const button = el("button", "city-path", path);
+    button.type = "button";
+    button.addEventListener("click", async () => {
+      $("city-diff").textContent = "Loading redacted task diff…";
+      try {
+        const diff = await getJson(`/api/task-diff?task_id=${encodeURIComponent(task.task_id)}&path=${encodeURIComponent(path)}`);
+        $("city-diff").textContent = diff.diff;
+      } catch (error) { $("city-diff").textContent = error.message; }
+    });
+    box.append(button);
+  });
+  if (["preparing", "running"].includes(task.status) && cityTasks?.active_task?.task_id === task.task_id) {
+    const cancel = el("button", "danger-button", "Cancel worker");
+    cancel.type = "button";
+    cancel.addEventListener("click", async () => {
+      if (!window.confirm("Stop the active Codex process? Partial work remains in its isolated worktree.")) return;
+      try { await postJson(`/api/tasks/${task.task_id}/cancel`, { confirm: true }); await refresh(); }
+      catch (error) { $("city-request-error").textContent = error.message; }
+    });
+    box.append(cancel);
+  }
+}
+
+function updateWorkerForm() {
+  const qa = $("city-agent").value === "agent-3";
+  const debug = $("city-agent").value === "agent-5";
+  if (debug) {
+    if (!$("city-task-label").value.trim()) $("city-task-label").value = DEBUG_TASK_LABEL;
+    if (!$("city-task-prompt").value.trim()) $("city-task-prompt").value = DEBUG_TASK_PROMPT;
+  } else {
+    if ($("city-task-label").value === DEBUG_TASK_LABEL) $("city-task-label").value = "";
+    if ($("city-task-prompt").value === DEBUG_TASK_PROMPT) $("city-task-prompt").value = "";
+  }
+  $("city-prompt-fields").classList.toggle("hidden", qa);
+  $("city-qa-fields").classList.toggle("hidden", !qa);
+  $("city-task-label").required = !qa;
+  $("city-task-prompt").required = !qa;
+  $("city-qa-target").required = qa;
+  $("city-worker-form-title").textContent = qa ? "Run the QA Tester" : debug ? "Start the debugging worker" : "Start the coding worker";
+  $("city-start-worker").textContent = qa ? "Start QA worker" : debug ? "Start Agent 5" : "Start Agent 1";
+  $("city-task-prompt-label").textContent = debug ? "Issue details and optional redacted console output for Agent 5" : "Instructions for Agent 1";
+  $("city-task-prompt").placeholder = debug
+    ? "Describe the customer/admin sign-in or account-creation failure. Paste relevant browser console/API errors after removing passwords, tokens, emails, and customer data. Without pasted logs, Agent 5 can inspect code and existing checks but cannot see your browser console."
+    : "Describe the focused change. Do not include passwords, tokens, or customer data.";
+  $("city-debug-limit").classList.toggle("hidden", !debug);
+  refreshQaTargets(cityTasks?.tasks || []);
+}
+
+function setupCityControls() {
+  $("city-agent").addEventListener("change", updateWorkerForm);
+  $("city-worker-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    $("city-request-error").textContent = "";
+    if (!$("city-confirm").checked) {
+      $("city-request-error").textContent = "Confirm the isolated worker notice before starting.";
+      return;
+    }
+    $("city-start-worker").disabled = true;
+    try {
+      if ($("city-agent").value === "agent-3") {
+        const target = $("city-qa-target").value;
+        if (!target) throw new Error("Select a completed Agent 1 task for QA.");
+        const task = await postJson(`/api/tasks/${target}/qa`, { confirm: true });
+        citySelectedTask = task.task_id;
+      } else {
+        const task = await postJson("/api/tasks", {
+          agent_id: $("city-agent").value,
+          label: $("city-task-label").value,
+          prompt: $("city-task-prompt").value,
+          confirm: true,
+        });
+        citySelectedTask = task.task_id;
+        $("city-worker-form").reset();
+      }
+      $("city-confirm").checked = false;
+      await refresh();
+    } catch (error) {
+      $("city-request-error").textContent = error.message;
+      await loadCityTasks();
+    } finally {
+      updateWorkerForm();
+    }
+  });
+}
+
+async function loadCityTasks() {
+  const data = await getJson("/api/tasks");
+  renderCityTasks(data);
 }
 
 function renderSessions(sessions) {
@@ -412,7 +689,8 @@ function renderImages(images) {
 async function refresh() {
   $("error").classList.add("hidden");
   try {
-    overview = await getJson("/api/overview");
+    const results = await Promise.all([getJson("/api/overview"), getJson("/api/tasks")]);
+    overview = results[0];
     $("updated").textContent = `Updated ${new Date(overview.updated_at).toLocaleTimeString()}`;
     const activeSession = overview.sessions[0];
     const cards = [
@@ -438,6 +716,7 @@ async function refresh() {
     renderNotes(overview.notes);
     renderImages(overview.images);
     renderAgents(overview.agents);
+    renderCityTasks(results[1]);
     const limits = $("limits");
     limits.replaceChildren();
     overview.limits.forEach((line) => limits.append(el("li", "", line)));
@@ -483,6 +762,8 @@ $("attachment-file").addEventListener("change", async (event) => {
 });
 
 tabSetup();
+setupCityControls();
+updateWorkerForm();
 $("refresh").addEventListener("click", refresh);
 refresh();
 setInterval(refresh, 5000);

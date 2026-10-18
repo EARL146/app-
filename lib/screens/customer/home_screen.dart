@@ -69,6 +69,14 @@ class _HomeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
     final products = catalog.products;
+    final categories =
+        products
+            .map((product) => product.category?.trim())
+            .whereType<String>()
+            .where((category) => category.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
     final recentOrders = context
         .watch<CustomerOrdersProvider>()
         .orders
@@ -90,29 +98,43 @@ class _HomeTab extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 38,
-                    height: 38,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(13),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: const Icon(Icons.menu_rounded, size: 20),
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'Burger',
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-                  ),
-                  const Text(
-                    'Bites',
-                    style: TextStyle(
-                      color: AppColors.brandRed,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 18,
+                    child: IconButton(
+                      tooltip: 'Open menu',
+                      onPressed: () => Navigator.of(context).pushNamed('/menu'),
+                      icon: const Icon(Icons.menu_rounded, size: 20),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Burger',
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                          TextSpan(
+                            text: 'Bites',
+                            style: TextStyle(
+                              color: AppColors.brandRed,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
                   IconButton(
                     tooltip: 'Search menu',
                     onPressed: () => Navigator.of(context).pushNamed('/search'),
@@ -171,6 +193,15 @@ class _HomeTab extends StatelessWidget {
               _HeroOffer(
                 onOrder: () => Navigator.of(context).pushNamed('/menu'),
               ),
+              const SizedBox(height: 16),
+              _HomeInfoCard(
+                eyebrow: 'OUR STORY',
+                title: 'A little about BurgerBites',
+                description: 'Browse available menu items, add your picks to the cart, and review saved orders in one place.',
+                icon: Icons.lunch_dining_rounded,
+                actionLabel: 'Explore the menu',
+                onTap: () => Navigator.of(context).pushNamed('/menu'),
+              ),
               const SizedBox(height: 22),
               _SectionHeading(
                 title: 'Explore categories',
@@ -178,37 +209,34 @@ class _HomeTab extends StatelessWidget {
                 onTap: () => Navigator.of(context).pushNamed('/menu'),
               ),
               const SizedBox(height: 12),
-              SizedBox(
-                height: 74,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _CategoryBubble(
-                      label: 'Burgers',
-                      category: 'Burgers',
-                      icon: Icons.lunch_dining_rounded,
-                    ),
-                    _CategoryBubble(
-                      label: 'Crispy sides',
-                      category: 'Sides',
-                      icon: Icons.fastfood_rounded,
-                    ),
-                    _CategoryBubble(
-                      label: 'Fizzy drinks',
-                      category: 'Drinks',
-                      icon: Icons.local_drink_rounded,
-                    ),
-                    _CategoryBubble(
-                      label: 'Chicken',
-                      category: 'Chicken',
-                      icon: Icons.kebab_dining_rounded,
-                    ),
-                  ],
+              if (categories.isEmpty)
+                Text(
+                  catalog.isLoading ? 'Loading menu categories…' : 'Menu categories will appear when products are available.',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                )
+              else
+                SizedBox(
+                  height: 74,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: categories.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 4),
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      return _CategoryBubble(
+                        label: category,
+                        category: category,
+                        icon: _categoryIcon(category),
+                      );
+                    },
+                  ),
                 ),
-              ),
               const SizedBox(height: 22),
               _SectionHeading(
-                title: 'Popular bestsellers',
+                title: 'From the menu',
                 action: 'View menu',
                 onTap: () => Navigator.of(context).pushNamed('/menu'),
               ),
@@ -314,6 +342,21 @@ class _HomeTab extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              const _DifferenceSection(),
+              const SizedBox(height: 18),
+              _HomeInfoCard(
+                eyebrow: 'FIND US',
+                title: 'Store and contact',
+                description: 'Open Contact Us for published store details and support options.',
+                icon: Icons.location_on_rounded,
+                actionLabel: 'View contact details',
+                onTap: () => Navigator.of(context).pushNamed('/contact'),
+              ),
+              const SizedBox(height: 16),
+              _OrderCallToAction(
+                onTap: () => Navigator.of(context).pushNamed('/menu'),
+              ),
             ],
           ),
         ),
@@ -329,8 +372,14 @@ class _HeroOffer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final accessibleText = textScale > 1.15;
+    final heroHeight = accessibleText
+        ? (230 + ((textScale - 1.15) * 50)).clamp(230.0, 300.0).toDouble()
+        : 240.0;
+    final imageWidth = accessibleText ? 145.0 : 174.0;
     return Container(
-      height: 190,
+      height: heroHeight,
       decoration: BoxDecoration(
         color: const Color(0xFF2B1C16),
         borderRadius: BorderRadius.circular(22),
@@ -349,7 +398,7 @@ class _HeroOffer extends StatelessWidget {
             right: 0,
             top: 0,
             bottom: 0,
-            width: 174,
+            width: imageWidth,
             child: FoodImage(
               imageUrl: 'assets/products/smash_burger.jpg',
               borderRadius: 0,
@@ -377,55 +426,66 @@ class _HeroOffer extends StatelessWidget {
             bottom: 17,
             width: 208,
             child: Column(
+              mainAxisAlignment: accessibleText
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.brandOrange,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: const Text(
-                    'SPECIAL OFFER',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .6,
+                if (!accessibleText)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandOrange,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: const Text(
+                      'BURGERBITES MENU',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .6,
+                      ),
                     ),
                   ),
-                ),
-                const Spacer(),
-                const Text(
-                  'Delicious food.\nDelivered fast.',
+                if (!accessibleText) const Spacer(),
+                Text(
+                  accessibleText
+                      ? 'Choose your next favorite.'
+                      : 'Find your next\nfavorite.',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
+                    fontSize: accessibleText ? 18 : 22,
                     height: 1.05,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Get 20% off your first combo order.',
-                  style: TextStyle(color: Colors.white70, fontSize: 10),
-                ),
-                const SizedBox(height: 11),
+                if (!accessibleText) ...[
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Browse the menu and add your picks to the cart.',
+                    style: TextStyle(color: Colors.white70, fontSize: 10),
+                  ),
+                ],
+                SizedBox(height: accessibleText ? 10 : 11),
                 SizedBox(
-                  height: 32,
+                  height: accessibleText ? 48 : 32,
                   child: ElevatedButton.icon(
                     onPressed: onOrder,
                     icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-                    label: const Text(
+                    label: Text(
                       'Order now',
-                      style: TextStyle(fontSize: 11),
+                      style: TextStyle(fontSize: accessibleText ? 12 : 11),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.brandOrange,
-                      padding: const EdgeInsets.symmetric(horizontal: 13),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 13,
+                        vertical: 0,
+                      ),
                     ),
                   ),
                 ),
@@ -436,6 +496,241 @@ class _HeroOffer extends StatelessWidget {
       ),
     );
   }
+}
+
+class _HomeInfoCard extends StatelessWidget {
+  const _HomeInfoCard({
+    required this.eyebrow,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.actionLabel,
+    required this.onTap,
+  });
+
+  final String eyebrow;
+  final String title;
+  final String description;
+  final IconData icon;
+  final String actionLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: AppColors.brandOrange, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  eyebrow,
+                  style: const TextStyle(
+                    color: AppColors.brandOrange,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    height: 1.35,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: onTap,
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                  label: Text(actionLabel),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.brandOrange,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DifferenceSection extends StatelessWidget {
+  const _DifferenceSection();
+
+  static const _features = [
+    (
+      'Browse the menu',
+      'See the items currently listed.',
+      Icons.menu_book_rounded,
+    ),
+    (
+      'Build your cart',
+      'Collect your picks before checkout.',
+      Icons.shopping_bag_outlined,
+    ),
+    (
+      'Review orders',
+      'Check your saved order details.',
+      Icons.receipt_long_rounded,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'What makes us different',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+        ),
+        const SizedBox(height: 11),
+        SizedBox(
+          height: 119,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _features.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final feature = _features[index];
+              return SizedBox(
+                width: 142,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(feature.$3, color: AppColors.brandOrange, size: 19),
+                      const Spacer(),
+                      Text(
+                        feature.$1,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        feature.$2,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 9,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OrderCallToAction extends StatelessWidget {
+  const _OrderCallToAction({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: AppColors.brandOrange,
+        borderRadius: BorderRadius.circular(19),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Ready to order?',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Browse the menu and choose what you would like.',
+            style: TextStyle(color: Colors.white, fontSize: 11, height: 1.35),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.restaurant_menu_rounded, size: 17),
+              label: const Text('Browse menu'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: AppColors.brandOrange,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+IconData _categoryIcon(String category) {
+  final name = category.toLowerCase();
+  if (name.contains('burger')) return Icons.lunch_dining_rounded;
+  if (name.contains('drink') || name.contains('beverage')) {
+    return Icons.local_drink_rounded;
+  }
+  if (name.contains('side') || name.contains('fries')) {
+    return Icons.fastfood_rounded;
+  }
+  if (name.contains('chicken')) return Icons.kebab_dining_rounded;
+  return Icons.restaurant_menu_rounded;
 }
 
 class _SectionHeading extends StatelessWidget {

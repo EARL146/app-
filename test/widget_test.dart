@@ -2,7 +2,17 @@ import 'package:burger_bites/screens/customer/splash_screen.dart';
 import 'package:burger_bites/screens/customer/welcome_screen.dart';
 import 'package:burger_bites/screens/admin/admin_profile_screen.dart';
 import 'package:burger_bites/screens/admin/admin_store_profile_screen.dart';
+import 'package:burger_bites/screens/admin/admin_home_screen.dart';
+import 'package:burger_bites/screens/customer/home_screen.dart';
+import 'package:burger_bites/screens/customer/register_screen.dart';
+import 'package:burger_bites/screens/customer/search_screen.dart';
+import 'package:burger_bites/screens/customer/sign_in_screen.dart';
 import 'package:burger_bites/navigation/app_router.dart';
+import 'package:burger_bites/providers/admin_dashboard_provider.dart';
+import 'package:burger_bites/providers/admin_orders_provider.dart';
+import 'package:burger_bites/providers/cart_provider.dart';
+import 'package:burger_bites/providers/catalog_provider.dart';
+import 'package:burger_bites/providers/customer_orders_provider.dart';
 import 'package:burger_bites/services/auth_service.dart';
 import 'package:burger_bites/screens/customer/settings_screen.dart';
 import 'package:burger_bites/screens/customer/contact_screen.dart';
@@ -68,6 +78,98 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.text('/sign-in'), findsOneWidget);
+  });
+
+  testWidgets('welcome and auth screens fit common phone widths', (
+    WidgetTester tester,
+  ) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+
+    for (final width in [320, 360, 390, 430]) {
+      tester.view.physicalSize = Size(width.toDouble(), 700);
+      await tester.pumpWidget(const MaterialApp(home: WelcomeScreen()));
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: 'welcome at $width px');
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AuthService>.value(
+          value: AuthService(),
+          child: const MaterialApp(home: SignInScreen()),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: 'sign-in at $width px');
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AuthService>.value(
+          value: AuthService(),
+          child: const MaterialApp(home: RegisterScreen()),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: 'register at $width px');
+    }
+  });
+
+  testWidgets('customer home fits phone widths and its menu control works', (
+    WidgetTester tester,
+  ) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+    final auth = AuthService();
+
+    for (final width in [320, 360, 390, 430]) {
+      tester.view.physicalSize = Size(width.toDouble(), 844);
+      await tester.pumpWidget(_customerHomeHarness(auth));
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: 'home at $width px');
+      expect(find.text('Home'), findsOneWidget);
+    }
+
+    await tester.tap(find.byTooltip('Open menu'));
+    await tester.pumpAndSettle();
+    expect(find.text('Menu'), findsOneWidget);
+  });
+
+  testWidgets(
+    'search starts with real empty state, not sample search history',
+    (WidgetTester tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.physicalSize = const Size(320, 700);
+      tester.view.devicePixelRatio = 1;
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<CatalogProvider>(
+          create: (_) => CatalogProvider(),
+          child: const MaterialApp(home: SearchScreen()),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('No menu items yet'), findsOneWidget);
+      expect(find.text('Double Bacon Smash'), findsNothing);
+      expect(find.byIcon(Icons.mic_none_rounded), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('admin dashboard fits common phone widths', (
+    WidgetTester tester,
+  ) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    tester.view.devicePixelRatio = 1;
+
+    for (final width in [320, 360, 390, 430]) {
+      tester.view.physicalSize = Size(width.toDouble(), 844);
+      await tester.pumpWidget(_adminHomeHarness());
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: 'admin home at $width px');
+    }
   });
 
   testWidgets('admin profile exposes account, password, and logout controls', (
@@ -180,3 +282,24 @@ void main() {
     },
   );
 }
+
+Widget _customerHomeHarness(AuthService auth) => MultiProvider(
+  providers: [
+    ChangeNotifierProvider<AuthService>.value(value: auth),
+    ChangeNotifierProvider(create: (_) => CatalogProvider()),
+    ChangeNotifierProvider(create: (_) => CartProvider(authService: auth)),
+    ChangeNotifierProvider(create: (_) => CustomerOrdersProvider(auth)),
+  ],
+  child: MaterialApp(
+    onGenerateRoute: AppRouter.generateRoute,
+    home: const CustomerHomeScreen(),
+  ),
+);
+
+Widget _adminHomeHarness() => MultiProvider(
+  providers: [
+    ChangeNotifierProvider(create: (_) => AdminOrdersProvider()),
+    ChangeNotifierProvider(create: (_) => AdminDashboardProvider()),
+  ],
+  child: const MaterialApp(home: AdminHomeScreen()),
+);

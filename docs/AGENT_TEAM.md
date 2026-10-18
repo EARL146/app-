@@ -10,8 +10,9 @@
 | Agent 2 | Backend/API Developer | Assigned |
 | Agent 3 | QA Tester | Assigned |
 | Agent 4 | Code Reviewer | Assigned |
+| Agent 5 | Customer/Admin Debugger | Assigned |
 
-The role registry is `tools/agent-monitor/agents.json`. The local monitor shows only tasks recorded for these IDs. It does not guess that an anonymous Codex session belongs to a role.
+The role registry is `tools/agent-monitor/agents.json`. Agent 1, Agent 3, and Agent 5 can run through the monitor's isolated Codex worker adapter; Agent 5 focuses on customer/admin sign-in and account creation. Agent 5 cannot read a live browser console automatically, so include redacted console/API errors in the task when available. Agent 2 and Agent 4 remain explicit-log roles. The local monitor does not guess that an anonymous Codex session belongs to a role.
 
 ## Agent task records and performance
 

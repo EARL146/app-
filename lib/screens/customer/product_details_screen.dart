@@ -37,6 +37,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
+    final isBurgerProduct = product.category?.trim().toLowerCase() == 'burgers';
+    final categoryLabel = product.category?.trim();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
@@ -105,50 +107,84 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       ],
                     ),
                   ),
-                  if (product.category == 'Burgers') ...[
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            product.name,
+                  const SizedBox(height: 18),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          product.name,
+                          style: const TextStyle(
+                            fontSize: 23,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '₱${product.price.toStringAsFixed(0)}',
                             style: const TextStyle(
-                              fontSize: 23,
+                              color: AppColors.brandOrange,
+                              fontSize: 21,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                        ),
-                        const Icon(
-                          Icons.star_rounded,
-                          size: 17,
+                          const Text(
+                            'Base price',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ProductInfoChip(
+                        icon: Icons.restaurant_menu_rounded,
+                        label: categoryLabel?.isNotEmpty == true
+                            ? categoryLabel!
+                            : 'Menu item',
+                      ),
+                      _ProductInfoChip(
+                        icon: product.available
+                            ? Icons.check_circle_outline_rounded
+                            : Icons.remove_circle_outline_rounded,
+                        label: product.available ? 'Available' : 'Unavailable',
+                        color: product.available
+                            ? AppColors.success
+                            : AppColors.danger,
+                      ),
+                      if (product.rating != null)
+                        _ProductInfoChip(
+                          icon: Icons.star_rounded,
+                          label: product.reviewCount == null
+                              ? product.rating!.toStringAsFixed(1)
+                              : '${product.rating!.toStringAsFixed(1)} (${product.reviewCount})',
                           color: AppColors.warning,
                         ),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${product.rating ?? 4.8}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                          ),
-                        ),
-                        Text(
-                          ' (${product.reviewCount ?? 0})',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    product.description.trim().isEmpty
+                        ? 'A description for this item has not been added yet.'
+                        : product.description.trim(),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      height: 1.5,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      product.description,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                        height: 1.5,
-                      ),
-                    ),
+                  ),
+                  if (isBurgerProduct) ...[
                     const SizedBox(height: 18),
                     const _FieldHeading(
                       title: 'Burger size',
@@ -277,29 +313,36 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         height: 49,
                         child: Consumer<CartProvider>(
                           builder: (context, cart, _) => ElevatedButton(
-                            onPressed: () {
-                              final toppings = _extras.toList()..sort();
-                              final displayName =
-                                  '${product.category == 'Burgers' && _size != 'Regular' ? '$_size ' : ''}${product.name}${toppings.isEmpty ? '' : ' + ${toppings.join(', ')}'}';
-                              cart.addItem(
-                                product,
-                                quantity: _quantity,
-                                unitPrice: product.category == 'Burgers'
-                                    ? _unitPrice
-                                    : product.price,
-                                displayName: displayName,
-                                customizations: product.category == 'Burgers'
-                                    ? {'size': _size, 'toppings': toppings}
-                                    : const {},
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('$displayName added to cart'),
-                                  behavior: SnackBarBehavior.floating,
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            },
+                            onPressed: product.available
+                                ? () {
+                                    final toppings = _extras.toList()..sort();
+                                    final displayName =
+                                        '${isBurgerProduct && _size != 'Regular' ? '$_size ' : ''}${product.name}${toppings.isEmpty ? '' : ' + ${toppings.join(', ')}'}';
+                                    cart.addItem(
+                                      product,
+                                      quantity: _quantity,
+                                      unitPrice: isBurgerProduct
+                                          ? _unitPrice
+                                          : product.price,
+                                      displayName: displayName,
+                                      customizations: isBurgerProduct
+                                          ? {
+                                              'size': _size,
+                                              'toppings': toppings,
+                                            }
+                                          : const {},
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          '$displayName added to cart',
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                        duration: const Duration(seconds: 1),
+                                      ),
+                                    );
+                                  }
+                                : null,
                             child: Row(
                               children: [
                                 const Icon(
@@ -359,6 +402,45 @@ class _FieldHeading extends StatelessWidget {
       ),
     ],
   );
+}
+
+class _ProductInfoChip extends StatelessWidget {
+  const _ProductInfoChip({
+    required this.icon,
+    required this.label,
+    this.color = AppColors.textSecondary,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SizeOption extends StatelessWidget {

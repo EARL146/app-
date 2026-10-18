@@ -1,13 +1,33 @@
 # Next Session — BurgerBites
 
-[[PROJECT_HOME]] · [[INTEGRATION_MAP]] · [[BACKUP_WORKFLOW]] · [[PRODUCTION_READINESS_AUDIT]] · [[KNOWN_ISSUES]] · [[TESTING]]
+[[PROJECT_HOME]] · [[INTEGRATION_MAP]] · [[AGENT_TEAM]] · [[AGENT_MONITOR]] · [[BACKUP_WORKFLOW]] · [[PRODUCTION_READINESS_AUDIT]] · [[KNOWN_ISSUES]] · [[TESTING]]
 
-## AI agent monitoring system (2026-10-15)
+## Hosting direction and local verification (2026-10-16)
 
-- Added a standalone read-only local dashboard under `tools/agent-monitor/`; Obsidian remains the project memory source. Setup and data limits: [[AGENT_MONITOR]].
+- Hostinger domain and hosting are the planned deployment target, but have not been purchased or configured. Do not treat the app as deployed. Once available, verify the plan's PHP/PDO-MySQL support, database version, HTTPS, rewrite rules, backups, and environment-secret configuration before deployment.
+- Restarted the local API at `http://127.0.0.1:8081`. `GET /api/v1/products?limit=1` returned HTTP 200 with zero products; `GET /api/v1/store-profile` returned HTTP 503 because migration `003_app_workflows.sql` is still not imported. The browser CORS preflight for `http://localhost:5000` returned HTTP 204.
+- `flutter analyze --no-pub` reported no issues (118.4 seconds); `flutter test --no-pub` passed all 10 tests. These checks do not verify workflows that require migration 003 or a populated catalog.
+- To avoid the Flutter "API is not configured" message during local Edge development, pass `--dart-define=BURGER_BITES_API_BASE_URL=http://127.0.0.1:8081/api/v1`; the full local commands are in [[backend/README]].
+- Next database step remains: export a backup in phpMyAdmin, import migration 003 once, and verify Admin More reports the workflow schema ready. Optional migration 002 contains development sample menu data only.
+
+## Flutter mobile UI audit (2026-10-16)
+
+- Fixed small-phone layout issues in welcome/auth, customer home, and the admin dashboard; customer and admin header menu controls now open their existing destinations. Search no longer implies voice search or preloads sample history, and reports empty/error states based on actual catalog data.
+- `flutter test --no-pub --reporter expanded`: all 14 tests passed. `flutter analyze --no-pub`: no issues. Widget tests cover 320, 360, 390, and 430 px for welcome/auth, customer home, and admin dashboard; search empty state is checked at 320 px.
+- `graphify update .` completed locally (1,860 nodes, 3,031 edges, 125 communities); existing `linux/runner/my_application.h` parser warning remains. No device/emulator visual review was performed. See [[SCREEN_IMPLEMENTATION_STATUS]] for remaining whole-project and backend limitations.
+
+## AI agent monitoring system (2026-10-16)
+
+- Added a standalone read-only local dashboard under `tools/agent-monitor/`; Obsidian remains the project memory source. The Agents tab now tracks named roles Agent 1 Frontend Developer, Agent 2 Backend/API Developer, Agent 3 QA Tester, and Agent 4 Code Reviewer. Setup and data limits: [[AGENT_MONITOR]] and [[AGENT_TEAM]].
 - It reads actual local Codex JSONL session markers/tool names/exit codes and supported thread usage fields, local Git status/diffs, selected `docs/` notes, existing project images, and browser-only user-selected image/Markdown files. Prompt bodies, tool arguments, command text/output, and external uploads are excluded.
-- The observed Codex JSONL format is not a public live-session API. RTK 1.0.0 executes in PowerShell but reports no hook installed; Graphify Local 0.9.90 works; ICM MCP tools are memory/transcript operations with no event stream; GTX was not identified.
-- Verification: 6 monitor tests passed; Python compile check and Node syntax check passed; the local HTTP smoke test read 2 Codex sessions, Git state, 5 project images, and 4 selected notes. Details: [[AGENT_MONITOR]].
+- Named-role data comes only from explicit entries in the ignored local event ledger; dashboard metrics are descriptive run/check counts, not a live API or quality score. Each run now shows event timeline, blocker labels, verification counts, and task-related paths.
+- RTK 1.0.0 is installed. Project and global Codex hooks are registered, but `rtk gain` still reports no active hook in this session; restart Codex and approve any trust prompt, then verify activation. Graphify Local 0.9.90 updates code graph locally and its report/view are linked from [[AGENT_TEAM]]. ICM MCP is available for durable memory and transcript tools, not live agent events. GTX remains unidentified.
+- The current monitor check results and known setup limits are recorded in [[AGENT_MONITOR]]. No app/API/database schema changes or push were made for this monitoring work.
+- The separate monitor now has a Windows point-in-time process card matched by executable basename, in addition to JSONL-derived session history and explicit role events. It does not identify process publisher/path or correlate a process to a session or role. See [[AGENT_MONITOR]] for the 19-test result and HTTP/native smoke checks.
+- Agent City now moves all four pixel-art figures between Command HQ and their assigned station from recorded task state: Agent 1/3 prefer the latest isolated Codex worker task and fall back to a newer explicit role-log entry; Agent 2/4 use explicit role-log entries only. The five-second refresh also shows source, status, task, and location cards; reduced-motion settings disable animation. Role-log activity is not proof of a running process. The original 3D city remains available; see [[AGENT_MONITOR]].
+- Latest local monitor snapshot had no Codex worker task and one active explicit role-log record for Agent 1; that log does not verify a running Codex process. JavaScript syntax checks, served-page checks, and `git diff --check` passed; see [[AGENT_MONITOR]].
+- Local checkpoint commit `3d3be2d` contains only the reviewed monitor implementation/docs; it was not pushed. Existing `.obsidian/graph.json`, `.obsidian/workspace.json`, `package-lock.json`, and mixed `docs/NEXT_SESSION.md` changes remain outside that commit.
+- After the checkpoint, the Windows process snapshot, UI, tests, and integration notes were updated locally but are not committed. `graphify update .` refreshed the local code graph to 1,842 nodes / 3,007 edges / 117 communities; no label/LLM pass or upload was run.
 
 ## Customer/admin visual and store-profile pass (2026-10-15)
 

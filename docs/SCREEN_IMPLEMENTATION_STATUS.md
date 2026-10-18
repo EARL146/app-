@@ -2,7 +2,7 @@
 
 [[PROJECT_HOME]] · [[SCREEN_DESIGN_SPEC]] · [[TESTING]] · [[FILE_REGISTRY]] · [[PRODUCTION_READINESS_AUDIT]]
 
-Updated: 2026-10-15. “Connected” describes code paths; new SQL workflows still require migration 003 and live verification.
+Updated: 2026-10-16. “Connected” describes code paths; new SQL workflows still require migration 003 and live verification.
 
 ## Customer screens
 
@@ -42,4 +42,7 @@ Updated: 2026-10-15. “Connected” describes code paths; new SQL workflows sti
 - Supplied conversation screenshots are current design references. The Figma URL could not be opened by the viewer, so **Verified Against Figma: none**.
 - The original logo remains at `assets/branding/burger_bites_logo.png`; a transparent cutout is used by `BrandLogo`. Registration, sign-in, and welcome marks float gently. The welcome hero uses a separate transparent photorealistic burger cutout and slow float/tilt lighting motion; reduced-motion preferences stop the loops.
 - Verification on 2026-10-15: `flutter analyze --no-pub` reported no issues, all 10 Flutter tests passed, and `flutter build web --no-pub` built the JavaScript Web app. The read-only public store-profile API returned HTTP 503 because migration 003 is still absent from MySQL. The two PNG cutout assets have transparent corners and are present in the built Web assets.
+- Responsive UI audit on 2026-10-16: `flutter test --no-pub --reporter expanded` passed all 14 tests; `flutter analyze --no-pub` reported no issues. Welcome, sign-in, registration, customer home, and admin dashboard were checked at 320, 360, 390, and 430 px. Search empty-state behavior was also checked at 320 px. No Android emulator or physical device is connected; this was a widget-test pass, not a device-rendered visual review.
+- The small-phone pass fixed welcome/auth/home/admin layout overflow, made customer/admin header menu controls navigable, and removed unsupported voice-search and sample-search-history cues. The search screen now distinguishes empty/error states. Existing API, SQL, payment, and authentication behavior was not redesigned.
+- `graphify update .` refreshed the local code graph to 1,860 nodes, 3,031 edges, and 125 communities. Its existing Linux header parse warning remains; generated graph output stays local and ignored.
 - Android debug APK build: Gradle failed to resolve `storage.googleapis.com`; no APK was produced. No Android device/emulator is connected.

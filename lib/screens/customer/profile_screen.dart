@@ -1,15 +1,55 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../models/order_model.dart';
+import '../../providers/customer_orders_provider.dart';
 import '../../services/auth_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  String? _requestedUserId;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.read<AuthService>();
+    final userId = auth.currentUserId;
+    if (!auth.isAuthenticated || userId == null) {
+      _requestedUserId = null;
+      return;
+    }
+    if (_requestedUserId == userId) return;
+    _requestedUserId = userId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || context.read<AuthService>().currentUserId != userId) {
+        return;
+      }
+      unawaited(context.read<CustomerOrdersProvider>().loadOrders(force: true));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    final customerOrders = context.watch<CustomerOrdersProvider>();
+    final orderCountStatus = _orderCountStatus(auth, customerOrders);
+    final orderCount =
+        orderCountStatus.value ?? customerOrders.orders.length.toString();
+    final deliveryCount =
+        orderCountStatus.value ??
+        customerOrders.orders
+            .where((order) => order.status == OrderStatus.delivered)
+            .length
+            .toString();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       body: SafeArea(
@@ -122,13 +162,14 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 13),
                   const _RewardsCard(),
                   const SizedBox(height: 13),
-                  const Row(
+                  Row(
                     children: [
                       Expanded(
                         child: _StatTile(
                           icon: Icons.receipt_long_rounded,
-                          value: '—',
+                          value: orderCount,
                           label: 'Orders',
+                          detail: orderCountStatus.detail,
                         ),
                       ),
                       SizedBox(width: 9),
@@ -137,18 +178,44 @@ class ProfileScreen extends StatelessWidget {
                           icon: Icons.stars_rounded,
                           value: '—',
                           label: 'Points',
+                          detail: 'Not supported yet',
                         ),
                       ),
                       SizedBox(width: 9),
                       Expanded(
                         child: _StatTile(
                           icon: Icons.delivery_dining_rounded,
-                          value: '—',
+                          value: deliveryCount,
                           label: 'Deliveries',
+                          detail: orderCountStatus.detail,
                         ),
                       ),
                     ],
                   ),
+                  if (auth.isAuthenticated &&
+                      customerOrders.errorMessage != null) ...[
+                    const SizedBox(height: 7),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Order history unavailable. ${customerOrders.errorMessage}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => context
+                              .read<CustomerOrdersProvider>()
+                              .loadOrders(force: true),
+                          icon: const Icon(Icons.refresh_rounded, size: 14),
+                          label: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   const _GroupLabel(title: 'PERSONAL & PREFERENCES'),
                   const SizedBox(height: 7),
@@ -242,6 +309,19 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
+({String? value, String? detail}) _orderCountStatus(
+  AuthService auth,
+  CustomerOrdersProvider orders,
+) {
+  if (auth.isInitializing) return (value: '…', detail: 'Checking account');
+  if (!auth.isAuthenticated) return (value: '—', detail: 'Sign in to view');
+  if (orders.isLoading) return (value: '…', detail: 'Loading');
+  if (orders.errorMessage != null) {
+    return (value: '—', detail: 'Unavailable');
+  }
+  return (value: null, detail: null);
+}
+
 class _RewardsCard extends StatelessWidget {
   const _RewardsCard();
 
@@ -274,7 +354,7 @@ class _RewardsCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'ACCOUNT SERVICE REQUIRED',
+                'POINTS NOT AVAILABLE',
                 style: TextStyle(
                   color: Color(0xFFFFC247),
                   fontWeight: FontWeight.w900,
@@ -285,7 +365,7 @@ class _RewardsCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           const Text(
-            'Rewards and points will appear here when the customer account service is connected.',
+            'Points are unavailable because the BurgerBites API and database do not support rewards yet.',
             style: TextStyle(color: Colors.white70, fontSize: 10, height: 1.4),
           ),
         ],
@@ -299,10 +379,12 @@ class _StatTile extends StatelessWidget {
     required this.icon,
     required this.value,
     required this.label,
+    this.detail,
   });
   final IconData icon;
   final String value;
   final String label;
+  final String? detail;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -325,6 +407,15 @@ class _StatTile extends StatelessWidget {
           label,
           style: const TextStyle(color: AppColors.textSecondary, fontSize: 8),
         ),
+        if (detail != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            detail!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 7),
+          ),
+        ],
       ],
     ),
   );
@@ -362,35 +453,38 @@ class _ProfileTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 7),
-      decoration: BoxDecoration(
+      child: Material(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: ListTile(
-        onTap: () => Navigator.of(context).pushNamed(route),
-        dense: true,
-        leading: Container(
-          width: 35,
-          height: 35,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceMuted,
-            borderRadius: BorderRadius.circular(11),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        child: ListTile(
+          onTap: () => Navigator.of(context).pushNamed(route),
+          dense: true,
+          leading: Container(
+            width: 35,
+            height: 35,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, color: AppColors.brandOrange, size: 18),
           ),
-          child: Icon(icon, color: AppColors.brandOrange, size: 18),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
-        ),
-        trailing: const Icon(
-          Icons.chevron_right_rounded,
-          size: 18,
-          color: AppColors.textSecondary,
+          title: Text(
+            title,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
+          ),
+          trailing: const Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
         ),
       ),
     );

@@ -19,11 +19,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
   String _category = 'Burgers';
   _ProductSort _sort = _ProductSort.recommended;
-  final List<String> _recentSearches = [
-    'Double Bacon Smash',
-    'Crispy Chicken',
-    'Loaded Fries',
-  ];
+  final List<String> _recentSearches = [];
 
   @override
   void dispose() {
@@ -59,6 +55,12 @@ class _SearchScreenState extends State<SearchScreen> {
       case _ProductSort.recommended:
         break;
     }
+    final suggestions = query.isEmpty
+        ? <Product>[]
+        : products
+              .where((product) => !results.contains(product))
+              .take(3)
+              .toList();
 
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
@@ -95,7 +97,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   color: AppColors.brandOrange,
                 ),
                 suffixIcon: _controller.text.isEmpty
-                    ? const Icon(Icons.mic_none_rounded)
+                    ? null
                     : IconButton(
                         onPressed: () {
                           _controller.clear();
@@ -155,120 +157,175 @@ class _SearchScreenState extends State<SearchScreen> {
                   ],
                 ),
                 const SizedBox(height: 9),
-                if (results.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: const Column(
-                      children: [
-                        Icon(
-                          Icons.search_off_rounded,
-                          color: AppColors.textSecondary,
-                          size: 29,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'No menu items match your search.',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
+                if (catalog.isLoading && products.isEmpty)
+                  const _SearchNotice(
+                    icon: Icons.restaurant_menu_rounded,
+                    title: 'Loading the menu',
+                    message: 'Fresh picks will appear here in a moment.',
+                    isLoading: true,
+                  )
+                else if (products.isEmpty && catalog.errorMessage != null)
+                  _SearchNotice(
+                    icon: Icons.cloud_off_rounded,
+                    title: 'Menu unavailable',
+                    message: catalog.errorMessage!,
+                    actionLabel: 'Try again',
+                    onAction: () => context
+                        .read<CatalogProvider>()
+                        .loadProducts(force: true),
+                  )
+                else if (products.isEmpty)
+                  const _SearchNotice(
+                    icon: Icons.restaurant_menu_rounded,
+                    title: 'No menu items yet',
+                    message: 'New menu items will show here when they are available.',
+                  )
+                else if (results.isEmpty)
+                  const _SearchNotice(
+                    icon: Icons.search_off_rounded,
+                    title: 'No matching items',
+                    message:
+                        'Try another search or choose a different category.',
                   )
                 else
                   ...results.map(
                     (product) => _SearchResultTile(product: product),
                   ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Recent searches',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
+                if (_recentSearches.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Recent searches',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () => setState(_recentSearches.clear),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.textSecondary,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      child: const Text(
-                        'Clear all',
-                        style: TextStyle(fontSize: 9),
-                      ),
-                    ),
-                  ],
-                ),
-                Wrap(
-                  spacing: 7,
-                  runSpacing: 7,
-                  children: _recentSearches
-                      .map(
-                        (term) => ActionChip(
-                          avatar: const Icon(Icons.history_rounded, size: 13),
-                          label: Text(
-                            term,
-                            style: const TextStyle(fontSize: 9),
-                          ),
-                          onPressed: () {
-                            _controller.text = term;
-                            setState(() {});
-                          },
-                          backgroundColor: AppColors.surface,
-                          side: const BorderSide(color: AppColors.border),
+                      TextButton(
+                        onPressed: () => setState(_recentSearches.clear),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
                           visualDensity: VisualDensity.compact,
                         ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: 17),
-                const Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Trending cravings',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
+                        child: const Text(
+                          'Clear all',
+                          style: TextStyle(fontSize: 12),
                         ),
                       ),
+                    ],
+                  ),
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 7,
+                    children: _recentSearches
+                        .map(
+                          (term) => ActionChip(
+                            avatar: const Icon(Icons.history_rounded, size: 16),
+                            label: Text(
+                              term,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            onPressed: () {
+                              _controller.text = term;
+                              setState(() {});
+                            },
+                            backgroundColor: AppColors.surface,
+                            side: const BorderSide(color: AppColors.border),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+                if (suggestions.isNotEmpty) ...[
+                  const SizedBox(height: 17),
+                  const Text(
+                    'More from the menu',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 8),
+                  ...suggestions.map(
+                    (product) => _TrendingTile(
+                      product: product,
+                      onTap: () {
+                        _controller.text = product.name;
+                        setState(() {});
+                      },
                     ),
-                    Text(
-                      'HOT NOW',
-                      style: TextStyle(
-                        color: AppColors.brandOrange,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...products
-                    .take(3)
-                    .map(
-                      (product) => _TrendingTile(
-                        product: product,
-                        onTap: () {
-                          _controller.text = product.name;
-                          setState(() {});
-                        },
-                      ),
-                    ),
+                  ),
+                ],
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchNotice extends StatelessWidget {
+  const _SearchNotice({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.isLoading = false,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final bool isLoading;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          if (isLoading)
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            )
+          else
+            Icon(icon, color: AppColors.brandOrange, size: 28),
+          const SizedBox(height: 9),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 8),
+            TextButton(onPressed: onAction, child: Text(actionLabel!)),
+          ],
         ],
       ),
     );

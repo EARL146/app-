@@ -98,11 +98,6 @@ class _MenuScreenState extends State<MenuScreen> {
                           ),
                         ),
                       ),
-                      Icon(
-                        Icons.mic_none_rounded,
-                        color: AppColors.textSecondary,
-                        size: 18,
-                      ),
                     ],
                   ),
                 ),

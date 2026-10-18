@@ -35,15 +35,16 @@ class WelcomeScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
                             children: [
                               const BrandLogo(
                                 width: 44,
                                 height: 44,
                                 animate: true,
                               ),
-                              const SizedBox(width: 8),
                               const Text(
                                 'BurgerBites',
                                 style: TextStyle(

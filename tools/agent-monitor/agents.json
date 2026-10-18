@@ -2,5 +2,6 @@
   {"agent_id": "agent-1", "name": "Agent 1", "role": "Frontend Developer"},
   {"agent_id": "agent-2", "name": "Agent 2", "role": "Backend/API Developer"},
   {"agent_id": "agent-3", "name": "Agent 3", "role": "QA Tester"},
-  {"agent_id": "agent-4", "name": "Agent 4", "role": "Code Reviewer"}
+  {"agent_id": "agent-4", "name": "Agent 4", "role": "Code Reviewer"},
+  {"agent_id": "agent-5", "name": "Agent 5", "role": "Customer/Admin Debugger"}
 ]

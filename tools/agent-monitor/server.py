@@ -22,6 +22,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from agent_events import agent_overview
+from worker_runtime import WorkerManager
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -588,7 +589,7 @@ def file_diff(root: Path, relative: str) -> dict:
 
 
 class MonitorHandler(BaseHTTPRequestHandler):
-    server_version = "BurgerBitesMonitor/1.0"
+    server_version = "BurgerBitesMonitor/2.0"
 
     @property
     def project_root(self) -> Path:
@@ -613,21 +614,34 @@ class MonitorHandler(BaseHTTPRequestHandler):
 
     def _json(self, value: object, status: int = 200) -> None:
         payload = json.dumps(value, ensure_ascii=False).encode("utf-8")
-        if status != 200:
-            self.send_response(status)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(payload)))
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("X-Content-Type-Options", "nosniff")
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-        self._headers("application/json; charset=utf-8", len(payload))
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'")
+        self.end_headers()
         self.wfile.write(payload)
 
-    def do_GET(self) -> None:  # noqa: N802 - stdlib handler method name
+    def _local_request_allowed(self, require_origin: bool = False) -> bool:
         host = (self.headers.get("Host") or "").split(":", 1)[0].strip("[]").lower()
         if host not in {"127.0.0.1", "localhost"}:
+            return False
+        try:
+            if not ipaddress.ip_address(self.client_address[0]).is_loopback:
+                return False
+        except ValueError:
+            return False
+        if require_origin:
+            port = int(self.server.server_address[1])
+            origin = self.headers.get("Origin", "")
+            if origin not in {f"http://127.0.0.1:{port}", f"http://localhost:{port}"}:
+                return False
+        return True
+
+    def do_GET(self) -> None:  # noqa: N802 - stdlib handler method name
+        if not self._local_request_allowed():
             self._json({"error": "Use the local dashboard address."}, 403)
             return
         parsed = urlsplit(self.path)
@@ -635,7 +649,7 @@ class MonitorHandler(BaseHTTPRequestHandler):
         try:
             if parsed.path == "/":
                 self._static("index.html", "text/html; charset=utf-8")
-            elif parsed.path in ("/app.js", "/style.css"):
+            elif parsed.path in ("/app.js", "/city.js", "/style.css", "/city.css"):
                 name = parsed.path.lstrip("/")
                 content_type = "text/javascript; charset=utf-8" if name.endswith(".js") else "text/css; charset=utf-8"
                 self._static(name, content_type)
@@ -651,11 +665,19 @@ class MonitorHandler(BaseHTTPRequestHandler):
                     "images": list_images(self.project_root),
                     "limits": [
                         "Task/session details are local JSONL records; the separate Windows process snapshot is name-matched OS data and is not linked to a session or role.",
-                        "Prompts, tool arguments, command text, and command/tool output are not displayed.",
+                        "Existing session records remain log-derived. Worker activity comes from the isolated Codex CLI JSON event stream; prompts, tool arguments, command text, and raw output are withheld.",
                         "Agent role metrics come only from explicit local agent-event records; this is not a live agent API.",
+                        "Agent 5 cannot inspect a browser DevTools session; console or API error text must be provided by the user, with secrets and customer data removed.",
                         "GitHub is not contacted. Ahead/behind counts use cached remote-tracking refs only.",
+                        "Coding, debugging, and QA workers run one at a time in isolated worktrees based on committed HEAD. The main worktree is not changed by workers.",
                     ],
                 })
+            elif parsed.path == "/api/tasks":
+                self._json(self.server.worker_manager.list_tasks())
+            elif parsed.path.startswith("/api/tasks/") and re.fullmatch(r"/api/tasks/[0-9a-f]{32}", parsed.path):
+                self._json(self.server.worker_manager.get_task(parsed.path.rsplit("/", 1)[-1]))
+            elif parsed.path == "/api/task-diff":
+                self._json(self.server.worker_manager.task_diff(query.get("task_id", [""])[0], query.get("path", [""])[0]))
             elif parsed.path == "/api/diff":
                 self._json(file_diff(self.project_root, query.get("path", [""])[0]))
             elif parsed.path == "/api/note":
@@ -684,25 +706,73 @@ class MonitorHandler(BaseHTTPRequestHandler):
         except (OSError, subprocess.TimeoutExpired):
             self._json({"error": "Local read operation failed."}, 500)
 
+    def do_POST(self) -> None:  # noqa: N802 - stdlib handler method name
+        if not self._local_request_allowed(require_origin=True):
+            self._json({"error": "Worker controls accept same-origin requests from the local dashboard only."}, 403)
+            return
+        if self.headers.get_content_type() != "application/json":
+            self._json({"error": "Send a JSON request body."}, 415)
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
+        if length < 2 or length > 16_384:
+            self._json({"error": "Request body must be between 2 bytes and 16 KB."}, 413)
+            return
+        try:
+            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            self._json({"error": "Request body is not valid JSON."}, 400)
+            return
+        if not isinstance(payload, dict) or payload.get("confirm") is not True:
+            self._json({"error": "Review the isolated-worker notice and explicitly confirm before starting or cancelling work."}, 400)
+            return
+        path = urlsplit(self.path).path
+        try:
+            if path == "/api/tasks":
+                task = self.server.worker_manager.start_coding_task(
+                    payload.get("agent_id", "agent-1"), payload.get("label", ""), payload.get("prompt", "")
+                )
+                self._json(task, 202)
+            elif re.fullmatch(r"/api/tasks/[0-9a-f]{32}/qa", path):
+                task_id = path.split("/")[3]
+                self._json(self.server.worker_manager.start_qa_task(task_id), 202)
+            elif re.fullmatch(r"/api/tasks/[0-9a-f]{32}/cancel", path):
+                task_id = path.split("/")[3]
+                self._json(self.server.worker_manager.cancel(task_id), 202)
+            else:
+                self._json({"error": "Not found."}, 404)
+        except ValueError as exc:
+            self._json({"error": str(exc)}, 400)
+        except RuntimeError as exc:
+            self._json({"error": str(exc)}, 409)
+        except (OSError, subprocess.SubprocessError):
+            self._json({"error": "Worker request failed before it could be safely started."}, 500)
+
     def _static(self, name: str, content_type: str) -> None:
         path = STATIC_ROOT / name
         body = path.read_bytes()
         self._headers(content_type, len(body))
         self.wfile.write(body)
 
-
 class MonitorServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, address: tuple[str, int], project_root: Path, codex_home: Path):
+    def __init__(self, address: tuple[str, int], project_root: Path, codex_home: Path, codex_executable: str | None = None, worker_state_root: Path | None = None):
         super().__init__(address, MonitorHandler)
         self.project_root = project_root.resolve()
         self.session_index = SessionIndex(codex_home)
+        self.worker_manager = WorkerManager(
+            self.project_root,
+            worker_state_root or STATIC_ROOT / ".state" / "agent-city",
+            codex_executable,
+        )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the read-only BurgerBites agent monitor on localhost.")
+    parser = argparse.ArgumentParser(description="Run the local BurgerBites agent monitor and isolated Codex worker controls.")
     parser.add_argument("--host", default="127.0.0.1", help="Loopback address only (default: 127.0.0.1).")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT, help="BurgerBites project root.")
@@ -717,9 +787,9 @@ def main() -> None:
         parser.error("Project root must be a Git working tree.")
     codex_home = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex")).expanduser()
     server = MonitorServer((args.host, args.port), root, codex_home)
-    print(f"Read-only monitor: http://{args.host}:{args.port}")
+    print(f"Local Agent Monitor: http://{args.host}:{args.port}")
     print(f"Project: {root}")
-    print("Press Ctrl+C to stop. No network interface or write endpoint is enabled.")
+    print("Press Ctrl+C to stop. Worker controls are loopback-only and use isolated Git worktrees.")
     try:
         server.serve_forever(poll_interval=0.5)
     except KeyboardInterrupt:
