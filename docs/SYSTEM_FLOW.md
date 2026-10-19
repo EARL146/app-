@@ -2,43 +2,54 @@
 
 [[PROJECT_HOME]] · [[SCREEN_FLOW]] · [[CUSTOMER_FLOW]] · [[ADMIN_FLOW]] · [[PRODUCTION_READINESS_AUDIT]] · [[API_SPEC]]
 
-This describes the Flutter app and PHP API code. Migration `001` is installed in local MySQL database `burger_bites`; migration `003_app_workflows.sql` is required for saved carts, reminders, preferences, support, inventory, and expanded order states, but is not yet imported. A local HTTP smoke test passed admin login, `/me`, admin authorization on the readiness endpoint, and logout. Other migration-003 customer/admin workflows still need live verification.
+This describes the customer/admin app, PHP API, MySQL data path, and the separate local development monitor. Migration `001` is installed in local MySQL database `burger_bites`; migration `003_app_workflows.sql` is required for saved carts, reminders, preferences, support, inventory, and expanded order states, but is not yet imported. The latest recorded catalog check returned no products. A local HTTP smoke test passed admin login, `/me`, admin authorization on the readiness endpoint, and logout. Other migration-003 customer/admin workflows still need live verification.
 
 ## 1. Startup and authentication
 
 ```mermaid
 flowchart TD
     A[Flutter starts] --> B[AppShell and shared providers]
-    B --> C[Splash with supplied logo]
-    C --> D{Secure stored session?}
+    B --> C[4.5-second animated burger splash]
+    C --> D{Saved session?}
     D -->|No| E[Greetings]
     D -->|Yes and API configured| F[GET /me]
-    F -->|Valid session| G[Open server role home]
+    F -->|Valid customer/admin| G[Open role home]
     F -->|401 expired token| H[POST /auth/refresh]
-    H -->|Rotated token pair saved| F
+    H -->|Save rotated tokens| F
     F -->|Offline, invalid, or rejected| E
-    E --> I[Sign in or register]
-    I --> J[Flutter validates form]
-    J --> K[POST /auth/login or /auth/register]
-    K -->|Safe error| I
-    K -->|Valid token, user ID, role| L[Save session with Secure Storage]
+    E -->|Browse menu| N[Customer Home and public catalog]
+    E -->|Log in| I[Sign in]
+    I --> J[Sign in or create account]
+    S --> J
+    J --> K{Account action}
+    K -->|Log in| K1[POST /auth/login]
+    K -->|Register| K2[POST /auth/register]
+    K1 -->|Safe error| I
+    K2 -->|Safe error| I
+    K1 -->|Valid token, user ID, role| L[Save session with Secure Storage]
+    K2 -->|Valid token, user ID, role| L
     L --> G
     G --> M{Server role}
-    M -->|customer| N[Customer home]
+    M -->|customer| N
     M -->|admin| O[Admin home]
-    O --> P[Client AdminRouteGate]
-    P -. API must independently check token and role .-> Q[PHP authorization]
+    N --> P[Browse menu, search, product details]
+    P --> Q{Favorite or add to cart}
+    Q -->|Customer session| R[Perform favorite or add-to-cart action]
+    Q -->|Guest| S[Sign-in/create-account prompt]
+    L -->|Action was pending| R
+    O --> U[Client AdminRouteGate]
+    U -. API checks token and role independently .-> V[PHP authorization]
 ```
 
-Fresh install goes Splash → Greetings → Sign in/Register. Returning users validate `/me`; if the access token expired, the client uses a refresh token once and retries `/me`. Without `BURGER_BITES_API_BASE_URL`, auth actions fail closed and the app stays in its public flow. No demo credential exists.
+Fresh install goes Splash → Greetings → Browse menu. Guests can browse without signing in. Favorites, adding products to cart, reorder, checkout, and order placement require a customer session; after sign-in or registration, the app returns to the calling product/action. Sign-in also links to registration. Returning users validate `/me`; if the access token expired, the client uses a refresh token once and retries `/me`. Without `BURGER_BITES_API_BASE_URL`, auth actions fail closed and the app stays in its public flow. No demo credential exists.
 
 ## 2. Browse and favorites
 
 ```mermaid
 flowchart TD
-    A[Customer home] --> B[CatalogProvider]
-    B --> C[GET /products from SQL]
-    C --> D[Menu or Search filters live catalog]
+    A[Guest or customer home] --> B[CatalogProvider]
+    B --> C[Public GET /products from SQL]
+    C --> D[Menu or Search filters current catalog]
     D --> E[Product details]
     E --> F{Burger customization?}
     F -->|Yes| G[Select size and toppings]
@@ -47,41 +58,45 @@ flowchart TD
     H --> I
     D --> J[Favorite button]
     E --> J
-    J --> K{Signed in?}
-    K -->|No| L[Ask customer to sign in]
-    K -->|Yes| M[GET /me/favorites]
-    M --> N[POST /me/favorites or DELETE /me/favorites/id]
+    J --> K{Customer session?}
+    K -->|No| L[Prompt to log in or create account]
+    L -->|Authentication succeeds| M[Return and resume favorite action]
+    K -->|Yes| M
+    M --> N[GET/POST/DELETE /me/favorites]
     N --> O[Change icon after API success]
 ```
 
-Catalog/search read SQL products. Burger options remain tied to the real product row; the server calculates modifier prices instead of trusting client totals. Favorites are scoped to the signed-in user.
+Catalog, search, and product details are available to guests. The catalog endpoint is public and reads SQL products; the last recorded database check found zero product rows, so a working route can still show an empty menu until real products are added. Burger options remain tied to the real product row; the server calculates modifier prices instead of trusting client totals. Favorites are scoped to the signed-in user.
 
 ## 3. Cart and checkout
 
 ```mermaid
 flowchart TD
-    A[Choose SQL catalog product] --> B{Available and quantity valid?}
-    B -->|No| C[Show message]
-    B -->|Yes| D[CartProvider merges identical product/options]
-    D --> E{Signed in?}
-    E -->|No| F[Keep guest cart in memory]
-    E -->|Yes| G[GET/PUT /me/cart syncs account cart]
-    F --> H[Edit quantity or remove]
-    G --> H
-    H --> I[Show preview total]
-    I --> J[Enter name, delivery address, phone; select COD]
-    J --> K{Form valid?}
-    K -->|No| L[Show validation and keep cart]
-    K -->|Yes| M[POST /orders with IDs, options, and quantities]
-    M --> N[Server reloads prices and checks stock]
-    N --> O{COD order transaction succeeds?}
-    O -->|No| P[Show error and keep cart]
-    O -->|Yes and order ID returned| Q[Clear local and saved cart; show request reference]
-    Q --> R[GET /me/orders shows saved order]
-    R -->|Pending| S[Customer may cancel; stock is restored]
+    A[Select Add to cart] --> B{Customer session?}
+    B -->|No| C[Prompt to log in or create account]
+    C -->|Successful customer auth| D[Return to product and resume add]
+    B -->|Yes| E[CartProvider validates availability and quantity]
+    D --> E
+    E -->|Invalid| F[Show message]
+    E -->|Valid| G[Merge identical product/options]
+    G --> H[GET/PUT /me/cart syncs customer cart]
+    H --> I[Edit quantity or remove]
+    I --> J[Show preview total]
+    J --> K[Continue to checkout]
+    K --> L[Customer session gate]
+    L --> M[Enter name, delivery address, phone; select COD]
+    M --> N{Form valid?}
+    N -->|No| O[Show validation and keep cart]
+    N -->|Yes| P[POST /orders with IDs, options, and quantities]
+    P --> Q[Server reloads prices and checks stock]
+    Q --> R{COD order transaction succeeds?}
+    R -->|No| S[Show error and keep cart]
+    R -->|Yes and order ID returned| T[Clear saved cart and show request reference]
+    T --> U[GET /me/orders shows saved order]
+    U -->|Pending| V[Customer may cancel; stock is restored]
 ```
 
-The Flutter cart estimate uses a 12% tax and ₱25 delivery fee. Signed-in cart changes sync to `cart_items`; guest carts remain in memory until sign-in. The PHP API re-reads product price/stock and uses configurable tax/delivery values (`ORDER_TAX_PERCENT`, `ORDER_DELIVERY_FEE`). It saves COD order and option snapshots, clears the saved cart, and decrements stock in one transaction. Admin status updates progress through pending, processing, ready, shipped, delivered; cancellation restores stock before dispatch. GCash/Maya stay disabled until sandbox/callback setup is available.
+The Flutter cart estimate uses a 12% tax and ₱25 delivery fee. UI actions require customer authentication before adding to the cart; signed-in cart changes sync to `cart_items`. The PHP API re-reads product price/stock and uses configurable tax/delivery values (`ORDER_TAX_PERCENT`, `ORDER_DELIVERY_FEE`). It saves COD order and option snapshots, clears the saved cart, and decrements stock in one transaction. Admin status updates progress through pending, processing, ready, shipped, delivered; cancellation restores stock before dispatch. GCash/Maya stay disabled until sandbox/callback setup is available.
 
 ## 4. Admin
 
@@ -118,7 +133,7 @@ flowchart LR
     AUTH[AuthService] --> STORE[Secure Storage]
     AUTH --> API[ApiService: configured HTTPS release URL]
     API --> PHP[PHP/PDO routes]
-    PHP --> DB[(burger_bites: migrations 001 and 003)]
+    PHP --> DB[(burger_bites: 001 installed; 003 pending)]
     UI --> SUPPORT[Support form and admin inbox]
     UI --> PREFS[Profile, password, account preferences]
     SUPPORT --> PHP
@@ -140,3 +155,28 @@ flowchart LR
 | Multiple saved addresses | Not implemented | One default address remains on the user profile |
 
 See [[API_SPEC]], [[DATABASE_SCHEMA]], [[SECURITY]], and [[PRODUCTION_READINESS_AUDIT]].
+
+## 7. Obsidian and agent-monitor workflow
+
+```mermaid
+flowchart LR
+    O[Obsidian: project memory in docs/] --> C[Codex reads relevant notes before work]
+    C --> RTK[RTK: condense supported terminal output when active]
+    C --> ICM[ICM MCP: supplementary local assistant memory]
+    C --> GF[Graphify: local code structure graph]
+    C --> W[Implement and inspect changes]
+    RTK --> V[Run available checks and review Git diff]
+    W --> V
+    V --> O2[Update project memory notes]
+    W --> G[Git local branch and GitHub remote]
+    G -->|Only after user approval| B[Commit or push]
+    A[Separate Agent Monitor on 127.0.0.1:8765] --> S[Observed sessions, process snapshots, Git, selected notes/images]
+    A --> X[Agent 1/5 workers; Agent 3 can test Agent 1 worktree]
+    X --> EV[Recorded events and worktree diff for review]
+    U[User supplies redacted browser console/API errors] --> D[Agent 5 customer/admin debugger]
+    D --> X
+```
+
+Obsidian remains the source of project documentation and memory. RTK only reduces terminal output for supported commands when its hook is active; it does not guarantee lower total AI usage. ICM is supplementary local Codex memory and is not connected to the dashboard's activity stream. Graphify builds a local code-structure graph; it does not replace Markdown notes or upload the project. Git/GitHub provide reviewed version history and backup, with commits and pushes gated on user approval. Current connection states and setup limits are recorded in [[INTEGRATION_MAP]].
+
+The Agent Monitor is a separate local activity dashboard. It cannot read browser DevTools. Agent 5 can use console/API errors pasted into its task and starts from committed `HEAD` in an isolated Git worktree, so uncommitted app changes are not copied. See [[AGENT_MONITOR]] and [[AGENT_TEAM]].

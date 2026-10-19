@@ -28,6 +28,20 @@ class ApiService {
   );
   static const Duration _timeout = Duration(seconds: 15);
 
+  static String _initialBaseUrl() {
+    final configured = _compileTimeBaseUrl.trim();
+    if (configured.isNotEmpty) {
+      return configured.replaceFirst(RegExp(r'/+$'), '');
+    }
+
+    // Let local Edge/Chrome development use the documented PHP API by
+    // default, while keeping native tests and release builds isolated.
+    if (kDebugMode && kIsWeb) {
+      return 'http://127.0.0.1:8081/api/v1';
+    }
+    return '';
+  }
+
   final StorageService _storageService;
   final http.Client _httpClient;
   String _baseUrl;
@@ -37,7 +51,7 @@ class ApiService {
   ApiService._internal()
     : _storageService = StorageService(),
       _httpClient = http.Client(),
-      _baseUrl = _compileTimeBaseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
+      _baseUrl = _initialBaseUrl();
 
   bool get isConfigured {
     final uri = Uri.tryParse(_baseUrl);
@@ -110,7 +124,7 @@ class ApiService {
     } catch (_) {
       return const ApiResponse(
         success: false,
-        error: 'Unable to connect to BurgerBites. Check the API URL and connection.',
+        error: 'Unable to reach BurgerBites. Check that the API server is running and the app API URL is correct.',
       );
     }
   }

@@ -7,6 +7,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/favorite_button.dart';
+import '../../widgets/customer_account_prompt.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -466,7 +467,14 @@ class _SearchResultTile extends StatelessWidget {
                 FavoriteButton(product: product, iconSize: 18),
                 Consumer<CartProvider>(
                   builder: (context, cart, _) => IconButton.filled(
-                    onPressed: () {
+                    onPressed: () async {
+                      if (!await requireCustomerAccount(
+                        context,
+                        action: 'add this item to your cart',
+                      )) {
+                        return;
+                      }
+                      if (!context.mounted) return;
                       cart.addItem(product);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

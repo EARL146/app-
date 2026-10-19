@@ -2,12 +2,20 @@
 
 [[PROJECT_HOME]] · [[INTEGRATION_MAP]] · [[AGENT_TEAM]] · [[AGENT_MONITOR]] · [[BACKUP_WORKFLOW]] · [[PRODUCTION_READINESS_AUDIT]] · [[KNOWN_ISSUES]] · [[TESTING]]
 
+## Guest-first catalog and account prompt flow (2026-10-19)
+
+- Fresh sessions now see the existing ingredient-animation splash, then the Greetings screen with a Browse Menu path. Restored customer and admin sessions still go directly to their role home.
+- Guests can browse the public API catalog and product details. Favorite, add-to-cart, reorder, checkout, and order placement prompt guests to sign in or create a customer account. Successful authentication returns to and resumes the pending customer action.
+- The app does not fabricate catalog entries. The last recorded database check found zero products; seed or add real products to `burger_bites` before expecting menu cards to appear. The API availability and product count were not rechecked during this implementation.
+- Flow diagram and current behavior: [[SCREEN_FLOW]]. `flutter analyze --no-pub` reported no issues and `git diff --check` passed. The existing startup widget test expectation was updated for the guest flow, but Flutter tests and a device/browser run were not performed in this task.
+- Graphify Local refreshed after this implementation: 2,000 nodes, 3,371 edges, and 122 communities. The existing `linux/runner/my_application.h` parse warning remains; no LLM labeling pass or external upload was run.
+
 ## Hosting direction and local verification (2026-10-16)
 
 - Hostinger domain and hosting are the planned deployment target, but have not been purchased or configured. Do not treat the app as deployed. Once available, verify the plan's PHP/PDO-MySQL support, database version, HTTPS, rewrite rules, backups, and environment-secret configuration before deployment.
 - Restarted the local API at `http://127.0.0.1:8081`. `GET /api/v1/products?limit=1` returned HTTP 200 with zero products; `GET /api/v1/store-profile` returned HTTP 503 because migration `003_app_workflows.sql` is still not imported. The browser CORS preflight for `http://localhost:5000` returned HTTP 204.
 - `flutter analyze --no-pub` reported no issues (118.4 seconds); `flutter test --no-pub` passed all 10 tests. These checks do not verify workflows that require migration 003 or a populated catalog.
-- To avoid the Flutter "API is not configured" message during local Edge development, pass `--dart-define=BURGER_BITES_API_BASE_URL=http://127.0.0.1:8081/api/v1`; the full local commands are in [[backend/README]].
+- Flutter Web debug builds now default to the local API URL (`127.0.0.1:8081`) when no `BURGER_BITES_API_BASE_URL` is supplied. Other targets use the explicit URLs in [[backend/README]]. The PHP API and MySQL must still be running; release builds require an explicit HTTPS URL.
 - Next database step remains: export a backup in phpMyAdmin, import migration 003 once, and verify Admin More reports the workflow schema ready. Optional migration 002 contains development sample menu data only.
 
 ## Flutter mobile UI audit (2026-10-16)

@@ -4,6 +4,7 @@ import 'package:burger_bites/screens/admin/admin_profile_screen.dart';
 import 'package:burger_bites/screens/admin/admin_store_profile_screen.dart';
 import 'package:burger_bites/screens/admin/admin_home_screen.dart';
 import 'package:burger_bites/screens/customer/home_screen.dart';
+import 'package:burger_bites/screens/customer/greetings_screen.dart';
 import 'package:burger_bites/screens/customer/register_screen.dart';
 import 'package:burger_bites/screens/customer/search_screen.dart';
 import 'package:burger_bites/screens/customer/sign_in_screen.dart';
@@ -21,7 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  testWidgets('fresh startup assembles the burger and opens welcome actions', (
+  testWidgets('fresh startup assembles the burger and opens guest browsing', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -32,7 +33,8 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         onGenerateRoute: (settings) {
-          if (settings.name == '/register' || settings.name == '/sign-in') {
+          if (settings.name == '/sign-in' ||
+              settings.name == '/customer-home') {
             return MaterialPageRoute<void>(
               settings: settings,
               builder: (_) => Scaffold(body: Text(settings.name!)),
@@ -49,35 +51,19 @@ void main() {
 
     for (
       var frame = 0;
-      frame < 60 && find.byType(WelcomeScreen).evaluate().isEmpty;
+      frame < 60 && find.byType(GreetingsScreen).evaluate().isEmpty;
       frame++
     ) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.byType(WelcomeScreen), findsOneWidget);
-    expect(find.text('Your Cravings,\nOur Burgers'), findsOneWidget);
-    expect(
-      find.text('Freshly made favorites, ready when you are.'),
-      findsOneWidget,
-    );
+    expect(find.byType(GreetingsScreen), findsOneWidget);
+    expect(find.text('Welcome to BurgerBites'), findsOneWidget);
 
-    await tester.tap(find.text('Get Started'));
+    await tester.tap(find.text('Browse menu'));
     for (var frame = 0; frame < 10; frame++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.text('/register'), findsOneWidget);
-
-    await tester.binding.handlePopRoute();
-    for (var frame = 0; frame < 10; frame++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.byType(WelcomeScreen), findsOneWidget);
-
-    await tester.tap(find.text('Log In'));
-    for (var frame = 0; frame < 10; frame++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.text('/sign-in'), findsOneWidget);
+    expect(find.text('/customer-home'), findsOneWidget);
   });
 
   testWidgets('welcome and auth screens fit common phone widths', (

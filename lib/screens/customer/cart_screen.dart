@@ -5,6 +5,7 @@ import '../../constants/app_colors.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/food_image.dart';
+import '../../widgets/customer_account_prompt.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -338,8 +339,16 @@ class CartScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed('/checkout'),
+                      onPressed: () async {
+                        if (!await requireCustomerAccount(
+                          context,
+                          action: 'continue to checkout',
+                        )) {
+                          return;
+                        }
+                        if (!context.mounted) return;
+                        Navigator.of(context).pushNamed('/checkout');
+                      },
                       child: Row(
                         children: [
                           const Icon(Icons.lock_outline_rounded, size: 17),

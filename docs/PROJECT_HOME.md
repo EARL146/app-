@@ -25,7 +25,7 @@ The app uses Flutter/Dart with a dependency-free PHP/PDO API backed by MySQL dat
 ## Current project status
 
 - Flutter customer and admin screens exist. See [[CUSTOMER_FLOW]] and [[ADMIN_FLOW]].
-- The supplied logo is in `assets/branding/burger_bites_logo.png`; startup routes through Splash → Greetings → Sign in/Register.
+- The supplied logo is in `assets/branding/burger_bites_logo.png`; fresh startup routes through the animated Splash → Greetings → public catalog. Sign-in is requested when a guest favorites or adds an item to cart. See [[SCREEN_FLOW]] and [[SYSTEM_FLOW]].
 - The hard-coded admin credential was removed. PHP auth/profile/favorites/catalog/COD-order routes and SQL-backed admin workflows exist in code; migration 003 and end-to-end checks remain pending.
 - Admin providers, customer catalog, favorites, cart, and customer order history call the SQL-backed API in code. Admin endpoints enforce roles on the server; migration 003 is still required before the new customer/admin flows can run against the database.
 - The Figma link was inaccessible. Supplied screenshots remain the design reference; no exact Figma comparison is marked verified.

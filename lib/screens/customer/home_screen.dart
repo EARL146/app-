@@ -8,6 +8,7 @@ import '../../providers/catalog_provider.dart';
 import '../../providers/customer_orders_provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/food_image.dart';
+import '../../widgets/customer_account_prompt.dart';
 import 'menu_screen.dart';
 import 'order_history_screen.dart';
 import 'profile_screen.dart';
@@ -913,7 +914,14 @@ class _ProductCard extends StatelessWidget {
                     height: 29,
                     child: IconButton.filled(
                       padding: EdgeInsets.zero,
-                      onPressed: () {
+                      onPressed: () async {
+                        if (!await requireCustomerAccount(
+                          context,
+                          action: 'add this item to your cart',
+                        )) {
+                          return;
+                        }
+                        if (!context.mounted) return;
                         cart.addItem(product);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

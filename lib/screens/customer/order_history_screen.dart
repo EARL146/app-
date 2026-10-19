@@ -7,6 +7,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/customer_orders_provider.dart';
 import '../../widgets/food_image.dart';
+import '../../widgets/customer_account_prompt.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -369,7 +370,11 @@ class _OrderCard extends StatelessWidget {
 
   String _dateLabel(DateTime date) => '${date.month}/${date.day}/${date.year}';
 
-  void _reorder(BuildContext context) {
+  Future<void> _reorder(BuildContext context) async {
+    if (!await requireCustomerAccount(context, action: 'reorder these items')) {
+      return;
+    }
+    if (!context.mounted) return;
     final cart = context.read<CartProvider>();
     final products = context.read<CatalogProvider>().products;
     for (final item in order.items) {

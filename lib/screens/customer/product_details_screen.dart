@@ -6,6 +6,7 @@ import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/favorite_button.dart';
 import '../../widgets/food_image.dart';
+import '../../widgets/customer_account_prompt.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   const ProductDetailsScreen({required this.product, super.key});
@@ -314,7 +315,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         child: Consumer<CartProvider>(
                           builder: (context, cart, _) => ElevatedButton(
                             onPressed: product.available
-                                ? () {
+                                ? () async {
+                                    if (!await requireCustomerAccount(
+                                      context,
+                                      action: 'add this item to your cart',
+                                    )) {
+                                      return;
+                                    }
+                                    if (!context.mounted) return;
                                     final toppings = _extras.toList()..sort();
                                     final displayName =
                                         '${isBurgerProduct && _size != 'Regular' ? '$_size ' : ''}${product.name}${toppings.isEmpty ? '' : ' + ${toppings.join(', ')}'}';

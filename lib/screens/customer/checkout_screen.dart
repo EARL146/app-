@@ -5,6 +5,7 @@ import '../../constants/app_colors.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/food_image.dart';
+import '../../widgets/customer_account_prompt.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -291,6 +292,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _submit(BuildContext context, CartProvider cart) async {
+    if (!await requireCustomerAccount(context, action: 'place this order')) {
+      return;
+    }
+    if (!context.mounted) return;
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
     final orderId = await cart.submitOrder(

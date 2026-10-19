@@ -94,7 +94,8 @@ class WelcomeScreen extends StatelessWidget {
                             height: 58,
                             child: ElevatedButton(
                               onPressed: () =>
-                                  Navigator.of(context).pushNamed('/register'),
+                                  Navigator.of(context)
+                                      .pushReplacementNamed('/customer-home'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.brandOrange,
                                 foregroundColor: Colors.white,
@@ -110,7 +111,7 @@ class WelcomeScreen extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Get Started',
+                                    'Browse Menu',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,

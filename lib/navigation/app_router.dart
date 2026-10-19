@@ -45,9 +45,15 @@ class AppRouter {
       case '/welcome':
         return MaterialPageRoute(builder: (_) => const WelcomeScreen());
       case '/sign-in':
-        return MaterialPageRoute(builder: (_) => const SignInScreen());
+        return MaterialPageRoute(
+          builder: (_) =>
+              SignInScreen(returnToCaller: settings.arguments == true),
+        );
       case '/register':
-        return MaterialPageRoute(builder: (_) => const RegisterScreen());
+        return MaterialPageRoute(
+          builder: (_) =>
+              RegisterScreen(returnToCaller: settings.arguments == true),
+        );
       case '/customer-home':
         return MaterialPageRoute(builder: (_) => const CustomerHomeScreen());
       case '/search':

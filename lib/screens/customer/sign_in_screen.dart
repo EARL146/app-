@@ -7,7 +7,9 @@ import '../../navigation/app_routes.dart';
 import '../../widgets/brand_logo.dart';
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+  const SignInScreen({super.key, this.returnToCaller = false});
+
+  final bool returnToCaller;
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -239,7 +241,15 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.of(context).pushNamed('/register');
+                            final navigator = Navigator.of(context);
+                            if (widget.returnToCaller) {
+                              navigator.pushReplacementNamed(
+                                '/register',
+                                arguments: true,
+                              );
+                            } else {
+                              navigator.pushNamed('/register');
+                            }
                           },
                           child: const Text(
                             'Create one',
@@ -288,6 +298,10 @@ class _SignInScreenState extends State<SignInScreen> {
     final destination = auth.currentUserRole == 'admin'
         ? AppRoutes.adminHome
         : AppRoutes.customerHome;
+    if (widget.returnToCaller && auth.currentUserRole == 'customer') {
+      Navigator.of(context).pop(true);
+      return;
+    }
     Navigator.of(context)
         .pushNamedAndRemoveUntil(destination, (route) => false);
   }

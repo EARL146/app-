@@ -49,15 +49,15 @@ class GreetingsScreen extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () =>
                           Navigator.of(context)
-                              .pushReplacementNamed('/sign-in'),
-                      child: const Text('Continue'),
+                              .pushReplacementNamed('/customer-home'),
+                      child: const Text('Browse menu'),
                     ),
                   ),
                   const SizedBox(height: 10),
                   TextButton(
                     onPressed: () =>
-                        Navigator.of(context).pushReplacementNamed('/register'),
-                    child: const Text('Create an account'),
+                        Navigator.of(context).pushNamed('/sign-in'),
+                    child: const Text('Log in'),
                   ),
                 ],
               ),

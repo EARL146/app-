@@ -7,6 +7,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/favorite_button.dart';
+import '../../widgets/customer_account_prompt.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key, this.initialCategory = 'All'});
@@ -457,7 +458,14 @@ class MenuProductCard extends StatelessWidget {
                           height: 31,
                         ),
                         padding: EdgeInsets.zero,
-                        onPressed: () {
+                        onPressed: () async {
+                          if (!await requireCustomerAccount(
+                            context,
+                            action: 'add this item to your cart',
+                          )) {
+                            return;
+                          }
+                          if (!context.mounted) return;
                           cart.addItem(product);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

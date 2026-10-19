@@ -18,6 +18,7 @@ class FavoritesProvider extends ChangeNotifier {
   final Map<String, Product> _favorites = {};
   bool _isLoading = false;
   String? _errorMessage;
+  Future<void>? _loadOperation;
 
   List<Product> get favorites => List.unmodifiable(_favorites.values);
   bool get isLoading => _isLoading;
@@ -41,6 +42,21 @@ class FavoritesProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    final activeLoad = _loadOperation;
+    if (activeLoad != null) {
+      await activeLoad;
+      return;
+    }
+    final operation = _loadFavoritesFromApi();
+    _loadOperation = operation;
+    try {
+      await operation;
+    } finally {
+      if (identical(_loadOperation, operation)) _loadOperation = null;
+    }
+  }
+
+  Future<void> _loadFavoritesFromApi() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -82,6 +98,8 @@ class FavoritesProvider extends ChangeNotifier {
   }
 
   Future<bool> toggleFavorite(Product product) async {
+    final activeLoad = _loadOperation;
+    if (activeLoad != null) await activeLoad;
     if (!_authService.isAuthenticated) {
       _errorMessage = 'Sign in to save favorites to your account.';
       notifyListeners();

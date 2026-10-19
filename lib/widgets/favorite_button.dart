@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../models/product_model.dart';
 import '../providers/favorites_provider.dart';
+import 'customer_account_prompt.dart';
 
 class FavoriteButton extends StatelessWidget {
   const FavoriteButton({required this.product, this.iconSize = 21, super.key});
@@ -24,6 +25,13 @@ class FavoriteButton extends StatelessWidget {
           onPressed: favorites.isLoading
               ? null
               : () async {
+                  if (!await requireCustomerAccount(
+                    context,
+                    action: 'save this favorite',
+                  )) {
+                    return;
+                  }
+                  if (!context.mounted) return;
                   final changed = await context
                       .read<FavoritesProvider>()
                       .toggleFavorite(product);

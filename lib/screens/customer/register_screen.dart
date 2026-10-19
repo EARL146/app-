@@ -4,9 +4,12 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/brand_logo.dart';
+import '../../navigation/app_routes.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({super.key, this.returnToCaller = false});
+
+  final bool returnToCaller;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -215,7 +218,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: () {
+                            final navigator = Navigator.of(context);
+                            if (widget.returnToCaller) {
+                              navigator.pushReplacementNamed(
+                                AppRoutes.signIn,
+                                arguments: true,
+                              );
+                            } else {
+                              navigator.pop();
+                            }
+                          },
                           child: const Text(
                             'Sign in',
                             style: TextStyle(
@@ -258,7 +271,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       return;
     }
+    if (widget.returnToCaller && auth.currentUserRole == 'customer') {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    final destination = auth.currentUserRole == 'admin'
+        ? AppRoutes.adminHome
+        : AppRoutes.customerHome;
     Navigator.of(context)
-        .pushNamedAndRemoveUntil('/customer-home', (route) => false);
+        .pushNamedAndRemoveUntil(destination, (route) => false);
   }
 }
