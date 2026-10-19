@@ -5,6 +5,7 @@ import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
 import '../../navigation/app_routes.dart';
 import '../../providers/admin_products_provider.dart';
+import '../../widgets/admin_page_frame.dart';
 import '../../widgets/food_image.dart';
 
 class AdminProductsScreen extends StatefulWidget {
@@ -61,154 +62,161 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
           ),
         ],
       ),
-      body: Consumer<AdminProductsProvider>(
-        builder: (context, provider, _) {
-          return Column(
-            children: [
-              if (provider.isLoading) const LinearProgressIndicator(),
-              if (provider.errorMessage != null)
-                TextButton.icon(
-                  onPressed: () => provider.loadProducts(force: true),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: Text(provider.errorMessage!),
+      body: AdminPageFrame(
+        child: Consumer<AdminProductsProvider>(
+          builder: (context, provider, _) {
+            return Column(
+              children: [
+                if (provider.isLoading) const LinearProgressIndicator(),
+                if (provider.errorMessage != null)
+                  TextButton.icon(
+                    onPressed: () => provider.loadProducts(force: true),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(provider.errorMessage!),
+                  ),
+                // Stats Cards Row
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Total Products',
+                          value: provider.totalProducts.toString(),
+                          color: AppColors.brandOrange,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Available',
+                          value: provider.availableProducts.toString(),
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              // Stats Cards Row
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Total Products',
-                        value: provider.totalProducts.toString(),
-                        color: AppColors.brandOrange,
+                // Search & Filter
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search products...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        onChanged: (value) => setState(() {}),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Available',
-                        value: provider.availableProducts.toString(),
-                        color: Colors.green,
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 44,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _CategoryChip(
+                                label: 'All',
+                                isSelected: _selectedCategory == 'All',
+                                onTap: () =>
+                                    setState(() => _selectedCategory = 'All'),
+                              ),
+                              const SizedBox(width: 8),
+                              _CategoryChip(
+                                label: 'Burgers',
+                                isSelected: _selectedCategory == 'Burgers',
+                                onTap: () => setState(
+                                  () => _selectedCategory = 'Burgers',
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              _CategoryChip(
+                                label: 'Chicken',
+                                isSelected: _selectedCategory == 'Chicken',
+                                onTap: () => setState(
+                                  () => _selectedCategory = 'Chicken',
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              _CategoryChip(
+                                label: 'Sides',
+                                isSelected: _selectedCategory == 'Sides',
+                                onTap: () =>
+                                    setState(() => _selectedCategory = 'Sides'),
+                              ),
+                              const SizedBox(width: 8),
+                              _CategoryChip(
+                                label: 'Drinks',
+                                isSelected: _selectedCategory == 'Drinks',
+                                onTap: () => setState(
+                                  () => _selectedCategory = 'Drinks',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              // Search & Filter
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search products...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 12),
+                // Products List
+                Expanded(
+                  child: provider.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _getFilteredProducts(provider).isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inventory_2,
+                                size: 64,
+                                color: Colors.grey[300],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No products found',
+                                style: Theme.of(context).textTheme.titleMedium!
+                                    .copyWith(color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          itemCount: _getFilteredProducts(provider).length,
+                          itemBuilder: (context, index) {
+                            final product = _getFilteredProducts(
+                              provider,
+                            )[index];
+                            return _ProductCard(
+                              product: product,
+                              onEdit: () => _editProduct(context, product),
+                              onDelete: () => _deleteProduct(context, product),
+                              onToggleAvailability: () =>
+                                  _toggleAvailability(context, product),
+                            );
+                          },
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
-                      onChanged: (value) => setState(() {}),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 44,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _CategoryChip(
-                              label: 'All',
-                              isSelected: _selectedCategory == 'All',
-                              onTap: () =>
-                                  setState(() => _selectedCategory = 'All'),
-                            ),
-                            const SizedBox(width: 8),
-                            _CategoryChip(
-                              label: 'Burgers',
-                              isSelected: _selectedCategory == 'Burgers',
-                              onTap: () =>
-                                  setState(() => _selectedCategory = 'Burgers'),
-                            ),
-                            const SizedBox(width: 8),
-                            _CategoryChip(
-                              label: 'Chicken',
-                              isSelected: _selectedCategory == 'Chicken',
-                              onTap: () =>
-                                  setState(() => _selectedCategory = 'Chicken'),
-                            ),
-                            const SizedBox(width: 8),
-                            _CategoryChip(
-                              label: 'Sides',
-                              isSelected: _selectedCategory == 'Sides',
-                              onTap: () =>
-                                  setState(() => _selectedCategory = 'Sides'),
-                            ),
-                            const SizedBox(width: 8),
-                            _CategoryChip(
-                              label: 'Drinks',
-                              isSelected: _selectedCategory == 'Drinks',
-                              onTap: () =>
-                                  setState(() => _selectedCategory = 'Drinks'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              // Products List
-              Expanded(
-                child: provider.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _getFilteredProducts(provider).isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.inventory_2,
-                              size: 64,
-                              color: Colors.grey[300],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No products found',
-                              style: Theme.of(context).textTheme.titleMedium!
-                                  .copyWith(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        itemCount: _getFilteredProducts(provider).length,
-                        itemBuilder: (context, index) {
-                          final product = _getFilteredProducts(provider)[index];
-                          return _ProductCard(
-                            product: product,
-                            onEdit: () => _editProduct(context, product),
-                            onDelete: () => _deleteProduct(context, product),
-                            onToggleAvailability: () =>
-                                _toggleAvailability(context, product),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

@@ -89,279 +89,291 @@ class _HomeTab extends StatelessWidget {
         : auth.currentUserBranch?.trim().isNotEmpty == true
         ? auth.currentUserBranch!
         : 'Add your delivery address';
-    return CustomScrollView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
-          sliver: SliverList.list(
-            children: [
-              Row(
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: CustomScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+              sliver: SliverList.list(
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: IconButton(
-                      tooltip: 'Open menu',
-                      onPressed: () => Navigator.of(context).pushNamed('/menu'),
-                      icon: const Icon(Icons.menu_rounded, size: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Burger',
-                            style: TextStyle(fontWeight: FontWeight.w900),
-                          ),
-                          TextSpan(
-                            text: 'Bites',
-                            style: TextStyle(
-                              color: AppColors.brandRed,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Search menu',
-                    onPressed: () => Navigator.of(context).pushNamed('/search'),
-                    icon: const Icon(Icons.search_rounded),
-                  ),
-                  Consumer<CartProvider>(
-                    builder: (context, cart, _) => _CartButton(
-                      count: cart.items.fold<int>(0, (s, i) => s + i.quantity),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'DELIVER TO',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 10,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_rounded,
-                    color: AppColors.brandOrange,
-                    size: 17,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      deliveryAddress,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () =>
-                        Navigator.of(context).pushNamed('/profile'),
-                    icon: const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      size: 17,
-                    ),
-                    label: const Text('Change'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.brandOrange,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _HeroOffer(
-                onOrder: () => Navigator.of(context).pushNamed('/menu'),
-              ),
-              const SizedBox(height: 16),
-              _HomeInfoCard(
-                eyebrow: 'OUR STORY',
-                title: 'A little about BurgerBites',
-                description: 'Browse available menu items, add your picks to the cart, and review saved orders in one place.',
-                icon: Icons.lunch_dining_rounded,
-                actionLabel: 'Explore the menu',
-                onTap: () => Navigator.of(context).pushNamed('/menu'),
-              ),
-              const SizedBox(height: 22),
-              _SectionHeading(
-                title: 'Explore categories',
-                action: 'See all',
-                onTap: () => Navigator.of(context).pushNamed('/menu'),
-              ),
-              const SizedBox(height: 12),
-              if (categories.isEmpty)
-                Text(
-                  catalog.isLoading ? 'Loading menu categories…' : 'Menu categories will appear when products are available.',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
-                )
-              else
-                SizedBox(
-                  height: 74,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: categories.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 4),
-                    itemBuilder: (context, index) {
-                      final category = categories[index];
-                      return _CategoryBubble(
-                        label: category,
-                        category: category,
-                        icon: _categoryIcon(category),
-                      );
-                    },
-                  ),
-                ),
-              const SizedBox(height: 22),
-              _SectionHeading(
-                title: 'From the menu',
-                action: 'View menu',
-                onTap: () => Navigator.of(context).pushNamed('/menu'),
-              ),
-              const SizedBox(height: 12),
-              if (catalog.isLoading && products.isEmpty)
-                const SizedBox(
-                  height: 90,
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (products.isEmpty)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      catalog.errorMessage ??
-                          'Our menu is being updated. Please check again soon.',
-                      style: const TextStyle(color: AppColors.textSecondary),
-                    ),
-                    if (catalog.errorMessage != null)
-                      TextButton.icon(
-                        onPressed: () => catalog.loadProducts(force: true),
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Try again'),
-                      ),
-                  ],
-                )
-              else
-                SizedBox(
-                  height: 220,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: products.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 12),
-                    itemBuilder: (context, index) =>
-                        _ProductCard(product: products[index]),
-                  ),
-                ),
-              const SizedBox(height: 22),
-              _SectionHeading(
-                title: 'Your recent orders',
-                action: 'Order history',
-                onTap: () => Navigator.of(context).pushNamed('/order-history'),
-              ),
-              const SizedBox(height: 12),
-              if (recentOrders.isEmpty)
-                const Text(
-                  'Your saved orders will appear here.',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ...recentOrders.map(
-                (order) => Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(13),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
+                  Row(
                     children: [
                       Container(
-                        width: 42,
-                        height: 42,
+                        width: 48,
+                        height: 48,
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceMuted,
+                          color: AppColors.surface,
                           borderRadius: BorderRadius.circular(13),
+                          border: Border.all(color: AppColors.border),
                         ),
-                        child: const Icon(
-                          Icons.receipt_long_rounded,
-                          color: AppColors.brandOrange,
-                        ),
-                      ),
-                      const SizedBox(width: 11),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              order.id,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              '${order.items.length} item${order.items.length == 1 ? '' : 's'} · ${order.status.displayName}',
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
+                        child: IconButton(
+                          tooltip: 'Open menu',
+                          onPressed: () =>
+                              Navigator.of(context).pushNamed('/menu'),
+                          icon: const Icon(Icons.menu_rounded, size: 20),
                         ),
                       ),
-                      Text(
-                        '₱${order.total.toStringAsFixed(0)}',
-                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'Burger',
+                                style: TextStyle(fontWeight: FontWeight.w900),
+                              ),
+                              TextSpan(
+                                text: 'Bites',
+                                style: TextStyle(
+                                  color: AppColors.brandRed,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Search menu',
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/search'),
+                        icon: const Icon(Icons.search_rounded),
+                      ),
+                      Consumer<CartProvider>(
+                        builder: (context, cart, _) => _CartButton(
+                          count: cart.items.fold<int>(
+                            0,
+                            (s, i) => s + i.quantity,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'DELIVER TO',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_rounded,
+                        color: AppColors.brandOrange,
+                        size: 17,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          deliveryAddress,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/profile'),
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 17,
+                        ),
+                        label: const Text('Change'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.brandOrange,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _SectionHeading(
+                    title: 'Explore categories',
+                    action: 'See all',
+                    onTap: () => Navigator.of(context).pushNamed('/menu'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (categories.isEmpty)
+                    Text(
+                      catalog.isLoading ? 'Loading menu categories…' : 'Menu categories will appear when products are available.',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      height: 74,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: categories.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 4),
+                        itemBuilder: (context, index) {
+                          final category = categories[index];
+                          return _CategoryBubble(
+                            label: category,
+                            category: category,
+                            icon: _categoryIcon(category),
+                          );
+                        },
+                      ),
+                    ),
+                  const SizedBox(height: 22),
+                  _SectionHeading(
+                    title: 'From the menu',
+                    action: 'View menu',
+                    onTap: () => Navigator.of(context).pushNamed('/menu'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (catalog.isLoading && products.isEmpty)
+                    const SizedBox(
+                      height: 90,
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (products.isEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          catalog.errorMessage ?? 'Our menu is being updated. Please check again soon.',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        if (catalog.errorMessage != null)
+                          TextButton.icon(
+                            onPressed: () => catalog.loadProducts(force: true),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Try again'),
+                          ),
+                      ],
+                    )
+                  else
+                    SizedBox(
+                      height: 220,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: products.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 12),
+                        itemBuilder: (context, index) =>
+                            _ProductCard(product: products[index]),
+                      ),
+                    ),
+                  const SizedBox(height: 22),
+                  _HeroOffer(
+                    onOrder: () => Navigator.of(context).pushNamed('/menu'),
+                  ),
+                  const SizedBox(height: 16),
+                  _HomeInfoCard(
+                    eyebrow: 'OUR STORY',
+                    title: 'A little about BurgerBites',
+                    description: 'Browse available menu items, add your picks to the cart, and review saved orders in one place.',
+                    icon: Icons.lunch_dining_rounded,
+                    actionLabel: 'Explore the menu',
+                    onTap: () => Navigator.of(context).pushNamed('/menu'),
+                  ),
+                  const SizedBox(height: 22),
+                  _SectionHeading(
+                    title: 'Your recent orders',
+                    action: 'Order history',
+                    onTap: () =>
+                        Navigator.of(context).pushNamed('/order-history'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (recentOrders.isEmpty)
+                    const Text(
+                      'Your saved orders will appear here.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ...recentOrders.map(
+                    (order) => Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceMuted,
+                              borderRadius: BorderRadius.circular(13),
+                            ),
+                            child: const Icon(
+                              Icons.receipt_long_rounded,
+                              color: AppColors.brandOrange,
+                            ),
+                          ),
+                          const SizedBox(width: 11),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  order.id,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${order.items.length} item${order.items.length == 1 ? '' : 's'} · ${order.status.displayName}',
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '₱${order.total.toStringAsFixed(0)}',
+                            style: const TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const _DifferenceSection(),
+                  const SizedBox(height: 18),
+                  _HomeInfoCard(
+                    eyebrow: 'FIND US',
+                    title: 'Store and contact',
+                    description: 'Open Contact Us for published store details and support options.',
+                    icon: Icons.location_on_rounded,
+                    actionLabel: 'View contact details',
+                    onTap: () => Navigator.of(context).pushNamed('/contact'),
+                  ),
+                  const SizedBox(height: 16),
+                  _OrderCallToAction(
+                    onTap: () => Navigator.of(context).pushNamed('/menu'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              const _DifferenceSection(),
-              const SizedBox(height: 18),
-              _HomeInfoCard(
-                eyebrow: 'FIND US',
-                title: 'Store and contact',
-                description: 'Open Contact Us for published store details and support options.',
-                icon: Icons.location_on_rounded,
-                actionLabel: 'View contact details',
-                onTap: () => Navigator.of(context).pushNamed('/contact'),
-              ),
-              const SizedBox(height: 16),
-              _OrderCallToAction(
-                onTap: () => Navigator.of(context).pushNamed('/menu'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

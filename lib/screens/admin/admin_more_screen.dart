@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
 import '../../navigation/app_routes.dart';
+import '../../widgets/admin_page_frame.dart';
 import '../../providers/admin_customers_provider.dart';
 import '../../providers/admin_orders_provider.dart';
 import '../../providers/admin_products_provider.dart';
@@ -35,80 +36,82 @@ class _AdminMoreScreenState extends State<AdminMoreScreen> {
         ),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: AppColors.surfaceMuted,
-                    child: Icon(
-                      Icons.admin_panel_settings_rounded,
-                      color: AppColors.brandOrange,
+      body: AdminPageFrame(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: AppColors.surfaceMuted,
+                      child: Icon(
+                        Icons.admin_panel_settings_rounded,
+                        color: AppColors.brandOrange,
+                      ),
                     ),
+                    title: const Text(
+                      'Admin profile',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: const Text('Account details and sign out'),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () =>
+                        Navigator.pushNamed(context, AppRoutes.adminProfile),
                   ),
-                  title: const Text(
-                    'Admin profile',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  subtitle: const Text('Account details and sign out'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () =>
-                      Navigator.pushNamed(context, AppRoutes.adminProfile),
                 ),
-              ),
-              const SizedBox(height: 24),
-              // Business Revenue Summary
-              Text(
-                'Revenue Summary',
-                style: Theme.of(context).textTheme.titleLarge!
-                    .copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _RevenueSummaryCard(),
-              const SizedBox(height: 24),
-              // Quick Stats
-              Text(
-                'Business Health',
-                style: Theme.of(context).textTheme.titleLarge!
-                    .copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _BusinessHealthCard(),
-              const SizedBox(height: 24),
-              // Admin Settings
-              Text(
-                'Admin Settings',
-                style: Theme.of(context).textTheme.titleLarge!
-                    .copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _AdminSettingsCard(),
-              const SizedBox(height: 24),
-              // Payment Setup
-              Text(
-                'Payment Setup',
-                style: Theme.of(context).textTheme.titleLarge!
-                    .copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _PayoutCard(),
-              const SizedBox(height: 24),
-              // App Information
-              Text(
-                'App Information',
-                style: Theme.of(context).textTheme.titleLarge!
-                    .copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              _AppInfoCard(),
-            ],
+                const SizedBox(height: 24),
+                // Business Revenue Summary
+                Text(
+                  'Revenue Summary',
+                  style: Theme.of(context).textTheme.titleLarge!
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                _RevenueSummaryCard(),
+                const SizedBox(height: 24),
+                // Quick Stats
+                Text(
+                  'Business Health',
+                  style: Theme.of(context).textTheme.titleLarge!
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                _BusinessHealthCard(),
+                const SizedBox(height: 24),
+                // Admin Settings
+                Text(
+                  'Admin Settings',
+                  style: Theme.of(context).textTheme.titleLarge!
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                _AdminSettingsCard(),
+                const SizedBox(height: 24),
+                // Payment Setup
+                Text(
+                  'Payment Setup',
+                  style: Theme.of(context).textTheme.titleLarge!
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                _PayoutCard(),
+                const SizedBox(height: 24),
+                // App Information
+                Text(
+                  'App Information',
+                  style: Theme.of(context).textTheme.titleLarge!
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                _AppInfoCard(),
+              ],
+            ),
           ),
         ),
       ),

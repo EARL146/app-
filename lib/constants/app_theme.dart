@@ -8,10 +8,18 @@ class AppTheme {
       useMaterial3: true,
       scaffoldBackgroundColor: AppColors.pageBackground,
       primaryColor: AppColors.brandOrange,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.brandOrange,
-        brightness: Brightness.light,
-      ),
+      colorScheme:
+          ColorScheme.fromSeed(
+            seedColor: AppColors.brandOrange,
+            brightness: Brightness.light,
+          ).copyWith(
+            primary: AppColors.brandOrange,
+            onPrimary: Colors.white,
+            secondary: AppColors.textPrimary,
+            surface: AppColors.surface,
+            error: AppColors.danger,
+            outline: AppColors.border,
+          ),
       fontFamily: 'Roboto',
       textTheme: const TextTheme(
         displayLarge: TextStyle(
@@ -26,6 +34,11 @@ class AppTheme {
         ),
         bodyLarge: TextStyle(fontSize: 15, color: AppColors.textPrimary),
         bodyMedium: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        labelLarge: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.pageBackground,
@@ -74,6 +87,14 @@ class AppTheme {
             width: 1.5,
           ),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: AppColors.danger),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -97,6 +118,50 @@ class AppTheme {
           fontWeight: FontWeight.w700,
         ),
         unselectedLabelStyle: TextStyle(fontSize: 10),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.surface,
+        selectedColor: AppColors.surfaceMuted,
+        disabledColor: AppColors.pageBackground,
+        side: const BorderSide(color: AppColors.border),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+        labelStyle: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        secondaryLabelStyle: const TextStyle(
+          color: AppColors.brandOrangeDark,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.textPrimary,
+          side: const BorderSide(color: AppColors.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.pageBackground,
+        surfaceTintColor: Colors.transparent,
+        showDragHandle: true,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.darkSurface,
+        contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }

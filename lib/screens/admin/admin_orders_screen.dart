@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../models/order_model.dart';
 import '../../providers/admin_orders_provider.dart';
+import '../../widgets/admin_page_frame.dart';
 import '../../widgets/food_image.dart';
 
 class AdminOrdersScreen extends StatefulWidget {
@@ -42,190 +43,198 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
         ),
         elevation: 0,
       ),
-      body: Consumer<AdminOrdersProvider>(
-        builder: (context, provider, _) {
-          return Column(
-            children: [
-              if (provider.isLoading) const LinearProgressIndicator(),
-              if (provider.errorMessage != null)
-                TextButton.icon(
-                  onPressed: () => provider.loadOrders(force: true),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: Text(provider.errorMessage!),
+      body: AdminPageFrame(
+        child: Consumer<AdminOrdersProvider>(
+          builder: (context, provider, _) {
+            return Column(
+              children: [
+                if (provider.isLoading) const LinearProgressIndicator(),
+                if (provider.errorMessage != null)
+                  TextButton.icon(
+                    onPressed: () => provider.loadOrders(force: true),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(provider.errorMessage!),
+                  ),
+                // Stats Cards Row
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _StatCard(
+                          label: 'Total Orders',
+                          value: provider.totalOrders.toString(),
+                          color: AppColors.brandOrange,
+                        ),
+                        const SizedBox(width: 12),
+                        _StatCard(
+                          label: 'Pending',
+                          value: provider.pendingOrders.toString(),
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 12),
+                        _StatCard(
+                          label: 'Processing',
+                          value: provider.processingOrders.toString(),
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 12),
+                        _StatCard(
+                          label: 'Delivered',
+                          value: provider.deliveredOrders.toString(),
+                          color: Colors.green,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              // Stats Cards Row
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+                // Search & Filter
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _StatCard(
-                        label: 'Total Orders',
-                        value: provider.totalOrders.toString(),
-                        color: AppColors.brandOrange,
+                      TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search by order ID...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        onChanged: (value) => setState(() {}),
                       ),
-                      const SizedBox(width: 12),
-                      _StatCard(
-                        label: 'Pending',
-                        value: provider.pendingOrders.toString(),
-                        color: Colors.amber,
-                      ),
-                      const SizedBox(width: 12),
-                      _StatCard(
-                        label: 'Processing',
-                        value: provider.processingOrders.toString(),
-                        color: Colors.blue,
-                      ),
-                      const SizedBox(width: 12),
-                      _StatCard(
-                        label: 'Delivered',
-                        value: provider.deliveredOrders.toString(),
-                        color: Colors.green,
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 44,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _FilterChip(
+                                label: 'All',
+                                isSelected: _selectedStatus == null,
+                                onTap: () {
+                                  setState(() => _selectedStatus = null);
+                                  provider.setFilterStatus(null);
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                label: 'Pending',
+                                isSelected:
+                                    _selectedStatus == OrderStatus.pending,
+                                onTap: () {
+                                  setState(
+                                    () => _selectedStatus = OrderStatus.pending,
+                                  );
+                                  provider.setFilterStatus(OrderStatus.pending);
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                label: 'Processing',
+                                isSelected:
+                                    _selectedStatus == OrderStatus.processing,
+                                onTap: () {
+                                  setState(
+                                    () => _selectedStatus =
+                                        OrderStatus.processing,
+                                  );
+                                  provider.setFilterStatus(
+                                    OrderStatus.processing,
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                label: 'Delivered',
+                                isSelected:
+                                    _selectedStatus == OrderStatus.delivered,
+                                onTap: () {
+                                  setState(
+                                    () =>
+                                        _selectedStatus = OrderStatus.delivered,
+                                  );
+                                  provider.setFilterStatus(
+                                    OrderStatus.delivered,
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _FilterChip(
+                                label: 'Cancelled',
+                                isSelected:
+                                    _selectedStatus == OrderStatus.canceled,
+                                onTap: () {
+                                  setState(
+                                    () =>
+                                        _selectedStatus = OrderStatus.canceled,
+                                  );
+                                  provider.setFilterStatus(
+                                    OrderStatus.canceled,
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              // Search & Filter
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search by order ID...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 12),
+                // Orders List
+                Expanded(
+                  child: provider.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : provider.orders.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.receipt_long,
+                                size: 64,
+                                color: Colors.grey[300],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No orders found',
+                                style: Theme.of(context).textTheme.titleMedium!
+                                    .copyWith(color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          itemCount: provider.orders.length,
+                          itemBuilder: (context, index) {
+                            final order = provider.orders[index];
+                            return _OrderCard(
+                              order: order,
+                              onTap: () => _showOrderDetails(context, order),
+                              onStatusUpdate: (newStatus) =>
+                                  _updateOrderStatus(context, order, newStatus),
+                              onCancel: () => _cancelOrder(context, order),
+                            );
+                          },
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
-                      onChanged: (value) => setState(() {}),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 44,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _FilterChip(
-                              label: 'All',
-                              isSelected: _selectedStatus == null,
-                              onTap: () {
-                                setState(() => _selectedStatus = null);
-                                provider.setFilterStatus(null);
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: 'Pending',
-                              isSelected:
-                                  _selectedStatus == OrderStatus.pending,
-                              onTap: () {
-                                setState(
-                                  () => _selectedStatus = OrderStatus.pending,
-                                );
-                                provider.setFilterStatus(OrderStatus.pending);
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: 'Processing',
-                              isSelected:
-                                  _selectedStatus == OrderStatus.processing,
-                              onTap: () {
-                                setState(
-                                  () =>
-                                      _selectedStatus = OrderStatus.processing,
-                                );
-                                provider.setFilterStatus(
-                                  OrderStatus.processing,
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: 'Delivered',
-                              isSelected:
-                                  _selectedStatus == OrderStatus.delivered,
-                              onTap: () {
-                                setState(
-                                  () => _selectedStatus = OrderStatus.delivered,
-                                );
-                                provider.setFilterStatus(OrderStatus.delivered);
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: 'Cancelled',
-                              isSelected:
-                                  _selectedStatus == OrderStatus.canceled,
-                              onTap: () {
-                                setState(
-                                  () => _selectedStatus = OrderStatus.canceled,
-                                );
-                                provider.setFilterStatus(OrderStatus.canceled);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              // Orders List
-              Expanded(
-                child: provider.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : provider.orders.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.receipt_long,
-                              size: 64,
-                              color: Colors.grey[300],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No orders found',
-                              style: Theme.of(context).textTheme.titleMedium!
-                                  .copyWith(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        itemCount: provider.orders.length,
-                        itemBuilder: (context, index) {
-                          final order = provider.orders[index];
-                          return _OrderCard(
-                            order: order,
-                            onTap: () => _showOrderDetails(context, order),
-                            onStatusUpdate: (newStatus) =>
-                                _updateOrderStatus(context, order, newStatus),
-                            onCancel: () => _cancelOrder(context, order),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

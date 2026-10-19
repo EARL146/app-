@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
 import '../../providers/admin_customers_provider.dart';
+import '../../widgets/admin_page_frame.dart';
 
 class AdminCustomersScreen extends StatefulWidget {
   const AdminCustomersScreen({super.key});
@@ -40,153 +41,155 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
         ),
         elevation: 0,
       ),
-      body: Consumer<AdminCustomersProvider>(
-        builder: (context, provider, _) {
-          final customers = _getFilteredCustomers(provider);
+      body: AdminPageFrame(
+        child: Consumer<AdminCustomersProvider>(
+          builder: (context, provider, _) {
+            final customers = _getFilteredCustomers(provider);
 
-          return Column(
-            children: [
-              if (provider.isLoading) const LinearProgressIndicator(),
-              if (provider.errorMessage != null)
-                TextButton.icon(
-                  onPressed: () => provider.loadCustomers(force: true),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: Text(provider.errorMessage!),
-                ),
-              // Stats Cards Row
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Total Customers',
-                        value: provider.totalCustomers.toString(),
-                        color: AppColors.brandOrange,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Total Spent',
-                        value:
-                            '₱${provider.totalCustomerSpent.toStringAsFixed(0)}',
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Additional Stats
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Active',
-                        value: provider.activeCustomers.toString(),
-                        color: Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _StatCard(
-                        label: 'Avg Order Value',
-                        value:
-                            '₱${provider.averageOrderValue.toStringAsFixed(0)}',
-                        color: Colors.purple,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Search & Filter
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search by name, email, or phone...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+            return Column(
+              children: [
+                if (provider.isLoading) const LinearProgressIndicator(),
+                if (provider.errorMessage != null)
+                  TextButton.icon(
+                    onPressed: () => provider.loadCustomers(force: true),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(provider.errorMessage!),
+                  ),
+                // Stats Cards Row
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Total Customers',
+                          value: provider.totalCustomers.toString(),
+                          color: AppColors.brandOrange,
                         ),
                       ),
-                      onChanged: (value) => setState(() {}),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _showOnlyActive,
-                          onChanged: (value) {
-                            setState(() => _showOnlyActive = value ?? false);
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Total Spent',
+                          value:
+                              '₱${provider.totalCustomerSpent.toStringAsFixed(0)}',
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Additional Stats
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Active',
+                          value: provider.activeCustomers.toString(),
+                          color: AppColors.info,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          label: 'Avg Order Value',
+                          value:
+                              '₱${provider.averageOrderValue.toStringAsFixed(0)}',
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Search & Filter
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search by name, email, or phone...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        onChanged: (value) => setState(() {}),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _showOnlyActive,
+                            onChanged: (value) {
+                              setState(() => _showOnlyActive = value ?? false);
+                            },
+                            activeColor: AppColors.brandOrange,
+                          ),
+                          const Text('Show Active Only'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Customers List
+                Expanded(
+                  child: provider.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : customers.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.people,
+                                size: 64,
+                                color: Colors.grey[300],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No customers found',
+                                style: Theme.of(context).textTheme.titleMedium!
+                                    .copyWith(color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          itemCount: customers.length,
+                          itemBuilder: (context, index) {
+                            final customer = customers[index];
+                            return _CustomerCard(
+                              customer: customer,
+                              onTap: () => _showCustomerDetails(
+                                context,
+                                customer,
+                                provider,
+                              ),
+                              onToggleStatus: () =>
+                                  _toggleStatus(context, customer, provider),
+                            );
                           },
-                          activeColor: AppColors.brandOrange,
                         ),
-                        const Text('Show Active Only'),
-                      ],
-                    ),
-                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              // Customers List
-              Expanded(
-                child: provider.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : customers.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.people,
-                              size: 64,
-                              color: Colors.grey[300],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No customers found',
-                              style: Theme.of(context).textTheme.titleMedium!
-                                  .copyWith(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        itemCount: customers.length,
-                        itemBuilder: (context, index) {
-                          final customer = customers[index];
-                          return _CustomerCard(
-                            customer: customer,
-                            onTap: () => _showCustomerDetails(
-                              context,
-                              customer,
-                              provider,
-                            ),
-                            onToggleStatus: () =>
-                                _toggleStatus(context, customer, provider),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -196,8 +199,14 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
         ? provider.customers.where((c) => c.isActive).toList()
         : provider.customers;
 
-    if (_searchController.text.isEmpty) return baseList;
-    return provider.searchCustomers(_searchController.text);
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return baseList;
+
+    return baseList.where((customer) {
+      return customer.name.toLowerCase().contains(query) ||
+          customer.email.toLowerCase().contains(query) ||
+          customer.phone.toLowerCase().contains(query);
+    }).toList();
   }
 
   void _showCustomerDetails(

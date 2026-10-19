@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_colors.dart';
+import '../../widgets/admin_page_frame.dart';
 import '../../services/api_service.dart';
 
 class AdminSupportScreen extends StatefulWidget {
@@ -79,48 +80,50 @@ class _AdminSupportScreenState extends State<AdminSupportScreen> {
         IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded)),
       ],
     ),
-    body: _loading && _messages.isEmpty
-        ? const Center(child: CircularProgressIndicator())
-        : _error != null && _messages.isEmpty
-        ? Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(_error!, textAlign: TextAlign.center),
-                  const SizedBox(height: 12),
-                  FilledButton(
-                    onPressed: _load,
-                    child: const Text('Try again'),
-                  ),
-                ],
+    body: AdminPageFrame(
+      child: _loading && _messages.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null && _messages.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: _load,
+                      child: const Text('Try again'),
+                    ),
+                  ],
+                ),
               ),
+            )
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: _messages.isEmpty
+                  ? ListView(
+                      children: const [
+                        SizedBox(height: 180),
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 42,
+                          color: AppColors.textSecondary,
+                        ),
+                        SizedBox(height: 12),
+                        Center(child: Text('No support messages yet.')),
+                      ],
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _messages.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) =>
+                          _messageCard(_messages[index]),
+                    ),
             ),
-          )
-        : RefreshIndicator(
-            onRefresh: _load,
-            child: _messages.isEmpty
-                ? ListView(
-                    children: const [
-                      SizedBox(height: 180),
-                      Icon(
-                        Icons.inbox_outlined,
-                        size: 42,
-                        color: AppColors.textSecondary,
-                      ),
-                      SizedBox(height: 12),
-                      Center(child: Text('No support messages yet.')),
-                    ],
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, index) =>
-                        _messageCard(_messages[index]),
-                  ),
-          ),
+    ),
   );
 
   Widget _messageCard(Map<String, dynamic> message) {

@@ -40,6 +40,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final product = widget.product;
     final isBurgerProduct = product.category?.trim().toLowerCase() == 'burgers';
     final categoryLabel = product.category?.trim();
+    final heroHeight = (MediaQuery.sizeOf(context).height * 0.34)
+        .clamp(220.0, 310.0)
+        .toDouble();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
@@ -60,7 +63,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 padding: const EdgeInsets.fromLTRB(18, 2, 18, 18),
                 children: [
                   SizedBox(
-                    height: 254,
+                    height: heroHeight,
                     child: Stack(
                       children: [
                         Positioned.fill(
@@ -68,29 +71,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             imageUrl: product.imageUrl,
                             category: product.category,
                             borderRadius: 23,
-                          ),
-                        ),
-                        Positioned(
-                          left: 13,
-                          top: 13,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.brandOrange,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'CHEF’S SPECIAL',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 9,
-                                letterSpacing: .5,
-                              ),
-                            ),
                           ),
                         ),
                         Positioned(
@@ -175,6 +155,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     ],
                   ),
                   const SizedBox(height: 10),
+                  const Text(
+                    'About this item',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
                   Text(
                     product.description.trim().isEmpty
                         ? 'A description for this item has not been added yet.'
