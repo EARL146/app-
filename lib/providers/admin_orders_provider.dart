@@ -11,6 +11,7 @@ class AdminOrdersProvider extends ChangeNotifier {
   final List<Order> _orders = [];
   String? _errorMessage;
   bool _isLoading = false;
+  bool _hasLoaded = false;
   String? _successMessage;
   Order? _selectedOrder;
   OrderStatus? _filterStatus;
@@ -18,6 +19,7 @@ class AdminOrdersProvider extends ChangeNotifier {
   List<Order> get orders => List.unmodifiable(_filteredOrders);
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
+  bool get hasLoaded => _hasLoaded;
   String? get successMessage => _successMessage;
   Order? get selectedOrder => _selectedOrder;
   OrderStatus? get filterStatus => _filterStatus;
@@ -45,29 +47,39 @@ class AdminOrdersProvider extends ChangeNotifier {
       : _orders.where((order) => order.status == _filterStatus).toList();
 
   Future<void> loadOrders({bool force = false}) async {
-    if (_isLoading || (!force && _orders.isNotEmpty)) return;
+    if (_isLoading || (!force && _hasLoaded)) return;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
-    final response = await _apiService.get<Map<String, dynamic>>(
-      '/admin/orders',
-      fromJson: _asMap,
-    );
-    if (!response.success || response.data == null) {
-      _errorMessage = response.error ?? 'Unable to load orders.';
-    } else {
-      try {
-        final rows = response.data!['orders'];
-        if (rows is! List) throw const FormatException('Invalid orders list.');
-        _orders
-          ..clear()
-          ..addAll(rows.whereType<Map<String, dynamic>>().map(Order.fromJson));
-      } catch (_) {
-        _errorMessage = 'The server returned an invalid order list.';
+    try {
+      final response = await _apiService.get<Map<String, dynamic>>(
+        '/admin/orders',
+        fromJson: _asMap,
+      );
+      if (!response.success || response.data == null) {
+        _errorMessage = response.error ?? 'Unable to load orders.';
+      } else {
+        try {
+          final rows = response.data!['orders'];
+          if (rows is! List) {
+            throw const FormatException('Invalid orders list.');
+          }
+          _orders
+            ..clear()
+            ..addAll(
+              rows.whereType<Map<String, dynamic>>().map(Order.fromJson),
+            );
+        } catch (_) {
+          _errorMessage = 'The server returned an invalid order list.';
+        }
       }
+    } catch (_) {
+      _errorMessage = 'Unable to load orders. Please try again.';
+    } finally {
+      _hasLoaded = true;
+      _isLoading = false;
+      notifyListeners();
     }
-    _isLoading = false;
-    notifyListeners();
   }
 
   void clearMessages() {
@@ -110,24 +122,29 @@ class AdminOrdersProvider extends ChangeNotifier {
       OrderStatus.delivered => 'delivered',
       OrderStatus.canceled => 'cancelled',
     };
-    final response = await _apiService.put<Map<String, dynamic>>(
-      '/admin/orders/${Uri.encodeComponent(orderId)}',
-      body: {'status': apiStatus},
-      fromJson: _asMap,
-    );
-    _isLoading = false;
-    if (!response.success) {
-      _errorMessage = response.error ?? 'Unable to update the order.';
-      notifyListeners();
+    try {
+      final response = await _apiService.put<Map<String, dynamic>>(
+        '/admin/orders/${Uri.encodeComponent(orderId)}',
+        body: {'status': apiStatus},
+        fromJson: _asMap,
+      );
+      if (!response.success) {
+        _errorMessage = response.error ?? 'Unable to update the order.';
+        return false;
+      }
+      final old = _orders[index];
+      final updated = _withStatus(old, newStatus);
+      _orders[index] = updated;
+      if (_selectedOrder?.id == orderId) _selectedOrder = updated;
+      _successMessage = 'Order status updated to ${newStatus.displayName}.';
+      return true;
+    } catch (_) {
+      _errorMessage = 'Unable to update the order. Please try again.';
       return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    final old = _orders[index];
-    final updated = _withStatus(old, newStatus);
-    _orders[index] = updated;
-    if (_selectedOrder?.id == orderId) _selectedOrder = updated;
-    _successMessage = 'Order status updated to ${newStatus.displayName}.';
-    notifyListeners();
-    return true;
   }
 
   Future<bool> cancelOrder(String orderId) =>

@@ -403,37 +403,38 @@ class MenuProductCard extends StatelessWidget {
                       borderRadius: 12,
                     ),
                   ),
-                  Positioned(
-                    left: 6,
-                    top: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .95),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            size: 10,
-                            color: AppColors.warning,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            '${product.rating ?? 4.8}',
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
+                  if (product.rating != null)
+                    Positioned(
+                      left: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .95),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              size: 10,
+                              color: AppColors.warning,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 2),
+                            Text(
+                              product.rating!.toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                   Positioned(
                     right: 6,
                     top: 6,

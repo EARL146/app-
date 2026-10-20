@@ -78,11 +78,8 @@ class _HomeTab extends StatelessWidget {
             .toSet()
             .toList()
           ..sort();
-    final recentOrders = context
-        .watch<CustomerOrdersProvider>()
-        .orders
-        .take(2)
-        .toList();
+    final orderProvider = context.watch<CustomerOrdersProvider>();
+    final recentOrders = orderProvider.orders.take(2).toList();
     final auth = context.watch<AuthService>();
     final deliveryAddress = auth.currentUserAddress?.trim().isNotEmpty == true
         ? auth.currentUserAddress!
@@ -199,6 +196,10 @@ class _HomeTab extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
+                  _HeroOffer(
+                    onOrder: () => Navigator.of(context).pushNamed('/menu'),
+                  ),
+                  const SizedBox(height: 16),
                   _SectionHeading(
                     title: 'Explore categories',
                     action: 'See all',
@@ -271,10 +272,6 @@ class _HomeTab extends StatelessWidget {
                             _ProductCard(product: products[index]),
                       ),
                     ),
-                  const SizedBox(height: 22),
-                  _HeroOffer(
-                    onOrder: () => Navigator.of(context).pushNamed('/menu'),
-                  ),
                   const SizedBox(height: 16),
                   _HomeInfoCard(
                     eyebrow: 'OUR STORY',
@@ -287,17 +284,94 @@ class _HomeTab extends StatelessWidget {
                   const SizedBox(height: 22),
                   _SectionHeading(
                     title: 'Your recent orders',
-                    action: 'Order history',
-                    onTap: () =>
-                        Navigator.of(context).pushNamed('/order-history'),
+                    action: auth.isAuthenticated ? 'Order history' : 'Sign in',
+                    onTap: () => Navigator.of(context).pushNamed(
+                      auth.isAuthenticated ? '/order-history' : '/sign-in',
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  if (recentOrders.isEmpty)
+                  if (!auth.isAuthenticated)
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Sign in to view your order history.',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.of(context).pushNamed('/sign-in'),
+                          child: const Text('Sign in'),
+                        ),
+                      ],
+                    )
+                  else if (!orderProvider.hasLoaded)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    )
+                  else if (orderProvider.errorMessage != null &&
+                      recentOrders.isEmpty)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            orderProvider.errorMessage!,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: orderProvider.isLoading
+                              ? null
+                              : () => orderProvider.loadOrders(force: true),
+                          icon: const Icon(Icons.refresh_rounded, size: 15),
+                          label: const Text('Retry'),
+                        ),
+                      ],
+                    )
+                  else if (recentOrders.isEmpty)
                     const Text(
-                      'Your saved orders will appear here.',
+                      'No orders yet. Browse the menu to get started.',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 11,
+                      ),
+                    ),
+                  if (orderProvider.errorMessage != null &&
+                      recentOrders.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Could not refresh. Showing saved orders.',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: orderProvider.isLoading
+                                ? null
+                                : () => orderProvider.loadOrders(force: true),
+                            child: const Text('Retry'),
+                          ),
+                        ],
                       ),
                     ),
                   ...recentOrders.map(
@@ -467,8 +541,8 @@ class _HeroOffer extends StatelessWidget {
                 if (!accessibleText) const Spacer(),
                 Text(
                   accessibleText
-                      ? 'Choose your next favorite.'
-                      : 'Find your next\nfavorite.',
+                      ? 'Delicious food, delivered fast.'
+                      : 'Delicious food,\ndelivered fast.',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: accessibleText ? 18 : 22,
@@ -866,37 +940,38 @@ class _ProductCard extends StatelessWidget {
                       borderRadius: 12,
                     ),
                   ),
-                  Positioned(
-                    top: 7,
-                    left: 7,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .94),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            size: 11,
-                            color: AppColors.warning,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            '${product.rating ?? 4.8}',
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
+                  if (product.rating != null)
+                    Positioned(
+                      top: 7,
+                      left: 7,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .94),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              size: 11,
+                              color: AppColors.warning,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 2),
+                            Text(
+                              product.rating!.toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

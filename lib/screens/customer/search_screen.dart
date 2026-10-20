@@ -434,20 +434,22 @@ class _SearchResultTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.star_rounded,
-                        color: AppColors.warning,
-                        size: 12,
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${product.rating ?? 4.8}',
-                        style: const TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w800,
+                      if (product.rating != null) ...[
+                        const Icon(
+                          Icons.star_rounded,
+                          color: AppColors.warning,
+                          size: 12,
                         ),
-                      ),
-                      const SizedBox(width: 5),
+                        const SizedBox(width: 2),
+                        Text(
+                          product.rating!.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                      ],
                       Text(
                         '₱${product.price.toStringAsFixed(0)}',
                         style: const TextStyle(

@@ -8,12 +8,16 @@ import 'package:burger_bites/screens/customer/greetings_screen.dart';
 import 'package:burger_bites/screens/customer/register_screen.dart';
 import 'package:burger_bites/screens/customer/search_screen.dart';
 import 'package:burger_bites/screens/customer/sign_in_screen.dart';
+import 'package:burger_bites/screens/customer/product_details_screen.dart';
 import 'package:burger_bites/navigation/app_router.dart';
 import 'package:burger_bites/providers/admin_dashboard_provider.dart';
 import 'package:burger_bites/providers/admin_orders_provider.dart';
 import 'package:burger_bites/providers/cart_provider.dart';
 import 'package:burger_bites/providers/catalog_provider.dart';
 import 'package:burger_bites/providers/customer_orders_provider.dart';
+import 'package:burger_bites/providers/favorites_provider.dart';
+import 'package:burger_bites/models/product_model.dart';
+import 'package:burger_bites/services/api_service.dart';
 import 'package:burger_bites/services/auth_service.dart';
 import 'package:burger_bites/screens/customer/settings_screen.dart';
 import 'package:burger_bites/screens/customer/contact_screen.dart';
@@ -120,6 +124,27 @@ void main() {
     expect(find.text('Menu'), findsOneWidget);
   });
 
+  testWidgets('guest home identifies that order history needs sign in', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_customerHomeHarness(AuthService()));
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('Your recent orders'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+
+    expect(find.text('Sign in to view your order history.'), findsOneWidget);
+    expect(find.text('Your saved orders will appear here.'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'search starts with real empty state, not sample search history',
     (WidgetTester tester) async {
@@ -143,6 +168,73 @@ void main() {
     },
   );
 
+  testWidgets('product details shows description, sizes, and prices', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final auth = AuthService();
+    final product = Product(
+      id: 'burger-1',
+      name: 'Crispy Chicken Stack',
+      description: 'Crispy chicken, fresh lettuce, and house sauce.',
+      price: 220,
+      category: 'Burgers',
+      stockQuantity: 12,
+      createdAt: DateTime.utc(2026, 1, 1),
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthService>.value(value: auth),
+          ChangeNotifierProvider(
+            create: (_) => CartProvider(authService: auth),
+          ),
+          ChangeNotifierProvider(
+            create: (_) => FavoritesProvider(auth, ApiService()),
+          ),
+        ],
+        child: MaterialApp(home: ProductDetailsScreen(product: product)),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Product details'), findsOneWidget);
+    expect(find.text('Crispy Chicken Stack'), findsOneWidget);
+    expect(find.text('₱220'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('About this item'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.text('Crispy chicken, fresh lettuce, and house sauce.'),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(
+      find.text('Burger size'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Regular'), findsOneWidget);
+    expect(find.text('Large'), findsOneWidget);
+    expect(find.text('Double'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Extra toppings'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Extra cheese'), findsOneWidget);
+    expect(find.text('+ ₱25'), findsOneWidget);
+    expect(find.text('Crispy bacon'), findsOneWidget);
+    expect(find.text('+ ₱45'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('admin dashboard fits common phone widths', (
     WidgetTester tester,
   ) async {
@@ -156,6 +248,23 @@ void main() {
       await tester.pump();
       expect(tester.takeException(), isNull, reason: 'admin home at $width px');
     }
+  });
+
+  testWidgets('admin dashboard does not present initial zeroes as live data', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_adminHomeHarness());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Live account totals'), findsNothing);
+    expect(find.text('No orders yet'), findsNothing);
+    expect(find.text('SQL totals unavailable'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('admin profile exposes account, password, and logout controls', (

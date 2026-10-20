@@ -43,7 +43,7 @@ class ApiService {
   }
 
   final StorageService _storageService;
-  final http.Client _httpClient;
+  http.Client _httpClient;
   String _baseUrl;
 
   factory ApiService() => _instance;
@@ -77,6 +77,13 @@ class ApiService {
       );
     }
     _baseUrl = normalized;
+  }
+
+  @visibleForTesting
+  http.Client replaceHttpClientForTesting(http.Client client) {
+    final previousClient = _httpClient;
+    _httpClient = client;
+    return previousClient;
   }
 
   Future<Map<String, String>> _getHeaders({bool includeAuth = true}) async {

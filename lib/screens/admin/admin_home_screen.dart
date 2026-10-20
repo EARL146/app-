@@ -56,6 +56,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           child: Consumer2<AdminOrdersProvider, AdminDashboardProvider>(
             builder: (context, orderProvider, dashboardProvider, _) {
               final recentOrders = orderProvider.orders.take(3).toList();
+              final dashboardStatus = dashboardProvider.hasData
+                  ? dashboardProvider.errorMessage == null
+                        ? 'SQL totals loaded'
+                        : 'Refresh failed · showing last saved totals'
+                  : dashboardProvider.isLoading
+                  ? 'Loading SQL totals'
+                  : dashboardProvider.errorMessage == null
+                  ? 'Waiting for SQL totals'
+                  : 'SQL totals unavailable';
               return CustomScrollView(
                 slivers: [
                   SliverPadding(
@@ -190,9 +199,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                         ),
                                         borderRadius: BorderRadius.circular(20),
                                       ),
-                                      child: const Text(
-                                        'Live account totals',
-                                        style: TextStyle(
+                                      child: Text(
+                                        dashboardStatus,
+                                        style: const TextStyle(
                                           fontSize: 8,
                                           fontWeight: FontWeight.w800,
                                         ),
@@ -220,29 +229,36 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           children: [
                             _MetricCard(
                               label: 'Total orders',
-                              value: '${dashboardProvider.totalOrders}',
+                              value: dashboardProvider.hasData
+                                  ? '${dashboardProvider.totalOrders}'
+                                  : '—',
                               icon: Icons.receipt_long_rounded,
                               color: const Color(0xFFFF7C38),
                               trend: 'All time',
                             ),
                             _MetricCard(
                               label: 'Revenue',
-                              value:
-                                  '₱${dashboardProvider.deliveredRevenue.toStringAsFixed(0)}',
+                              value: dashboardProvider.hasData
+                                  ? '₱${dashboardProvider.deliveredRevenue.toStringAsFixed(0)}'
+                                  : '—',
                               icon: Icons.payments_outlined,
                               color: const Color(0xFF1EAD8B),
                               trend: 'Delivered',
                             ),
                             _MetricCard(
                               label: 'Customers',
-                              value: '${dashboardProvider.totalCustomers}',
+                              value: dashboardProvider.hasData
+                                  ? '${dashboardProvider.totalCustomers}'
+                                  : '—',
                               icon: Icons.people_outline_rounded,
                               color: const Color(0xFF4387F5),
                               trend: 'Registered',
                             ),
                             _MetricCard(
                               label: 'Products',
-                              value: '${dashboardProvider.totalProducts}',
+                              value: dashboardProvider.hasData
+                                  ? '${dashboardProvider.totalProducts}'
+                                  : '—',
                               icon: Icons.lunch_dining_rounded,
                               color: const Color(0xFF8963E8),
                               trend: 'Catalog',
@@ -268,7 +284,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               Row(
                                 children: [
                                   Text(
-                                    '₱${dashboardProvider.deliveredRevenue.toStringAsFixed(0)}',
+                                    dashboardProvider.hasData
+                                        ? '₱${dashboardProvider.deliveredRevenue.toStringAsFixed(0)}'
+                                        : '—',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w900,
                                       fontSize: 21,
@@ -289,11 +307,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               SizedBox(
                                 height: 105,
                                 width: double.infinity,
-                                child: CustomPaint(
-                                  painter: _RevenueChartPainter(
-                                    dashboardProvider.dailyRevenue,
-                                  ),
-                                ),
+                                child: dashboardProvider.hasData
+                                    ? CustomPaint(
+                                        painter: _RevenueChartPainter(
+                                          dashboardProvider.dailyRevenue,
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          dashboardProvider.isLoading
+                                              ? 'Loading sales data…'
+                                              : dashboardProvider
+                                                        .errorMessage ==
+                                                    null
+                                              ? 'Waiting for sales data…'
+                                              : 'Sales data unavailable',
+                                          style: const TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
                               ),
                               Row(
                                 mainAxisAlignment:
@@ -365,7 +399,55 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        if (recentOrders.isEmpty)
+                        if (!orderProvider.hasLoaded)
+                          const Padding(
+                            padding: EdgeInsets.all(18),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          )
+                        else if (orderProvider.errorMessage != null &&
+                            recentOrders.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    orderProvider.errorMessage!,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  onPressed: orderProvider.isLoading
+                                      ? null
+                                      : () => orderProvider.loadOrders(
+                                          force: true,
+                                        ),
+                                  icon: const Icon(
+                                    Icons.refresh_rounded,
+                                    size: 15,
+                                  ),
+                                  label: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          )
+                        else if (recentOrders.isEmpty)
                           Container(
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
@@ -387,6 +469,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           ...recentOrders.map(
                             (order) => _LatestOrderRow(order: order),
                           ),
+                        if (orderProvider.errorMessage != null &&
+                            recentOrders.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: TextButton.icon(
+                              onPressed: orderProvider.isLoading
+                                  ? null
+                                  : () => orderProvider.loadOrders(force: true),
+                              icon: const Icon(Icons.refresh_rounded, size: 15),
+                              label: const Text(
+                                'Refresh failed; showing last loaded orders',
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: 13),
                         Container(
                           padding: const EdgeInsets.all(11),
@@ -404,7 +500,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               const SizedBox(width: 7),
                               Expanded(
                                 child: Text(
-                                  dashboardProvider.errorMessage ?? 'Order, product and customer totals plus the seven-day order value chart are loaded from SQL.',
+                                  dashboardProvider.errorMessage ??
+                                      (dashboardProvider.hasData
+                                          ? 'Order, product, and customer totals loaded from the admin dashboard endpoint.'
+                                          : dashboardStatus),
                                   style: const TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 9,

@@ -27,7 +27,12 @@ class AuthService extends ChangeNotifier {
 
   factory AuthService() => _instance;
 
-  AuthService._internal()
+  AuthService._internal() : this._();
+
+  @visibleForTesting
+  AuthService.forTesting() : this._();
+
+  AuthService._()
     : _apiService = ApiService(),
       _storageService = StorageService() {
     initialization = _initializeAuth();
@@ -61,11 +66,15 @@ class AuthService extends ChangeNotifier {
           token.isNotEmpty &&
           userId != null &&
           {'customer', 'admin'}.contains(_currentUserRole);
-      if (!hasCompleteLocalSession || !_apiService.isConfigured) {
-        if (token != null) await _storageService.clearAll();
+      if (!hasCompleteLocalSession) {
+        await _storageService.clearAll();
         _clearIdentity();
         return;
       }
+      // Keep the cached identity available while the server is unreachable.
+      // Only an explicit unauthorized response below invalidates this session.
+      _isAuthenticated = true;
+      if (!_apiService.isConfigured) return;
 
       var response = await _apiService.get<Map<String, dynamic>>(
         '/me',
@@ -73,7 +82,8 @@ class AuthService extends ChangeNotifier {
             ? json
             : throw const FormatException('Invalid profile response.'),
       );
-      if (response.statusCode == 401 && await refreshToken()) {
+      if (response.statusCode == 401) {
+        if (!await refreshToken()) return;
         response = await _apiService.get<Map<String, dynamic>>(
           '/me',
           fromJson: (json) => json is Map<String, dynamic>
@@ -81,18 +91,22 @@ class AuthService extends ChangeNotifier {
               : throw const FormatException('Invalid profile response.'),
         );
       }
+      if (response.statusCode == 401) {
+        await _clearSavedSession();
+        return;
+      }
+      if (!response.success) return;
+
       final data = response.data;
       final user = data?['user'] is Map<String, dynamic>
           ? data!['user'] as Map<String, dynamic>
           : data;
       final serverId = user?['id']?.toString();
       final serverRole = user?['role']?.toString().toLowerCase();
-      if (!response.success ||
-          user == null ||
+      if (user == null ||
           serverId != _currentUserId ||
           !{'customer', 'admin'}.contains(serverRole)) {
-        await _storageService.clearAll();
-        _clearIdentity();
+        await _clearSavedSession();
         return;
       }
 
@@ -120,10 +134,10 @@ class AuthService extends ChangeNotifier {
       }
       _isAuthenticated = true;
     } catch (_) {
-      try {
-        await _storageService.clearAll();
-      } catch (_) {}
-      _clearIdentity();
+      // A transport, server, or local read error is not proof that the saved
+      // credentials are invalid. Preserve the cached identity and try again
+      // on a later app launch or authenticated request.
+      if (!_isAuthenticated) _clearIdentity();
     } finally {
       _isInitializing = false;
       notifyListeners();
@@ -139,6 +153,14 @@ class AuthService extends ChangeNotifier {
     _currentUserPhone = null;
     _currentUserBranch = null;
     _currentUserAddress = null;
+  }
+
+  Future<void> _clearSavedSession() async {
+    try {
+      await _apiService.logout();
+    } finally {
+      _clearIdentity();
+    }
   }
 
   Future<bool> register({
@@ -352,8 +374,15 @@ class AuthService extends ChangeNotifier {
   Future<bool> refreshToken() async {
     _errorMessage = null;
     final refreshToken = await _storageService.getRefreshToken();
-    if (refreshToken == null || !_apiService.isConfigured) {
-      await logout();
+    if (refreshToken == null) {
+      try {
+        await _clearSavedSession();
+      } finally {
+        notifyListeners();
+      }
+      return false;
+    }
+    if (!_apiService.isConfigured) {
       return false;
     }
 
@@ -376,7 +405,6 @@ class AuthService extends ChangeNotifier {
         await _storageService.saveToken(token);
         await _storageService.saveRefreshToken(rotatedRefreshToken);
       } catch (_) {
-        await logout();
         _errorMessage = 'Unable to securely save your refreshed session.';
         notifyListeners();
         return false;
@@ -387,8 +415,16 @@ class AuthService extends ChangeNotifier {
     }
 
     final refreshError =
-        response.error ?? 'Your session has expired. Sign in again.';
-    await logout();
+        response.error ?? 'Your session could not be refreshed.';
+    if (response.statusCode == 401) {
+      try {
+        await _clearSavedSession();
+      } finally {
+        _errorMessage = refreshError;
+        notifyListeners();
+      }
+      return false;
+    }
     _errorMessage = refreshError;
     notifyListeners();
     return false;

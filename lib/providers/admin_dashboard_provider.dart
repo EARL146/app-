@@ -8,6 +8,7 @@ class AdminDashboardProvider extends ChangeNotifier {
 
   final ApiService _api;
   bool isLoading = false;
+  bool hasData = false;
   String? errorMessage;
   int totalOrders = 0;
   int pendingOrders = 0;
@@ -27,46 +28,65 @@ class AdminDashboardProvider extends ChangeNotifier {
     isLoading = true;
     errorMessage = null;
     notifyListeners();
-    final response = await _api.get<Map<String, dynamic>>(
-      '/admin/dashboard',
-      fromJson: (json) => json is Map<String, dynamic>
-          ? json
-          : throw const FormatException('Invalid dashboard response.'),
-    );
-    final data = response.data?['dashboard'];
-    if (!response.success || data is! Map<String, dynamic>) {
-      errorMessage = response.error ?? 'Unable to load dashboard totals.';
-    } else {
-      int integer(String key) => (data[key] as num?)?.toInt() ?? 0;
-      totalOrders = integer('total_orders');
-      pendingOrders = integer('pending_orders');
-      processingOrders = integer('processing_orders');
-      deliveredOrders = integer('delivered_orders');
-      cancelledOrders = integer('cancelled_orders');
-      deliveredRevenue = (data['delivered_revenue'] as num?)?.toDouble() ?? 0;
-      totalCustomers = integer('total_customers');
-      activeCustomers = integer('active_customers');
-      totalProducts = integer('total_products');
-      availableProducts = integer('available_products');
-      final series = data['daily_revenue'];
-      if (series is List) {
-        final days = series.whereType<Map<String, dynamic>>().toList();
-        dailyRevenue = days
-            .map((day) => (day['revenue'] as num?)?.toDouble() ?? 0)
-            .toList(growable: false);
-        dailyRevenueLabels = days
-            .map((day) {
+    try {
+      final response = await _api.get<Map<String, dynamic>>(
+        '/admin/dashboard',
+        fromJson: (json) => json is Map<String, dynamic>
+            ? json
+            : throw const FormatException('Invalid dashboard response.'),
+      );
+      final data = response.data?['dashboard'];
+      if (!response.success || data is! Map<String, dynamic>) {
+        errorMessage = response.error ?? 'Unable to load dashboard totals.';
+      } else {
+        int integer(String key) => (data[key] as num?)?.toInt() ?? 0;
+        final nextTotalOrders = integer('total_orders');
+        final nextPendingOrders = integer('pending_orders');
+        final nextProcessingOrders = integer('processing_orders');
+        final nextDeliveredOrders = integer('delivered_orders');
+        final nextCancelledOrders = integer('cancelled_orders');
+        final nextDeliveredRevenue =
+            (data['delivered_revenue'] as num?)?.toDouble() ?? 0;
+        final nextTotalCustomers = integer('total_customers');
+        final nextActiveCustomers = integer('active_customers');
+        final nextTotalProducts = integer('total_products');
+        final nextAvailableProducts = integer('available_products');
+        final nextDailyRevenue = <double>[];
+        final nextDailyRevenueLabels = <String>[];
+        final series = data['daily_revenue'];
+        if (series is List) {
+          final days = series.whereType<Map<String, dynamic>>().toList();
+          nextDailyRevenue.addAll(
+            days.map((day) => (day['revenue'] as num?)?.toDouble() ?? 0),
+          );
+          nextDailyRevenueLabels.addAll(
+            days.map((day) {
               final parsed = DateTime.tryParse(day['day']?.toString() ?? '');
               return parsed == null ? '—' : _weekdayLabels[parsed.weekday - 1];
-            })
-            .toList(growable: false);
-      } else {
-        dailyRevenue = const [];
-        dailyRevenueLabels = const [];
+            }),
+          );
+        }
+
+        totalOrders = nextTotalOrders;
+        pendingOrders = nextPendingOrders;
+        processingOrders = nextProcessingOrders;
+        deliveredOrders = nextDeliveredOrders;
+        cancelledOrders = nextCancelledOrders;
+        deliveredRevenue = nextDeliveredRevenue;
+        totalCustomers = nextTotalCustomers;
+        activeCustomers = nextActiveCustomers;
+        totalProducts = nextTotalProducts;
+        availableProducts = nextAvailableProducts;
+        dailyRevenue = List.unmodifiable(nextDailyRevenue);
+        dailyRevenueLabels = List.unmodifiable(nextDailyRevenueLabels);
+        hasData = true;
       }
+    } catch (_) {
+      errorMessage = 'Unable to load dashboard totals. Please try again.';
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
-    isLoading = false;
-    notifyListeners();
   }
 
   static const _weekdayLabels = [
