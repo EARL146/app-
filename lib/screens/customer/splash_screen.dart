@@ -60,7 +60,8 @@ class _SplashScreenState extends State<SplashScreen>
     }
 
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/greetings');
+    Navigator.of(context)
+        .pushReplacementNamed('/customer-home', arguments: true);
   }
 
   @override

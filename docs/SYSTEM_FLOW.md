@@ -2,46 +2,43 @@
 
 [[PROJECT_HOME]] · [[SCREEN_FLOW]] · [[CUSTOMER_FLOW]] · [[ADMIN_FLOW]] · [[PRODUCTION_READINESS_AUDIT]] · [[API_SPEC]]
 
-This describes the customer/admin app, PHP API, MySQL data path, and the separate local development monitor. Migration `001` is installed in local MySQL database `burger_bites`; migration `003_app_workflows.sql` is required for saved carts, reminders, preferences, support, inventory, and expanded order states, but is not yet imported. The latest recorded catalog check returned no products. A local HTTP smoke test passed admin login, `/me`, admin authorization on the readiness endpoint, and logout. Other migration-003 customer/admin workflows still need live verification.
+This describes the customer/admin app, PHP API, MySQL data path, and the separate local development monitor. Migration `001` is installed in local MySQL database `burger_bites`; migration `003_app_workflows.sql` is required for saved carts, reminders, preferences, support, inventory, and expanded order states, but is not yet imported. Product data depends on the selected database. A local HTTP smoke test passed admin login, `/me`, admin authorization on the readiness endpoint, and logout. Other customer/admin workflows still need live verification.
 
 ## 1. Startup and authentication
 
 ```mermaid
 flowchart TD
     A[Flutter starts] --> B[AppShell and shared providers]
-    B --> C[4.5-second animated burger splash]
+    B --> C[4.5-second animated burger loading screen]
     C --> D{Saved session?}
-    D -->|No| E[Greetings]
-    D -->|Yes and API configured| F[GET /me]
-    F -->|Valid customer/admin| G[Open role home]
+    D -->|No session| N[Customer Home on Menu tab]
+    D -->|Saved session| F[GET /me]
+    F -->|Valid customer| G[Customer Home]
+    F -->|Valid admin| O[Admin Home]
     F -->|401 expired token| H[POST /auth/refresh]
     H -->|Save rotated tokens| F
-    F -->|Offline, invalid, or rejected| E
-    E -->|Browse menu| N[Customer Home and public catalog]
-    E -->|Log in| I[Sign in]
-    I --> J[Sign in or create account]
-    S --> J
-    J --> K{Account action}
-    K -->|Log in| K1[POST /auth/login]
-    K -->|Register| K2[POST /auth/register]
-    K1 -->|Safe error| I
-    K2 -->|Safe error| I
-    K1 -->|Valid token, user ID, role| L[Save session with Secure Storage]
-    K2 -->|Valid token, user ID, role| L
-    L --> G
-    G --> M{Server role}
-    M -->|customer| N
-    M -->|admin| O[Admin home]
+    F -->|Offline, invalid, or rejected| N
     N --> P[Browse menu, search, product details]
+    G --> P
     P --> Q{Favorite or add to cart}
-    Q -->|Customer session| R[Perform favorite or add-to-cart action]
+    Q -->|Customer session| R[Perform customer action]
     Q -->|Guest| S[Sign-in/create-account prompt]
-    L -->|Action was pending| R
-    O --> U[Client AdminRouteGate]
+    S --> I[Sign-in form]
+    N --> T[Profile tab]
+    T --> I
+    I -->|POST /auth/login| J{API verifies account role}
+    I -->|Create customer account| K[POST /auth/register]
+    J -->|Customer| L[Save session and open Customer Home]
+    J -->|Admin| O
+    J -->|Invalid| I
+    K -->|Success| L
+    K -->|Safe error| I
+    L -->|Pending customer action| R
+    O --> U[AdminRouteGate]
     U -. API checks token and role independently .-> V[PHP authorization]
 ```
 
-Fresh install goes Splash → Greetings → Browse menu. Guests can browse without signing in. Favorites, adding products to cart, reorder, checkout, and order placement require a customer session; after sign-in or registration, the app returns to the calling product/action. Sign-in also links to registration. Returning users validate `/me`; if the access token expired, the client uses a refresh token once and retries `/me`. Without `BURGER_BITES_API_BASE_URL`, auth actions fail closed and the app stays in its public flow. No demo credential exists.
+Fresh install goes Splash/loading → Customer Home on the Menu tab. There is no greeting page. Guests can browse without signing in and use Profile → Sign in to reach the shared login form. The API-issued role routes admins to Admin Home and customers to Customer Home. Favorites, cart, reorder, checkout, and order placement require a customer session; after sign-in or registration, the app returns to the calling product/action. Returning users validate `/me`; if the access token expired, the client uses a refresh token once and retries `/me`. Without `BURGER_BITES_API_BASE_URL`, auth actions fail closed and the app stays in its public flow. No demo credential exists.
 
 ## 2. Browse and favorites
 

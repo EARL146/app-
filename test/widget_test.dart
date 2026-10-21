@@ -4,7 +4,6 @@ import 'package:burger_bites/screens/admin/admin_profile_screen.dart';
 import 'package:burger_bites/screens/admin/admin_store_profile_screen.dart';
 import 'package:burger_bites/screens/admin/admin_home_screen.dart';
 import 'package:burger_bites/screens/customer/home_screen.dart';
-import 'package:burger_bites/screens/customer/greetings_screen.dart';
 import 'package:burger_bites/screens/customer/register_screen.dart';
 import 'package:burger_bites/screens/customer/search_screen.dart';
 import 'package:burger_bites/screens/customer/sign_in_screen.dart';
@@ -26,7 +25,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  testWidgets('fresh startup assembles the burger and opens guest browsing', (
+  testWidgets('fresh startup opens the menu after the burger intro', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -41,7 +40,9 @@ void main() {
               settings.name == '/customer-home') {
             return MaterialPageRoute<void>(
               settings: settings,
-              builder: (_) => Scaffold(body: Text(settings.name!)),
+              builder: (_) => Scaffold(
+                body: Text('${settings.name}:${settings.arguments}'),
+              ),
             );
           }
           return AppRouter.generateRoute(settings);
@@ -55,19 +56,12 @@ void main() {
 
     for (
       var frame = 0;
-      frame < 60 && find.byType(GreetingsScreen).evaluate().isEmpty;
+      frame < 60 && find.text('/customer-home:true').evaluate().isEmpty;
       frame++
     ) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    expect(find.byType(GreetingsScreen), findsOneWidget);
-    expect(find.text('Welcome to BurgerBites'), findsOneWidget);
-
-    await tester.tap(find.text('Browse menu'));
-    for (var frame = 0; frame < 10; frame++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.text('/customer-home'), findsOneWidget);
+    expect(find.text('/customer-home:true'), findsOneWidget);
   });
 
   testWidgets('welcome and auth screens fit common phone widths', (

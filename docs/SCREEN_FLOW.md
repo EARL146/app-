@@ -4,37 +4,37 @@
 
 ```mermaid
 flowchart TD
-    A[App start] --> B[Restore saved API session]
-    B -->|Valid customer session| G[Customer Home and public catalog]
-    B -->|Valid admin session| H[Admin Home]
-    B -->|No valid session| C[4.5 second ingredient intro]
-    C --> D[Greetings screen]
-    D -->|Browse menu| G
-    D -->|Log in| E[Sign in]
-    G --> I[Menu, Search, Product Details]
-    I --> J{Favorite or add to cart}
-    J -->|Signed-in customer, favorite| K[Save favorite]
-    J -->|Signed-in customer, add| M[Cart]
-    J -->|Guest| L[Sign-in prompt]
-    L -->|Log in or create account| E
-    L -->|Not now| I
-    E -->|Valid customer, pending favorite| K
-    E -->|Valid customer, pending add| M
-    E -->|Valid customer, normal sign-in| G
-    E -->|Server-issued admin role| H
-    M -->|Continue to checkout| N[Checkout]
-    N -->|Server returns order ID| O[Order request received]
-    N -->|API error| M
-    G --> P[Profile and order history]
-    H --> Q[Dashboard, Orders, Products, Customers, Profile, More]
+    A[App start] --> B[4.5-second burger loading intro]
+    B --> C{Saved session?}
+    C -->|Valid customer| D[Customer Home]
+    C -->|Valid admin| E[Admin Home]
+    C -->|No session or unavailable| F[Guest app opens on Menu]
+    F --> G[Browse menu, search, product details]
+    D --> G
+    G --> H{Favorite or add to cart?}
+    H -->|Signed-in customer| I[Save favorite or cart item]
+    H -->|Guest| J[Sign-in prompt]
+    J -->|Sign in or create customer account| K[Sign-in form]
+    J -->|Not now| G
+    F --> L[Profile tab]
+    L -->|Sign in| K
+    K --> M{API verifies account role}
+    M -->|Customer| D
+    M -->|Admin| E
+    M -->|Invalid| K
+    I -->|Continue| N[Cart and checkout]
+    E --> O[Dashboard, Orders, Products, Customers, Profile, More]
+    N -->|Order accepted| P[Order history and status]
 ```
 
 ## Current behavior
 
-- `lib/main.dart` starts `AppShell`; its `/` route opens the branded splash screen.
-- The splash restores secure session state with `GET /me`. A valid customer or admin session still goes directly to that role's home screen. A fresh session sees the ingredient assembly and BurgerBites wordmark, then the Greetings screen.
+- `lib/main.dart` starts `AppShell`; its `/` route opens the branded ingredient splash/loading screen.
+- A fresh guest sees the ingredient assembly and BurgerBites wordmark, then opens the Customer Home shell on its Menu tab. The Greetings screen is removed from the startup flow.
+- A valid restored customer session opens Customer Home; a valid admin session opens Admin Home. Session identity and role come from the API.
 - Guests can enter Customer Home and browse the public API catalog, menu, search results, and product details. The catalog request uses `requiresAuth: false`.
 - Favorite and add-to-cart controls show a sign-in/create-account prompt for guests. After successful customer sign-in or registration, the pending action resumes on the original screen. Admin sessions cannot use customer actions.
+- Guests can open Profile → Sign in. The shared sign-in form routes customers to Customer Home and API-identified admins to Admin Home.
 - Checkout also requires a customer session. Normal sign-in, registration, and session restoration continue to route customers and admins to their existing destinations.
 - Login, registration, favorites, cart, and checkout use the existing PHP API. No local account or product fallback is added.
 - An empty database catalog remains empty in the app. Products must exist in the configured database for the guest menu to display them; the UI does not invent menu items.

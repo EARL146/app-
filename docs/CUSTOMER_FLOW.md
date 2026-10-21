@@ -4,13 +4,14 @@
 
 ## Sign-in and profile
 
-1. Splash restores a saved token and role using `GET /me` when the API URL is configured. Valid customers and admins go directly to their role home.
-2. Guests see the ingredient intro and Greetings screen, then choose Browse menu. They can view the public catalog without signing in.
-3. Favorite or add-to-cart actions open a sign-in/create-account prompt. Successful customer authentication returns to the product and resumes the pending action. Sign-in links to registration.
-4. Flutter validates email and a 12-character password; the PHP API repeats validation, checks a small common-password list, and stores an Argon2id hash.
-5. Login/register call `AuthService`. The UI accepts a session only when the server returns a token, user ID, and `customer` or `admin` role.
-6. Access/refresh tokens, ID, role, and returned profile fields are stored with Flutter Secure Storage. Access tokens expire after 15 minutes; on a 401 at startup, the client rotates the refresh token and retries `/me`. Logout revokes the token family and clears local storage.
-7. Account Settings saves the customer's name, phone, and default delivery address through `PUT /me`; the returned address appears in the profile and seeds checkout. A live temporary-customer API check confirmed address save, read, and clear.
+1. The branded ingredient loading intro runs on a fresh/signed-out launch. If a saved session validates with `GET /me`, customers and admins go directly to their role home.
+2. Without a valid session, the app opens Customer Home on its Menu tab. Guests can view the public catalog without signing in; there is no separate greeting step.
+3. Guests can select Profile → Sign in. The shared sign-in form accepts both customer and admin accounts; the API-issued role sends admins to Admin Home and customers to Customer Home. The sign-in form links to customer registration.
+4. Favorite or add-to-cart actions open a sign-in/create-account prompt. Successful customer authentication returns to the product and resumes the pending action.
+5. Flutter validates email and a 12-character password; the PHP API repeats validation, checks a small common-password list, and stores an Argon2id hash.
+6. Login/register call `AuthService`. The UI accepts a session only when the server returns a token, user ID, and `customer` or `admin` role.
+7. Access/refresh tokens, ID, role, and returned profile fields are stored with Flutter Secure Storage. Access tokens expire after 15 minutes; on a 401 at startup, the client rotates the refresh token and retries `/me`. Logout revokes the token family and clears local storage, then returns to guest Menu.
+8. Account Settings saves the customer's name, phone, and default delivery address through `PUT /me`; the returned address appears in the profile and seeds checkout. A live temporary-customer API check confirmed address save, read, and clear.
 
 PHP routes and the local MySQL schema are configured. The database-backed products endpoint passed a smoke check. Authentication, profile loading/editing, and session persistence still need a full end-to-end user journey test.
 

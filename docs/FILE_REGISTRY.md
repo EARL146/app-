@@ -3,14 +3,15 @@
 | File or folder | Responsibility | Connections |
 |---|---|---|
 | `lib/main.dart` | Launches `AppShell` | Startup flow and Provider tree |
-| `lib/screens/customer/splash_screen.dart`, `greetings_screen.dart` | Branded startup and initial navigation | `AppRouter`, `BrandLogo`, `AuthService` |
+| `lib/screens/customer/splash_screen.dart` | Branded loading intro, session restore, and direct guest Menu navigation | `AppRouter`, `AnimatedBurgerAssembly`, `AuthService` |
+| `lib/screens/customer/home_screen.dart`, `profile_screen.dart` | Customer tab shell; guest Profile sign-in entry point | Menu tab, role-aware `/sign-in` route |
 | `lib/widgets/brand_logo.dart` | Displays supplied chef-burger logo | `assets/branding/burger_bites_logo.png` |
 | `lib/services/api_service.dart`, `auth_service.dart` | JSON API calls and secure client session/profile state | `BURGER_BITES_API_BASE_URL`, `flutter_secure_storage` |
 | `lib/providers/favorites_provider.dart` | Customer-scoped favorite API calls/state | `AuthService`, `ApiService`, favorites UI |
 | `lib/widgets/favorite_button.dart`, `lib/screens/customer/favorites_screen.dart` | Favorite toggle and saved-products screen | `FavoritesProvider`, `/me/favorites` contract |
 | `lib/navigation/admin_route_gate.dart` | Client-side guard around admin screens | `AuthService`; not server authorization |
 | `test/cart_provider_test.dart` | Cart arithmetic and availability tests | `CartProvider` |
-| `test/widget_test.dart` | Startup/greetings/sign-in navigation test | Splash/Greetings/Router |
+| `test/widget_test.dart` | Startup-to-Menu and sign-in navigation checks | Splash/Customer Home/Router |
 | `docs/SYSTEM_FLOW.md` | Whole-app Mermaid diagrams, current demo algorithms, state map, and route groups | [[PROJECT_HOME]], `lib/app_shell.dart`, `lib/navigation/app_router.dart`, providers and customer/admin screens |
 | `docs/PRODUCTION_READINESS_AUDIT.md` | Current architecture, feature status, blockers, and next steps | Flutter source, AMPPS environment, other audit notes |
 | `lib/` | Screens, widgets, models, services | Inspect actual contents |

@@ -160,6 +160,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 13),
+                  if (!auth.isAuthenticated && !auth.isInitializing) ...[
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceMuted,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Sign in to your account',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Customer and admin accounts can sign in here.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () =>
+                                  Navigator.of(context).pushNamed('/sign-in'),
+                              icon: const Icon(Icons.login_rounded),
+                              label: const Text('Sign in'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 13),
+                  ],
                   const _RewardsCard(),
                   const SizedBox(height: 13),
                   Row(
@@ -271,24 +312,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     route: '/about',
                   ),
                   const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      if (auth.isAuthenticated) {
+                  if (auth.isAuthenticated)
+                    OutlinedButton.icon(
+                      onPressed: () async {
                         await context.read<AuthService>().logout();
-                      }
-                      if (!context.mounted) return;
-                      Navigator.of(
-                        context,
-                      ).pushNamedAndRemoveUntil('/sign-in', (route) => false);
-                    },
-                    icon: const Icon(Icons.logout_rounded, size: 17),
-                    label: Text(auth.isAuthenticated ? 'Sign out' : 'Sign in'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.danger,
-                      side: const BorderSide(color: AppColors.border),
-                      minimumSize: const Size.fromHeight(47),
+                        if (!context.mounted) return;
+                        Navigator.of(context).pushNamedAndRemoveUntil(
+                          '/customer-home',
+                          (route) => false,
+                          arguments: true,
+                        );
+                      },
+                      icon: const Icon(Icons.logout_rounded, size: 17),
+                      label: const Text('Sign out'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.danger,
+                        side: const BorderSide(color: AppColors.border),
+                        minimumSize: const Size.fromHeight(47),
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 14),
                   const Center(
                     child: Text(

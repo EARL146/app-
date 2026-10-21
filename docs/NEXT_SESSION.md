@@ -41,13 +41,13 @@
 - Live login/catalog/order checks remain blocked until the PHP API and MySQL are running. The reported CanvasKit/WebGL errors were not reproduced here. OmniRoute remains a separate pending upstream Codex-auth issue; gateway API-key success does not establish upstream provider authentication.
 - Next: start API/MySQL and verify customer/admin flows with real data, then confirm database migration and catalog state. Do not claim the full system is complete until those live checks pass.
 
-## Guest-first catalog and account prompt flow (2026-10-19)
+## Guest-first Menu and Profile sign-in flow (2026-10-21)
 
-- Fresh sessions now see the existing ingredient-animation splash, then the Greetings screen with a Browse Menu path. Restored customer and admin sessions still go directly to their role home.
+- Fresh or signed-out sessions see the existing ingredient-animation loading screen, then open Customer Home on the Menu tab; the separate Greetings screen and route were removed. Restored customer and admin sessions still go directly to their role home.
+- Guests can open Profile → Sign in. The shared form routes by API-issued role: customers go to Customer Home and admins go to Admin Home. Signing out returns to the guest Menu.
 - Guests can browse the public API catalog and product details. Favorite, add-to-cart, reorder, checkout, and order placement prompt guests to sign in or create a customer account. Successful authentication returns to and resumes the pending customer action.
-- The app does not fabricate catalog entries. The last recorded database check found zero products; seed or add real products to `burger_bites` before expecting menu cards to appear. The API availability and product count were not rechecked during this implementation.
-- Flow diagram and current behavior: [[SCREEN_FLOW]]. `flutter analyze --no-pub` reported no issues and `git diff --check` passed. The existing startup widget test expectation was updated for the guest flow, but Flutter tests and a device/browser run were not performed in this task.
-- Graphify Local refreshed after this implementation: 2,000 nodes, 3,371 edges, and 122 communities. The existing `linux/runner/my_application.h` parse warning remains; no LLM labeling pass or external upload was run.
+- The app does not fabricate catalog entries. The active Docker database returned an empty product list; add real products to the selected database before expecting menu cards to appear.
+- Flow diagram and current behavior: [[SCREEN_FLOW]] and [[SYSTEM_FLOW]]. `dart format` completed, `flutter analyze --no-pub` reported no issues (129.7 seconds), `graphify update .` rebuilt the local code graph, and `git diff --check` passed. The startup widget-test expectation was updated but Flutter tests and device/browser checks were not run for this change.
 
 ## Hosting direction and local verification (2026-10-16)
 

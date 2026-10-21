@@ -19,7 +19,6 @@ import '../screens/customer/register_screen.dart';
 import '../screens/customer/search_screen.dart';
 import '../screens/customer/settings_screen.dart';
 import '../screens/customer/splash_screen.dart';
-import '../screens/customer/greetings_screen.dart';
 import '../screens/customer/sign_in_screen.dart';
 import '../screens/customer/theme_screen.dart';
 import '../screens/customer/welcome_screen.dart';
@@ -40,8 +39,6 @@ class AppRouter {
       case '/':
       case '/splash':
         return MaterialPageRoute(builder: (_) => const SplashScreen());
-      case '/greetings':
-        return MaterialPageRoute(builder: (_) => const GreetingsScreen());
       case '/welcome':
         return MaterialPageRoute(builder: (_) => const WelcomeScreen());
       case '/sign-in':
@@ -55,7 +52,10 @@ class AppRouter {
               RegisterScreen(returnToCaller: settings.arguments == true),
         );
       case '/customer-home':
-        return MaterialPageRoute(builder: (_) => const CustomerHomeScreen());
+        return MaterialPageRoute(
+          builder: (_) =>
+              CustomerHomeScreen(openMenuInitially: settings.arguments == true),
+        );
       case '/search':
         return MaterialPageRoute(builder: (_) => const SearchScreen());
       case '/favorites':

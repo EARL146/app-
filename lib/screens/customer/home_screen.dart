@@ -14,14 +14,22 @@ import 'order_history_screen.dart';
 import 'profile_screen.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
-  const CustomerHomeScreen({super.key});
+  const CustomerHomeScreen({super.key, this.openMenuInitially = false});
+
+  final bool openMenuInitially;
 
   @override
   State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
 }
 
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.openMenuInitially ? 1 : 0;
+  }
 
   final List<Widget> _screens = const [
     _HomeTab(),
