@@ -22,6 +22,8 @@ Without an API URL, the app opens its branded start and demo browsing screens, w
 
 Follow [backend/README.md](backend/README.md) to run the local PHP API and create an administrator when needed. Do not use `streetfood_db`; it is unrelated to the confirmed BurgerBites database.
 
+To run a separate Docker API/MySQL/Redis stack without replacing AMPPS, see [docs/DOCKER_REDIS.md](docs/DOCKER_REDIS.md). Its isolated API listens on `127.0.0.1:8082`; the Redis port is private to Docker.
+
 Pass the API URL to Flutter. For Edge, fix the Flutter web port to `5000` and allow `http://localhost:5000` in the backend's local CORS list:
 
 ```powershell

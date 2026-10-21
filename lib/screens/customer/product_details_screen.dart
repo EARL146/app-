@@ -18,16 +18,35 @@ class ProductDetailsScreen extends StatefulWidget {
 }
 
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
+  static const _drinkBrands = [
+    'Coca-Cola',
+    'Sprite',
+    'Pepsi',
+    'Royal',
+    'Mountain Dew',
+    '7Up',
+  ];
+
   int _quantity = 1;
   String _size = 'Regular';
+  String _drinkBrand = _drinkBrands.first;
   final Set<String> _extras = {};
 
+  @override
+  void initState() {
+    super.initState();
+    if (_isFries(widget.product)) _size = 'Small';
+  }
+
   double get _unitPrice {
-    final sizePrice = switch (_size) {
-      'Large' => 80.0,
-      'Double' => 120.0,
-      _ => 0.0,
-    };
+    final isBurger = _isBurger(widget.product);
+    final sizePrice = isBurger
+        ? switch (_size) {
+            'Large' => 80.0,
+            'Double' => 120.0,
+            _ => 0.0,
+          }
+        : 0.0;
     final extrasPrice = _extras.fold<double>(
       0,
       (sum, item) => sum + (item == 'Extra cheese' ? 25 : 45),
@@ -35,10 +54,24 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     return widget.product.price + sizePrice + extrasPrice;
   }
 
+  bool _isBurger(Product product) =>
+      product.category?.trim().toLowerCase() == 'burgers';
+
+  bool _isDrink(Product product) =>
+      product.category?.trim().toLowerCase() == 'drinks';
+
+  bool _isFries(Product product) {
+    final category = product.category?.trim().toLowerCase();
+    return category == 'fries' ||
+        (category == 'sides' && product.name.toLowerCase().contains('fries'));
+  }
+
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
-    final isBurgerProduct = product.category?.trim().toLowerCase() == 'burgers';
+    final isBurgerProduct = _isBurger(product);
+    final isFriesProduct = _isFries(product);
+    final isDrinkProduct = _isDrink(product);
     final categoryLabel = product.category?.trim();
     final heroHeight = (MediaQuery.sizeOf(context).height * 0.34)
         .clamp(220.0, 310.0)
@@ -259,6 +292,79 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       ),
                     ),
                   ],
+                  if (isFriesProduct) ...[
+                    const SizedBox(height: 18),
+                    const _FieldHeading(
+                      title: 'Fries size',
+                      trailing: 'Listed price',
+                    ),
+                    const SizedBox(height: 9),
+                    Row(
+                      children: [
+                        _SizeOption(
+                          label: 'Small',
+                          detail: 'Listed price',
+                          selected: _size == 'Small',
+                          onTap: () => setState(() => _size = 'Small'),
+                        ),
+                        const SizedBox(width: 8),
+                        _SizeOption(
+                          label: 'Medium',
+                          detail: 'Listed price',
+                          selected: _size == 'Medium',
+                          onTap: () => setState(() => _size = 'Medium'),
+                        ),
+                        const SizedBox(width: 8),
+                        _SizeOption(
+                          label: 'Large',
+                          detail: 'Listed price',
+                          selected: _size == 'Large',
+                          onTap: () => setState(() => _size = 'Large'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 7),
+                    const Text(
+                      'All fries sizes use this product’s current database price.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                  if (isDrinkProduct) ...[
+                    const SizedBox(height: 18),
+                    const _FieldHeading(
+                      title: 'Drink brand',
+                      trailing: 'Listed price',
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: _drinkBrands
+                          .map(
+                            (brand) => ChoiceChip(
+                              label: Text(brand),
+                              selected: _drinkBrand == brand,
+                              selectedColor: AppColors.brandOrange.withValues(
+                                alpha: 0.18,
+                              ),
+                              onSelected: (_) =>
+                                  setState(() => _drinkBrand = brand),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    const SizedBox(height: 7),
+                    const Text(
+                      'Drink brands use this product’s current database price.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -313,20 +419,23 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                     }
                                     if (!context.mounted) return;
                                     final toppings = _extras.toList()..sort();
-                                    final displayName =
-                                        '${isBurgerProduct && _size != 'Regular' ? '$_size ' : ''}${product.name}${toppings.isEmpty ? '' : ' + ${toppings.join(', ')}'}';
+                                    final displayName = isDrinkProduct
+                                        ? '$_drinkBrand ${product.name}'
+                                        : '${(isBurgerProduct && _size != 'Regular') || isFriesProduct ? '$_size ' : ''}${product.name}${toppings.isEmpty ? '' : ' + ${toppings.join(', ')}'}';
                                     cart.addItem(
                                       product,
                                       quantity: _quantity,
-                                      unitPrice: isBurgerProduct
-                                          ? _unitPrice
-                                          : product.price,
+                                      unitPrice: _unitPrice,
                                       displayName: displayName,
                                       customizations: isBurgerProduct
                                           ? {
                                               'size': _size,
                                               'toppings': toppings,
                                             }
+                                          : isFriesProduct
+                                          ? {'size': _size}
+                                          : isDrinkProduct
+                                          ? {'drink_brand': _drinkBrand}
                                           : const {},
                                     );
                                     ScaffoldMessenger.of(context).showSnackBar(

@@ -262,6 +262,7 @@ class CartProvider extends ChangeNotifier {
     return jsonEncode({
       'size': customizations['size']?.toString() ?? 'Regular',
       'toppings': toppings,
+      'drink_brand': customizations['drink_brand']?.toString(),
     });
   }
 

@@ -15,13 +15,13 @@ For Android, connect a USB-debugging phone or start an emulator and use the devi
 
 ## Local API and database
 
-The PHP API and SQL migrations are in `backend/`. The local database and API settings are already configured. Follow [backend/README.md](../backend/README.md) for setup details. Current database state:
+The PHP API and SQL migrations are in `backend/`. The local database and API settings are already configured. Follow [backend/README.md](../backend/README.md) for setup details. Last checked database state (2026-10-20):
 
 - `Burger_Bites` (`burger_bites`) has the seven core schema tables from migration `001`.
 - API account `burger_bites_app` has least-privilege CRUD grants and is configured in ignored `backend/.env`.
-- Optional sample products from migration `002` were not added.
-- Required workflow migration `003_app_workflows.sql` is still pending. The current database already has migration 001; do not import 001 again. Export a SQL backup first, then import only 003 once through phpMyAdmin's Import tab while `Burger_Bites` is selected. Admin More → App Information reports readiness afterward.
-- Start PHP on port 8081. Port 8080 is occupied by Tomcat on this computer. An admin account is created separately using the hidden-password helper; there is no default credential.
+- The products endpoint returned 6 products. Their origin (manual entry or optional migration `002`) was not verified.
+- The complete readiness of workflow migration `003_app_workflows.sql` is unverified. The public store-profile endpoint returned HTTP 200, but that is not a full schema check. Do not import `003` again unless Admin More → App Information confirms missing requirements; back up the database before any import. Never re-import migration `001`.
+- MySQL listened on port 3306 and the PHP API was started on loopback port 8081 during the last check. Start PHP using the backend instructions if it is stopped. An admin account is created separately using the hidden-password helper; there is no default credential.
 
 Run Edge against the API with a stable browser origin:
 

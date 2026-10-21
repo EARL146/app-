@@ -6,6 +6,7 @@ foreach ([
     __DIR__ . '/src/Database.php',
     __DIR__ . '/src/Http.php',
     __DIR__ . '/src/Auth.php',
+    __DIR__ . '/src/RedisRateLimiter.php',
     __DIR__ . '/src/ApiApplication.php',
 ] as $sourceFile) {
     require_once $sourceFile;

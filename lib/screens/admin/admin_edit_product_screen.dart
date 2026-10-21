@@ -274,12 +274,22 @@ class _AdminEditProductScreenState extends State<AdminEditProductScreen> {
             isExpanded: true,
             underline: const SizedBox(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            items: {'Burgers', 'Chicken', 'Sides', 'Drinks', _selectedCategory}
-                .map(
-                  (category) =>
-                      DropdownMenuItem(value: category, child: Text(category)),
-                )
-                .toList(),
+            items:
+                {
+                      'Burgers',
+                      'Chicken',
+                      'Sides',
+                      'Fries',
+                      'Drinks',
+                      _selectedCategory,
+                    }
+                    .map(
+                      (category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      ),
+                    )
+                    .toList(),
             onChanged: (value) {
               if (value != null) {
                 setState(() => _selectedCategory = value);

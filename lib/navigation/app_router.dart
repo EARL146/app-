@@ -45,12 +45,12 @@ class AppRouter {
       case '/welcome':
         return MaterialPageRoute(builder: (_) => const WelcomeScreen());
       case '/sign-in':
-        return MaterialPageRoute(
+        return MaterialPageRoute<bool>(
           builder: (_) =>
               SignInScreen(returnToCaller: settings.arguments == true),
         );
       case '/register':
-        return MaterialPageRoute(
+        return MaterialPageRoute<bool>(
           builder: (_) =>
               RegisterScreen(returnToCaller: settings.arguments == true),
         );
@@ -61,26 +61,35 @@ class AppRouter {
       case '/favorites':
         return MaterialPageRoute(builder: (_) => const FavoritesScreen());
       case '/menu':
-        final category = settings.arguments as String? ?? 'All';
+        final category = settings.arguments is String
+            ? settings.arguments as String
+            : 'All';
         return MaterialPageRoute(
           builder: (_) => MenuScreen(initialCategory: category),
         );
       case '/product-details':
-        final product = settings.arguments as Product?;
-        if (product == null) {
-          return _missingRecordRoute('Product was not selected.');
+        final argument = settings.arguments;
+        if (argument is! Product) {
+          return _missingRecordRoute(
+            argument == null
+                ? 'Product was not selected.'
+                : 'Product information is invalid.',
+          );
         }
         return MaterialPageRoute(
-          builder: (_) => ProductDetailsScreen(product: product),
+          builder: (_) => ProductDetailsScreen(product: argument),
         );
       case '/cart':
         return MaterialPageRoute(builder: (_) => const CartScreen());
       case '/checkout':
         return MaterialPageRoute(builder: (_) => const CheckoutScreen());
       case '/order-success':
-        final orderId = settings.arguments as String? ?? 'BB-0000';
+        final argument = settings.arguments;
+        if (argument is! String || argument.trim().isEmpty) {
+          return _missingRecordRoute('Order confirmation is unavailable.');
+        }
         return MaterialPageRoute(
-          builder: (_) => OrderSuccessScreen(orderId: orderId),
+          builder: (_) => OrderSuccessScreen(orderId: argument),
         );
       case '/order-history':
         return MaterialPageRoute(builder: (_) => const OrderHistoryScreen());
@@ -119,13 +128,17 @@ class AppRouter {
           builder: (_) => const AdminRouteGate(child: AdminAddProductScreen()),
         );
       case '/admin-edit-product':
-        final product = settings.arguments as Product?;
-        if (product == null) {
-          return _missingRecordRoute('Product was not selected.');
+        final argument = settings.arguments;
+        if (argument is! Product) {
+          return _missingRecordRoute(
+            argument == null
+                ? 'Product was not selected.'
+                : 'Product information is invalid.',
+          );
         }
         return MaterialPageRoute(
           builder: (_) =>
-              AdminRouteGate(child: AdminEditProductScreen(product: product)),
+              AdminRouteGate(child: AdminEditProductScreen(product: argument)),
         );
       case '/admin-customers':
         return MaterialPageRoute(

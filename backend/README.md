@@ -1,6 +1,6 @@
 # BurgerBites PHP API — local development
 
-This PHP 8.2 API implements the Flutter client's auth, profile/preferences, product catalog and management, favorites, account-synced carts, customer calendar reminders, COD ordering/history, admin order/customer management, and support inbox against the AMPPS MySQL database `burger_bites` (shown as `Burger_Bites` in phpMyAdmin). The original schema was applied without inserting application data. The unrelated `streetfood_db` database was not touched.
+This PHP 8.2 API implements the Flutter client's auth, profile/preferences, product catalog and management, favorites, account-synced carts, customer calendar reminders, COD ordering/history, admin order/customer management, and support inbox against the AMPPS MySQL database `burger_bites` (shown as `Burger_Bites` in phpMyAdmin). The unrelated `streetfood_db` database was not touched. On 2026-10-20, the local products endpoint returned six products and the public store-profile route returned HTTP 200; authenticated order and admin readiness checks remain to be verified.
 
 The API uses PDO prepared statements, Argon2id password hashes, opaque random access/refresh tokens stored only as HMAC hashes, 15-minute access/30-day refresh expiry with rotation, rate-limit counters, server-derived user roles, and transactions for order, status, and stock changes. Admin product deletion archives a product so prior orders remain valid.
 
@@ -8,13 +8,13 @@ The API uses PDO prepared statements, Argon2id password hashes, opaque random ac
 
 Start MySQL from AMPPS. Select the existing `Burger_Bites` database in phpMyAdmin. It was confirmed empty before the schema was applied. The MySQL server normalizes its name to `burger_bites` on this Windows setup.
 
-The current local database already has migration `001_initial_schema.sql`. **Do not import `001` again.** Migration `003_app_workflows.sql` is the required pending change. Before applying it, export a backup of `Burger_Bites` from phpMyAdmin (**Export → Quick → SQL**), then select `Burger_Bites`, open **Import**, choose `backend/database/migrations/003_app_workflows.sql`, and run the import once. Refresh the table list and confirm the workflow schema through Admin More → App Information.
+The current local database already has migration `001_initial_schema.sql`. **Do not import `001` again.** The complete readiness of `003_app_workflows.sql` is unverified: the store-profile endpoint returned HTTP 200, but that alone does not prove every workflow table and column is ready. Check Admin More → App Information first. Because the migration contains `ALTER TABLE` statements, do not import it again unless the readiness check confirms missing items; back up `Burger_Bites` first (**Export → Quick → SQL**).
 
 The migration history is:
 
 1. `backend/database/migrations/001_initial_schema.sql` creates the seven core tables. This was applied to the empty database during setup and must not be re-run on the current database.
 2. Optional local sample catalog only: `backend/database/migrations/002_development_catalog.sql`. It has not been imported; import it only if you want the sample burger menu.
-3. `backend/database/migrations/003_app_workflows.sql` adds order customizations/statuses, active-customer controls, preferences, support messages, user-scoped saved carts, customer-owned calendar reminders, and public store profile. It remains pending in the current database and must be imported once before using those workflows. Its `ALTER TABLE` statements make repeated imports unsafe.
+3. `backend/database/migrations/003_app_workflows.sql` adds order customizations/statuses, active-customer controls, preferences, support messages, user-scoped saved carts, customer-owned calendar reminders, and public store profile. Its complete readiness must be confirmed through Admin More → App Information before relying on those workflows. Its `ALTER TABLE` statements make repeated imports unsafe.
 
 For production, use verified product names, prices, images, and stock rather than the sample rows.
 
@@ -61,6 +61,10 @@ php -S 127.0.0.1:8081 -t public public/index.php
 
 The API root is `http://127.0.0.1:8081/api/v1`. Port `8080` is occupied by Tomcat on this computer. For a physical Android device on the same trusted Wi-Fi, bind to `0.0.0.0` and use the computer's LAN IP; limit the firewall rule to the private network and remove it after development.
 
+### Optional isolated Docker stack
+
+For a separate local API, MySQL database, and Redis rate-limit service, follow [../docs/DOCKER_REDIS.md](../docs/DOCKER_REDIS.md). It uses the isolated `burger_bites_docker` database and API port 8082 by default, leaving AMPPS MySQL and the existing API port unchanged. Redis shares expiring auth rate limits across API instances; the API falls back to MySQL rate limiting if Redis is unavailable.
+
 ## 5. Run Flutter against it
 
 For Edge, set the Web port so the CORS origin is stable. Add `http://localhost:5000` to `APP_ALLOWED_ORIGINS` in `backend/.env`:
@@ -83,7 +87,7 @@ The Android manifest permits cleartext HTTP only for debug builds. Release build
 - Calendar reminders are private SQL-backed account records with create, list, edit, and delete routes. They do not send push, SMS, or email alerts; migration 003 must be imported first.
 - Admin routes manage orders/status, inventory/products, customer accounts, dashboard totals, and customer support message status.
 - COD is the only active payment method. GCash/Maya must remain unavailable until sandbox credentials and provider callback details are supplied and integrated.
-- Sample data migration 002 is optional. Without products, the customer menu correctly shows an empty catalog.
+- Sample data migration 002 is optional. The latest local check returned six products from the database; their origin was not verified. The customer menu should show whatever active products the API returns.
 
 ## Remaining service integrations
 

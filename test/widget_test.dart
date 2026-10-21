@@ -224,7 +224,7 @@ void main() {
     expect(find.text('Large'), findsOneWidget);
     expect(find.text('Double'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.text('Extra toppings'),
+      find.text('Crispy bacon'),
       250,
       scrollable: find.byType(Scrollable).first,
     );

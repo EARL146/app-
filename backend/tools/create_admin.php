@@ -17,6 +17,10 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($name) < 2 || mb_str
     fwrite(STDERR, "Usage: create_admin.php <email> <full-name>\n");
     exit(2);
 }
+if (!defined('PASSWORD_ARGON2ID')) {
+    fwrite(STDERR, "This PHP installation does not support Argon2id password hashing. No admin account was created.\n");
+    exit(2);
+}
 $emailName = explode('@', $email, 2)[0];
 $passwordUsesEmail = strlen($emailName) >= 4 && stripos($password, $emailName) !== false;
 $commonPasswords = ['password123!', 'password123456', 'qwerty123456', 'letmein123456', '123456789012', 'welcome123456', 'adminadmin123', 'iloveyou12345', 'changeme12345', 'p@ssword12345'];

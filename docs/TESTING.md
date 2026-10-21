@@ -46,6 +46,20 @@ The Flutter tests do not exercise API calls, secure storage, login/register form
 | Transparent image assets | Passed | Logo and burger cutout PNGs both report zero alpha at their outer corner; both assets are included in `build/web`. |
 | Customer/admin visual update | Passed | `flutter analyze --no-pub`: no issues; all 10 Flutter tests passed; `flutter build web --no-pub` succeeded. Web build emitted the existing `flutter_secure_storage_web` Wasm compatibility dry-run warning; JavaScript build completed. |
 
+## Results from 2026-10-20
+
+| Check | Result | Evidence / scope |
+| --- | --- | --- |
+| `flutter test --no-pub` | Passed | All 29 tests passed, including customer Home at 320/360/390/430 px, guest order history, auth cross-navigation, route argument validation, product details, and admin dashboard states. |
+| `flutter analyze --no-pub` | Passed | No issues found. |
+| `flutter build web --no-pub --dart-define=BURGER_BITES_API_BASE_URL=http://127.0.0.1:8081/api/v1` | Passed | Standard JavaScript Web output built to `build/web`. The Wasm compatibility dry run still warns about `flutter_secure_storage_web` using `dart:html`/`dart:js_util`. |
+| PHP syntax (`ApiApplication.php`, `create_admin.php`) | Passed | Both files report no syntax errors. |
+| API catalog/store-profile reads | Passed | Loopback API on port 8081 returned HTTP 200; catalog count was 6 and public store-profile read succeeded. No product/store content was printed. |
+| Malformed login email | Passed | Array-valued email returned HTTP 401; the PHP server stderr had no array-to-string warning. No valid credentials were used. |
+| CORS preflight | Passed | `http://localhost:5000` returned HTTP 204; unconfigured `http://localhost:5001` returned HTTP 403. |
+| Authenticated SQL order/admin workflows | Not run | No account credentials were used; complete migration readiness and real order flows remain unverified. |
+| `git diff --check` | Passed | No whitespace errors. |
+
 ## Environment notes
 
 - Flutter 3.47.6 / Dart 3.13.5 and Android SDK are installed.

@@ -6,6 +6,7 @@ import '../../models/order_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/customer_orders_provider.dart';
+import '../../services/auth_service.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/customer_account_prompt.dart';
 
@@ -31,6 +32,31 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthService>();
+    if (auth.isInitializing) {
+      return Scaffold(
+        backgroundColor: AppColors.pageBackground,
+        appBar: AppBar(title: const Text('My orders')),
+        body: const Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Checking account'),
+        ),
+      );
+    }
+    if (!auth.isAuthenticated) {
+      return Scaffold(
+        backgroundColor: AppColors.pageBackground,
+        appBar: AppBar(title: const Text('My orders')),
+        body: const _OrderAccessPrompt(),
+      );
+    }
+    if (auth.currentUserRole != 'customer') {
+      return Scaffold(
+        backgroundColor: AppColors.pageBackground,
+        appBar: AppBar(title: const Text('My orders')),
+        body: const _OrderAccessPrompt(isNonCustomer: true),
+      );
+    }
+
     final history = context.watch<CustomerOrdersProvider>();
     final orders = history.orders.where((order) {
       final active =
@@ -48,7 +74,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         padding: const EdgeInsets.fromLTRB(17, 5, 17, 22),
         children: [
           if (history.isLoading) const LinearProgressIndicator(),
-          if (history.errorMessage != null)
+          if (history.errorMessage != null && orders.isNotEmpty)
             TextButton.icon(
               onPressed: () => history.loadOrders(force: true),
               icon: const Icon(Icons.refresh_rounded),
@@ -124,42 +150,202 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           ),
           const SizedBox(height: 13),
           if (orders.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(17),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Column(
-                children: [
-                  Icon(
-                    Icons.receipt_long_rounded,
-                    size: 31,
-                    color: AppColors.brandOrange,
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'No orders in this section',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Try the other tab or start a new order.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 9,
-                    ),
-                  ),
-                ],
-              ),
-            )
+            if (history.errorMessage != null)
+              _OrderHistoryStateCard(
+                icon: Icons.cloud_off_rounded,
+                title: 'Orders unavailable',
+                message: history.errorMessage!,
+                actionLabel: 'Try again',
+                onAction: () => history.loadOrders(force: true),
+              )
+            else if (history.isLoading || !history.hasLoaded)
+              const _OrderHistoryStateCard(
+                icon: Icons.receipt_long_rounded,
+                title: 'Loading your orders',
+                message: 'Your active and past orders will appear here.',
+                isLoading: true,
+              )
+            else
+              const _OrderHistoryStateCard(
+                icon: Icons.receipt_long_rounded,
+                title: 'No orders in this section',
+                message: 'Try the other tab or start a new order.',
+              )
           else
             ...orders.map((order) => _OrderCard(order: order)),
         ],
       ),
     );
   }
+}
+
+class _OrderAccessPrompt extends StatelessWidget {
+  const _OrderAccessPrompt({this.isNonCustomer = false});
+
+  final bool isNonCustomer;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = isNonCustomer
+        ? 'Customer account required'
+        : 'Sign in to see your orders';
+    final message = isNonCustomer
+        ? 'You are signed in with an administrator account. Order history is available only to customer accounts.'
+        : 'Sign in or create a customer account to view active and past orders.';
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFE6D9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isNonCustomer
+                        ? Icons.admin_panel_settings_outlined
+                        : Icons.receipt_long_rounded,
+                    color: AppColors.brandOrange,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                if (!isNonCustomer) ...[
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: () =>
+                          Navigator.of(context)
+                              .pushNamed('/sign-in', arguments: true),
+                      icon: const Icon(Icons.login_rounded, size: 18),
+                      label: const Text('Log in'),
+                    ),
+                  ),
+                  const SizedBox(height: 9),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          Navigator.of(context)
+                              .pushNamed('/register', arguments: true),
+                      icon: const Icon(
+                        Icons.person_add_alt_1_rounded,
+                        size: 18,
+                      ),
+                      label: const Text('Create account'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OrderHistoryStateCard extends StatelessWidget {
+  const _OrderHistoryStateCard({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.isLoading = false,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final bool isLoading;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(17),
+      border: Border.all(color: AppColors.border),
+    ),
+    child: Column(
+      children: [
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        else
+          Icon(icon, size: 31, color: AppColors.brandOrange),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 10,
+            height: 1.4,
+          ),
+        ),
+        if (actionLabel != null && onAction != null) ...[
+          const SizedBox(height: 10),
+          TextButton.icon(
+            onPressed: onAction,
+            icon: const Icon(Icons.refresh_rounded, size: 16),
+            label: Text(actionLabel!),
+          ),
+        ],
+      ],
+    ),
+  );
 }
 
 class _OrderTab extends StatelessWidget {

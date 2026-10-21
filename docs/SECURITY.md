@@ -15,7 +15,7 @@
 
 ## Not yet verified or implemented
 
-1. **Database:** Migration `001` is installed in the user-confirmed `burger_bites` database. PHP uses a dedicated account with only `SELECT`, `INSERT`, `UPDATE`, and `DELETE`; its random password and token pepper are kept in ignored `backend/.env`. `streetfood_db` was not changed. Optional sample seed `002` was not inserted; required workflow migration `003` is still pending.
+1. **Database:** Migration `001` is installed in the user-confirmed `burger_bites` database. PHP uses a dedicated account with only `SELECT`, `INSERT`, `UPDATE`, and `DELETE`; its random password and token pepper are kept in ignored `backend/.env`. `streetfood_db` was not changed. On 2026-10-20, the products endpoint returned 6 records and the public store-profile route returned HTTP 200. Full workflow migration `003` readiness remains unverified; confirm it in Admin More before relying on authenticated cart/order workflows or attempting any migration import.
 2. **Admin authorization/features:** PHP admin routes are implemented and independently check the bearer-token role. A local HTTP smoke test passed admin login, `/me`, the protected system-status endpoint, and logout. Product/order/customer/support operations still need migration 003 and full workflow tests before real use.
 3. **Order lifecycle:** Admin status updates and cancellation/restock routes exist in code, but migration 003 and live end-to-end tests are still required before orders are production-operable.
 4. **Account recovery:** Email verification, password reset, and account lockout/recovery flows are absent. Rate limits are process-independent database counters but have not been load-tested.

@@ -157,16 +157,18 @@ final class ApiApplication
 
     private static function register(PDO $db, string $pepper, array $body): never
     {
-        $name = trim((string)($body['full_name'] ?? ''));
-        $email = strtolower(trim((string)($body['email'] ?? '')));
+        $rawName = $body['full_name'] ?? null;
+        $rawEmail = $body['email'] ?? null;
+        $name = is_string($rawName) ? trim($rawName) : '';
+        $email = is_string($rawEmail) ? strtolower(trim($rawEmail)) : '';
         $password = $body['password'] ?? null;
         $emailName = explode('@', $email, 2)[0];
         $passwordUsesEmail = strlen($emailName) >= 4 && is_string($password) && stripos($password, $emailName) !== false;
         self::applyAuthLimits($db, $pepper, 'register', $email, 5, 3600, 2, 3600);
-        if (mb_strlen($name) < 2 || mb_strlen($name) > 120) {
+        if (!is_string($rawName) || mb_strlen($name) < 2 || mb_strlen($name) > 120) {
             throw new ApiException(422, 'Enter a name between 2 and 120 characters.');
         }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 254) {
+        if (!is_string($rawEmail) || !filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 254) {
             throw new ApiException(422, 'Enter a valid email address.');
         }
         $commonPasswords = ['password123!', 'password123456', 'qwerty123456', 'letmein123456', '123456789012', 'welcome123456', 'adminadmin123', 'iloveyou12345', 'changeme12345', 'p@ssword12345'];
@@ -197,10 +199,12 @@ final class ApiApplication
 
     private static function login(PDO $db, string $pepper, array $body): never
     {
-        $email = strtolower(trim((string)($body['email'] ?? '')));
+        $rawEmail = $body['email'] ?? null;
+        $email = is_string($rawEmail) ? strtolower(trim($rawEmail)) : '';
         $password = $body['password'] ?? null;
         self::applyAuthLimits($db, $pepper, 'login', $email, 30, 900, 10, 900);
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !is_string($password) || strlen($password) > 200) {
+        if (!is_string($rawEmail) || !filter_var($email, FILTER_VALIDATE_EMAIL) ||
+            !is_string($password) || strlen($password) > 200) {
             throw new ApiException(401, 'Email or password is incorrect.');
         }
         $query = $db->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
@@ -212,7 +216,8 @@ final class ApiApplication
         if (array_key_exists('is_active', $user) && !(bool)$user['is_active']) {
             throw new ApiException(401, 'This account is inactive. Contact BurgerBites support.');
         }
-        if (password_needs_rehash((string)$user['password_hash'], PASSWORD_ARGON2ID)) {
+        if (defined('PASSWORD_ARGON2ID') &&
+            password_needs_rehash((string)$user['password_hash'], PASSWORD_ARGON2ID)) {
             $update = $db->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
             $update->execute([password_hash($password, PASSWORD_ARGON2ID), $user['id']]);
         }
@@ -284,7 +289,11 @@ final class ApiApplication
         $fields = [];
         $values = [];
         if (array_key_exists('full_name', $body)) {
-            $name = trim((string)$body['full_name']);
+            $rawName = $body['full_name'];
+            if (!is_string($rawName)) {
+                throw new ApiException(422, 'Enter a name between 2 and 120 characters.');
+            }
+            $name = trim($rawName);
             if (mb_strlen($name) < 2 || mb_strlen($name) > 120) {
                 throw new ApiException(422, 'Enter a name between 2 and 120 characters.');
             }
@@ -292,7 +301,10 @@ final class ApiApplication
         }
         foreach (['phone' => 32, 'branch_name' => 120, 'default_address' => 500] as $key => $max) {
             if (!array_key_exists($key, $body)) continue;
-            $value = trim((string)$body[$key]);
+            if (!is_string($body[$key])) {
+                throw new ApiException(422, 'Profile fields must be text.');
+            }
+            $value = trim($body[$key]);
             if (mb_strlen($value) > $max) throw new ApiException(422, 'One of the profile fields is too long.');
             $fields[] = $key . ' = ?'; $values[] = $value === '' ? null : $value;
         }
@@ -452,17 +464,14 @@ final class ApiApplication
 
         $db->beginTransaction();
         try {
-            $productQuery = $db->prepare('SELECT category, is_available, stock_quantity FROM products WHERE id = ? FOR UPDATE');
+            $productQuery = $db->prepare('SELECT name, category, is_available, stock_quantity FROM products WHERE id = ? FOR UPDATE');
             foreach ($normalized as $item) {
                 $productQuery->execute([$item['product_id']]);
                 $product = $productQuery->fetch();
                 if (!$product || !(bool)$product['is_available'] || (int)$product['stock_quantity'] < 1) {
                     throw new ApiException(409, 'An item in your cart is no longer available.');
                 }
-                $isBurger = strtolower((string)$product['category']) === 'burgers';
-                if (!$isBurger && ($item['customizations']['size'] !== 'Regular' || $item['customizations']['toppings'] !== [])) {
-                    throw new ApiException(422, 'Size and topping options are only available for burgers.');
-                }
+                self::validateProductCustomizations((string)$product['name'], (string)$product['category'], $item['customizations']);
             }
 
             $delete = $db->prepare('DELETE FROM cart_items WHERE user_id = ?');
@@ -550,17 +559,14 @@ final class ApiApplication
                 $remainingStock[$id] ??= (int)$product['stock_quantity'];
                 if ($remainingStock[$id] < $quantity) throw new ApiException(409, 'There is not enough stock for ' . $product['name'] . '.');
                 $remainingStock[$id] -= $quantity;
-                $isBurger = strtolower((string)$product['category']) === 'burgers';
-                if (!$isBurger && ($customizations['size'] !== 'Regular' || $customizations['toppings'] !== [])) {
-                    throw new ApiException(422, 'Size and topping options are only available for burgers.');
-                }
+                self::validateProductCustomizations((string)$product['name'], (string)$product['category'], $customizations);
                 $unitPrice = self::customizedUnitPrice((string)$product['price'], (string)$product['category'], $customizations);
                 $subtotal += $unitPrice * $quantity;
                 $customName = self::customizedProductName((string)$product['name'], (string)$product['category'], $customizations);
                 $orderLines[] = [
                     'product' => $product, 'quantity' => $quantity, 'unit_price' => $unitPrice,
                     'product_name' => $customName,
-                    'customizations' => $isBurger ? $customizations : null,
+                    'customizations' => $customizations,
                 ];
             }
             $tax = (int)round($subtotal * $taxPercent / 100);
@@ -1046,10 +1052,18 @@ final class ApiApplication
 
     private static function createContactMessage(PDO $db, string $pepper, array $body): never
     {
-        $name = trim((string)($body['full_name'] ?? ''));
-        $contact = trim((string)($body['email_or_phone'] ?? ''));
-        $topic = trim((string)($body['topic'] ?? ''));
-        $message = trim((string)($body['message'] ?? ''));
+        $rawName = $body['full_name'] ?? null;
+        $rawContact = $body['email_or_phone'] ?? null;
+        $rawTopic = $body['topic'] ?? null;
+        $rawMessage = $body['message'] ?? null;
+        if (!is_string($rawName) || !is_string($rawContact) ||
+            !is_string($rawTopic) || !is_string($rawMessage)) {
+            throw new ApiException(422, 'Check your name, contact information, topic, and message.');
+        }
+        $name = trim($rawName);
+        $contact = trim($rawContact);
+        $topic = trim($rawTopic);
+        $message = trim($rawMessage);
         if (mb_strlen($name) < 2 || mb_strlen($name) > 120 || mb_strlen($contact) < 5 || mb_strlen($contact) > 254 ||
             mb_strlen($topic) < 2 || mb_strlen($topic) > 80 || mb_strlen($message) < 5 || mb_strlen($message) > 2000) {
             throw new ApiException(422, 'Check your name, contact information, topic, and message.');
@@ -1127,19 +1141,45 @@ final class ApiApplication
 
     private static function normalizeCustomizations(mixed $customizations): array
     {
-        if (!is_array($customizations) || array_diff(array_keys($customizations), ['size', 'toppings']) !== []) {
+        if (!is_array($customizations) || array_diff(array_keys($customizations), ['size', 'toppings', 'drink_brand']) !== []) {
             throw new ApiException(422, 'One of the product customizations is invalid.');
         }
         $size = $customizations['size'] ?? 'Regular';
         $toppings = $customizations['toppings'] ?? [];
+        $drinkBrand = $customizations['drink_brand'] ?? null;
         $allowedToppings = ['Extra cheese', 'Crispy bacon'];
-        if (!is_string($size) || !in_array($size, ['Regular', 'Large', 'Double'], true) || !is_array($toppings) || !array_is_list($toppings) ||
+        $allowedDrinkBrands = ['Coca-Cola', 'Sprite', 'Pepsi', 'Royal', 'Mountain Dew', '7Up'];
+        if (!is_string($size) || !in_array($size, ['Regular', 'Small', 'Medium', 'Large', 'Double'], true) || !is_array($toppings) || !array_is_list($toppings) ||
             count(array_filter($toppings, static fn($topping): bool => is_string($topping) && in_array($topping, $allowedToppings, true))) !== count($toppings) ||
-            count(array_unique($toppings)) !== count($toppings)) {
+            count(array_unique($toppings)) !== count($toppings) ||
+            ($drinkBrand !== null && (!is_string($drinkBrand) || !in_array($drinkBrand, $allowedDrinkBrands, true)))) {
             throw new ApiException(422, 'One of the product customizations is invalid.');
         }
         sort($toppings, SORT_STRING);
-        return ['size' => $size, 'toppings' => $toppings];
+        return ['size' => $size, 'toppings' => $toppings, 'drink_brand' => $drinkBrand];
+    }
+
+    private static function validateProductCustomizations(string $name, string $category, array $customizations): void
+    {
+        $category = strtolower(trim($category));
+        $isBurger = $category === 'burgers';
+        $isFries = $category === 'fries' || ($category === 'sides' && str_contains(strtolower($name), 'fries'));
+        $isDrink = $category === 'drinks';
+
+        if ($isBurger) {
+            $valid = in_array($customizations['size'], ['Regular', 'Large', 'Double'], true) &&
+                $customizations['drink_brand'] === null;
+        } elseif ($isFries) {
+            $valid = in_array($customizations['size'], ['Regular', 'Small', 'Medium', 'Large'], true) &&
+                $customizations['toppings'] === [] && $customizations['drink_brand'] === null;
+        } elseif ($isDrink) {
+            $valid = $customizations['size'] === 'Regular' && $customizations['toppings'] === [];
+        } else {
+            $valid = $customizations['size'] === 'Regular' && $customizations['toppings'] === [] &&
+                $customizations['drink_brand'] === null;
+        }
+
+        if (!$valid) throw new ApiException(422, 'Those options are not available for this product.');
     }
 
     private static function customizedUnitPrice(string $basePrice, string $category, array $customizations): int
@@ -1157,8 +1197,14 @@ final class ApiApplication
 
     private static function customizedProductName(string $name, string $category, array $customizations): string
     {
-        if (strtolower($category) !== 'burgers') return $name;
-        return ($customizations['size'] === 'Regular' ? '' : $customizations['size'] . ' ') .
+        $category = strtolower(trim($category));
+        $isFries = $category === 'fries' || ($category === 'sides' && str_contains(strtolower($name), 'fries'));
+        if ($category === 'drinks' && $customizations['drink_brand'] !== null) {
+            return $customizations['drink_brand'] . ' ' . $name;
+        }
+        if ($category !== 'burgers' && !$isFries) return $name;
+        $showSize = $customizations['size'] !== 'Regular';
+        return ($showSize ? $customizations['size'] . ' ' : '') .
             $name . ($customizations['toppings'] === [] ? '' : ' + ' . implode(', ', $customizations['toppings']));
     }
 
@@ -1185,6 +1231,12 @@ final class ApiApplication
     {
         $window = intdiv(time(), $seconds);
         $hash = hash_hmac('sha256', $subject, $pepper);
+        $redisAttempts = RedisRateLimiter::increment('burgerbites:auth:' . $action . ':' . $hash . ':' . $window, $seconds);
+        if ($redisAttempts !== null) {
+            if ($redisAttempts > $limit) throw new ApiException(429, 'Too many attempts. Wait a little and try again.');
+            return;
+        }
+
         $insert = $db->prepare('INSERT INTO auth_rate_limits (action_name, subject_hash, window_id, attempts) VALUES (?, ?, ?, 1) ON DUPLICATE KEY UPDATE attempts = attempts + 1');
         $insert->execute([$action, $hash, $window]);
         $query = $db->prepare('SELECT attempts FROM auth_rate_limits WHERE action_name = ? AND subject_hash = ? AND window_id = ?');

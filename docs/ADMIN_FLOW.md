@@ -14,10 +14,10 @@
 
 | Screen | Current behavior | Status |
 | --- | --- | --- |
-| Dashboard | Loads totals and a seven-day SQL order-value chart | API-backed code; schema migration 003 and data journey pending |
-| Orders | Reads SQL orders and submits allowed status transitions/cancellation | API-backed code; migration 003 and workflow checks pending |
-| Products | Lists, creates, edits, archives, and changes stock through admin routes | API-backed code; migration 003 and workflow checks pending |
-| Customers | Reads SQL profiles/order summaries and activates/deactivates accounts | API-backed code; migration 003 and workflow checks pending |
+| Dashboard | Loads totals and a seven-day SQL order-value chart | API-backed code; authenticated live verification pending |
+| Orders | Reads SQL orders and submits allowed status transitions/cancellation | API-backed code; migration readiness and live workflow verification pending |
+| Products | Lists, creates, edits, archives, and changes stock through admin routes | API-backed code; authenticated live workflow verification pending |
+| Customers | Reads SQL profiles/order summaries and activates/deactivates accounts | API-backed code; authenticated live workflow verification pending |
 | Profile | Reads server identity, edits name/phone/branch, changes password, and logs out | Admin login, `/me`, system-status authorization, and logout passed HTTP smoke testing; profile edits/password UI not yet tested live |
 | More | Reads API/database/migration readiness and accurately shows payment limits | Readiness endpoint is role-protected; migration 003 currently reports incomplete |
 

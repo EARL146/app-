@@ -218,17 +218,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {
-                            final navigator = Navigator.of(context);
-                            if (widget.returnToCaller) {
-                              navigator.pushReplacementNamed(
-                                AppRoutes.signIn,
-                                arguments: true,
-                              );
-                            } else {
-                              navigator.pop();
-                            }
-                          },
+                          onPressed: _openSignIn,
                           child: const Text(
                             'Sign in',
                             style: TextStyle(
@@ -280,5 +270,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
         : AppRoutes.customerHome;
     Navigator.of(context)
         .pushNamedAndRemoveUntil(destination, (route) => false);
+  }
+
+  Future<void> _openSignIn() async {
+    final navigator = Navigator.of(context);
+    if (!widget.returnToCaller) {
+      navigator.pop();
+      return;
+    }
+
+    final signedIn = await navigator.pushNamed<bool>(
+      AppRoutes.signIn,
+      arguments: true,
+    );
+    if (!mounted || signedIn != true) return;
+
+    final auth = context.read<AuthService>();
+    if (auth.isAuthenticated && auth.currentUserRole == 'customer') {
+      navigator.pop(true);
+    }
   }
 }

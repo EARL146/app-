@@ -459,128 +459,144 @@ class _HeroOffer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textScale = MediaQuery.textScalerOf(context).scale(1);
-    final accessibleText = textScale > 1.15;
-    final heroHeight = accessibleText
-        ? (230 + ((textScale - 1.15) * 50)).clamp(230.0, 300.0).toDouble()
-        : 240.0;
-    final imageWidth = accessibleText ? 145.0 : 174.0;
-    return Container(
-      height: heroHeight,
-      decoration: BoxDecoration(
-        color: const Color(0xFF2B1C16),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.brandOrange.withValues(alpha: .13),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(1);
+        final accessibleText = textScale > 1.15;
+        final compactLayout = constraints.maxWidth < 420;
+        final heroHeight = accessibleText
+            ? (230 + ((textScale - 1.15) * 50)).clamp(230.0, 300.0).toDouble()
+            : compactLayout
+            ? 220.0
+            : 240.0;
+        final imageWidth = compactLayout
+            ? (constraints.maxWidth * .32).clamp(88.0, 118.0).toDouble()
+            : accessibleText
+            ? 145.0
+            : 174.0;
+        final textWidth = (constraints.maxWidth - imageWidth - 44)
+            .clamp(132.0, 208.0)
+            .toDouble();
+        return Container(
+          height: heroHeight,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2B1C16),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.brandOrange.withValues(alpha: .13),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: imageWidth,
-            child: FoodImage(
-              imageUrl: 'assets/products/smash_burger.jpg',
-              borderRadius: 0,
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF2B1C16),
-                    const Color(0xFF2B1C16).withValues(alpha: .98),
-                    const Color(0xFF2B1C16).withValues(alpha: .06),
-                  ],
-                  stops: const [0, .52, 1],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: imageWidth,
+                child: FoodImage(
+                  imageUrl: 'assets/products/smash_burger.jpg',
+                  borderRadius: 0,
                 ),
               ),
-            ),
-          ),
-          Positioned(
-            left: 17,
-            top: 17,
-            bottom: 17,
-            width: 208,
-            child: Column(
-              mainAxisAlignment: accessibleText
-                  ? MainAxisAlignment.center
-                  : MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!accessibleText)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 5,
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF2B1C16),
+                        const Color(0xFF2B1C16).withValues(alpha: .98),
+                        const Color(0xFF2B1C16).withValues(alpha: .06),
+                      ],
+                      stops: const [0, .52, 1],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
                     ),
-                    decoration: BoxDecoration(
-                      color: AppColors.brandOrange,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: const Text(
-                      'BURGERBITES MENU',
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 17,
+                top: 17,
+                bottom: 17,
+                width: textWidth,
+                child: Column(
+                  mainAxisAlignment: accessibleText
+                      ? MainAxisAlignment.center
+                      : compactLayout
+                      ? MainAxisAlignment.center
+                      : MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!accessibleText && !compactLayout)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.brandOrange,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: const Text(
+                          'BURGERBITES MENU',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: .6,
+                          ),
+                        ),
+                      ),
+                    if (!accessibleText && !compactLayout) const Spacer(),
+                    Text(
+                      accessibleText
+                          ? 'Delicious food, delivered fast.'
+                          : 'Delicious food,\ndelivered fast.',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 9,
+                        fontSize: accessibleText || compactLayout ? 18 : 22,
+                        height: 1.05,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: .6,
                       ),
                     ),
-                  ),
-                if (!accessibleText) const Spacer(),
-                Text(
-                  accessibleText
-                      ? 'Delicious food, delivered fast.'
-                      : 'Delicious food,\ndelivered fast.',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: accessibleText ? 18 : 22,
-                    height: 1.05,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                if (!accessibleText) ...[
-                  const SizedBox(height: 6),
-                  const Text(
-                    'Browse the menu and add your picks to the cart.',
-                    style: TextStyle(color: Colors.white70, fontSize: 10),
-                  ),
-                ],
-                SizedBox(height: accessibleText ? 10 : 11),
-                SizedBox(
-                  height: accessibleText ? 48 : 32,
-                  child: ElevatedButton.icon(
-                    onPressed: onOrder,
-                    icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-                    label: Text(
-                      'Order now',
-                      style: TextStyle(fontSize: accessibleText ? 12 : 11),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.brandOrange,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 0,
+                    if (!accessibleText && !compactLayout) ...[
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Browse the menu and add your picks to the cart.',
+                        style: TextStyle(color: Colors.white70, fontSize: 10),
+                      ),
+                    ],
+                    SizedBox(height: accessibleText || compactLayout ? 10 : 11),
+                    SizedBox(
+                      height: accessibleText ? 48 : 44,
+                      child: ElevatedButton.icon(
+                        onPressed: onOrder,
+                        icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                        label: Text(
+                          'Order now',
+                          style: TextStyle(fontSize: accessibleText ? 12 : 11),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.brandOrange,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 13,
+                            vertical: 0,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

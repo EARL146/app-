@@ -2,7 +2,7 @@
 
 [[PROJECT_HOME]] · [[PROJECT_MAP]] · [[OBSIDIAN_SETUP]] · [[BACKUP_WORKFLOW]] · [[NEXT_SESSION]]
 
-Reviewed: 2026-10-18. “Configured” below means verified in this local project; official vendor documentation alone does not prove local setup.
+Reviewed: 2026-10-20. “Configured” below means verified in this local project; official vendor documentation alone does not prove local setup.
 
 ## Workflow
 
@@ -31,6 +31,8 @@ flowchart TD
 | GitHub | Remote backup at configured `origin`. | **PARTIALLY CONNECTED**: sanitized remote is `https://github.com/EARL146/app-.git`; local `main` tracks `origin/main`; read-only remote reachability was verified during the audit. A local checkpoint was committed for the monitor work; it has not been pushed. | Do not push without explicit authorization. A push transmits committed source/docs; see [[BACKUP_WORKFLOW]]. |
 | ICM | [rtk-ai/icm](https://github.com/rtk-ai/icm), local persistent memory exposed as an MCP server. | **PARTIALLY CONNECTED**: version 0.11.4; `codex mcp get icm` reports it enabled and MCP calls are available. | No account/source upload is configured. Per-project initialization hit a Windows manifest-write error, so ICM uses its local global database. It is not connected to the dashboard event stream. Do not store credentials or customer data. |
 | Graphify (user confirmed local) | [Graphify local development docs](https://docs.graphify.com/guides/local-development), a code structure graph generated on this computer. | **CONNECTED locally**: `graphifyy` 0.9.90 is installed; `graphify query` and `graphify update .` work. Obsidian links to local generated graph/report files. | This build indexes code only, not Markdown docs and images. Keep ignored `graphify-out/` local. No hosted account or source upload. |
+| Docker Compose | Local API/database runtime, isolated from AMPPS. | **CONNECTED LOCALLY**: API, MySQL, and Redis containers start healthy; API returns HTTP 200 on `127.0.0.1:8082`; the separate MySQL port is `127.0.0.1:3307`. | Separate MySQL volume/database; only loopback ports are published. Catalog migration 002 is omitted, so the product endpoint currently returns an empty list. Local development only. See [[DOCKER_REDIS]]. |
+| Redis | Optional shared registration/login/password rate-limit counters for the Docker API. | **PARTIALLY CONNECTED**: PHP Redis extension is loaded and the API container successfully pings Redis. Auth rate-limit behavior has not been exercised end to end. API falls back to MySQL if Redis or the extension is unavailable. | Redis has no host port, is capped at 64 MB, and stores no product or customer records. See [[DOCKER_REDIS]]. |
 | GTX | Identity unverified. | **UNVERIFIED / NOT CONFIGURED**: no matching command, MCP tool, or app integration was found in the inspected environment. | Do not install or connect until the exact product and official source are identified. |
 
 ## RTK command policy

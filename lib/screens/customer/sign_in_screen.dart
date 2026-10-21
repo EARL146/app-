@@ -240,17 +240,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {
-                            final navigator = Navigator.of(context);
-                            if (widget.returnToCaller) {
-                              navigator.pushReplacementNamed(
-                                '/register',
-                                arguments: true,
-                              );
-                            } else {
-                              navigator.pushNamed('/register');
-                            }
-                          },
+                          onPressed: _openRegistration,
                           child: const Text(
                             'Create one',
                             style: TextStyle(
@@ -304,6 +294,25 @@ class _SignInScreenState extends State<SignInScreen> {
     }
     Navigator.of(context)
         .pushNamedAndRemoveUntil(destination, (route) => false);
+  }
+
+  Future<void> _openRegistration() async {
+    final navigator = Navigator.of(context);
+    if (!widget.returnToCaller) {
+      await navigator.pushNamed('/register');
+      return;
+    }
+
+    final registered = await navigator.pushNamed<bool>(
+      '/register',
+      arguments: true,
+    );
+    if (!mounted || registered != true) return;
+
+    final auth = context.read<AuthService>();
+    if (auth.isAuthenticated && auth.currentUserRole == 'customer') {
+      navigator.pop(true);
+    }
   }
 
   Widget _socialButton(
