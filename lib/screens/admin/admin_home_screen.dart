@@ -7,6 +7,7 @@ import '../../navigation/app_routes.dart';
 import '../../providers/admin_dashboard_provider.dart';
 import '../../providers/admin_orders_provider.dart';
 import '../../widgets/admin_page_frame.dart';
+import '../../widgets/animated_brand_button.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -163,8 +164,24 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         Container(
                           padding: const EdgeInsets.all(15),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFE4D7),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFFEFE6), Color(0xFFFFDECC)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: AppColors.brandOrange.withValues(
+                                alpha: .18,
+                              ),
+                            ),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x12FF6422),
+                                blurRadius: 16,
+                                offset: Offset(0, 6),
+                              ),
+                            ],
                           ),
                           child: Row(
                             children: [
@@ -580,9 +597,16 @@ class _MetricCard extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: AppColors.surface,
+      gradient: AppColors.warmSurfaceGradient,
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: AppColors.border),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x0D1E130C),
+          blurRadius: 12,
+          offset: Offset(0, 5),
+        ),
+      ],
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,15 +698,22 @@ class _QuickAction extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => InkWell(
+  Widget build(BuildContext context) => AnimatedPressScale(
     onTap: onTap,
     borderRadius: BorderRadius.circular(14),
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        gradient: AppColors.warmSurfaceGradient,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D1E130C),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [

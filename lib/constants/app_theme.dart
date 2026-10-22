@@ -24,19 +24,42 @@ class AppTheme {
       textTheme: const TextTheme(
         displayLarge: TextStyle(
           fontSize: 32,
+          fontWeight: FontWeight.w900,
+          letterSpacing: -0.7,
+          height: 1.08,
+          color: AppColors.textPrimary,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 22,
           fontWeight: FontWeight.w800,
+          letterSpacing: -0.4,
           color: AppColors.textPrimary,
         ),
         titleLarge: TextStyle(
           fontSize: 19,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.25,
           color: AppColors.textPrimary,
         ),
-        bodyLarge: TextStyle(fontSize: 15, color: AppColors.textPrimary),
-        bodyMedium: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        titleMedium: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
+          color: AppColors.textPrimary,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 15,
+          height: 1.4,
+          color: AppColors.textPrimary,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 13,
+          height: 1.38,
+          color: AppColors.textSecondary,
+        ),
         labelLarge: TextStyle(
           fontSize: 13,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.15,
           color: AppColors.textPrimary,
         ),
       ),
@@ -47,7 +70,8 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: TextStyle(
           fontSize: 18,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w900,
+          letterSpacing: -0.25,
           color: AppColors.textPrimary,
         ),
         iconTheme: IconThemeData(color: AppColors.textPrimary),
@@ -57,7 +81,7 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: AppColors.border),
         ),
       ),
@@ -73,37 +97,42 @@ class AppTheme {
           fontSize: 13,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(
             color: AppColors.brandOrange,
-            width: 1.5,
+            width: 1.7,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.danger),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.danger, width: 1.7),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.brandOrange,
           foregroundColor: Colors.white,
-          elevation: 0,
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          elevation: 2,
+          shadowColor: AppColors.brandOrange.withValues(alpha: 0.24),
+          animationDuration: const Duration(milliseconds: 180),
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.2,
+          ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),

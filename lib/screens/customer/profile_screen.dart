@@ -7,6 +7,7 @@ import '../../constants/app_colors.dart';
 import '../../models/order_model.dart';
 import '../../providers/customer_orders_provider.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/animated_brand_button.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -81,23 +82,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     padding: const EdgeInsets.all(15),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      gradient: AppColors.warmSurfaceGradient,
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: AppColors.border),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x0D1E130C),
+                          blurRadius: 14,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
                     ),
                     child: Row(
                       children: [
                         Container(
                           width: 58,
                           height: 58,
-                          decoration: const BoxDecoration(
-                            color: AppColors.surfaceMuted,
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryButtonGradient,
                             shape: BoxShape.circle,
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x26FF6422),
+                                blurRadius: 10,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: const Icon(
                             Icons.person_rounded,
                             size: 31,
-                            color: AppColors.brandOrange,
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -493,39 +508,45 @@ class _ProfileTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 7),
-      child: Material(
-        color: AppColors.surface,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: AppColors.border),
-        ),
-        child: ListTile(
-          onTap: () => Navigator.of(context).pushNamed(route),
-          dense: true,
-          leading: Container(
-            width: 35,
-            height: 35,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceMuted,
-              borderRadius: BorderRadius.circular(11),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: AnimatedPressScale(
+        borderRadius: BorderRadius.circular(14),
+        child: Material(
+          color: AppColors.surface,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: ListTile(
+            onTap: () => Navigator.of(context).pushNamed(route),
+            dense: true,
+            leading: Container(
+              width: 35,
+              height: 35,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: Icon(icon, color: AppColors.brandOrange, size: 18),
             ),
-            child: Icon(icon, color: AppColors.brandOrange, size: 18),
-          ),
-          title: Text(
-            title,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
-          ),
-          trailing: const Icon(
-            Icons.chevron_right_rounded,
-            size: 18,
-            color: AppColors.textSecondary,
+            title: Text(
+              title,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+            ),
+            subtitle: Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 9,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: AppColors.textSecondary,
+            ),
           ),
         ),
       ),

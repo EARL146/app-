@@ -5,6 +5,7 @@ import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
+import '../../widgets/animated_brand_button.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/favorite_button.dart';
 import '../../widgets/customer_account_prompt.dart';
@@ -382,18 +383,25 @@ class _SearchResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AnimatedPressScale(
       onTap: () =>
           Navigator.of(context)
               .pushNamed('/product-details', arguments: product),
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(9),
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(15),
+          gradient: AppColors.warmSurfaceGradient,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0D1E130C),
+              blurRadius: 12,
+              offset: Offset(0, 5),
+            ),
+          ],
         ),
         child: Row(
           children: [

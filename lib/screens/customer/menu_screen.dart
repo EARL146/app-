@@ -5,6 +5,7 @@ import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
+import '../../widgets/animated_brand_button.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/favorite_button.dart';
 import '../../widgets/customer_account_prompt.dart';
@@ -71,35 +72,44 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 8, 18, 13),
-              child: InkWell(
-                onTap: () => Navigator.of(context).pushNamed('/search'),
-                borderRadius: BorderRadius.circular(15),
-                child: Container(
-                  height: 46,
-                  padding: const EdgeInsets.symmetric(horizontal: 13),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.search_rounded,
-                        color: AppColors.brandOrange,
-                        size: 19,
-                      ),
-                      SizedBox(width: 9),
-                      Expanded(
-                        child: Text(
-                          'Search burgers, crispy fries, drinks',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
+              child: AnimatedPressScale(
+                child: InkWell(
+                  onTap: () => Navigator.of(context).pushNamed('/search'),
+                  borderRadius: BorderRadius.circular(15),
+                  child: Container(
+                    height: 46,
+                    padding: const EdgeInsets.symmetric(horizontal: 13),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: AppColors.border),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.textPrimary.withValues(alpha: 0.03),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.search_rounded,
+                          color: AppColors.brandOrange,
+                          size: 19,
+                        ),
+                        SizedBox(width: 9),
+                        Expanded(
+                          child: Text(
+                            'Search burgers, crispy fries, drinks',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -119,25 +129,27 @@ class _MenuScreenState extends State<MenuScreen> {
                 itemBuilder: (context, index) {
                   final category = catalog.categories[index];
                   final selected = category == _selectedCategory;
-                  return ChoiceChip(
-                    label: Text(category),
-                    selected: selected,
-                    onSelected: (_) =>
-                        setState(() => _selectedCategory = category),
-                    backgroundColor: AppColors.surface,
-                    selectedColor: AppColors.brandOrange,
-                    side: BorderSide(
-                      color: selected
-                          ? AppColors.brandOrange
-                          : AppColors.border,
+                  return AnimatedPressScale(
+                    child: ChoiceChip(
+                      label: Text(category),
+                      selected: selected,
+                      onSelected: (_) =>
+                          setState(() => _selectedCategory = category),
+                      backgroundColor: AppColors.surface,
+                      selectedColor: AppColors.brandOrange,
+                      side: BorderSide(
+                        color: selected
+                            ? AppColors.brandOrange
+                            : AppColors.border,
+                      ),
+                      labelStyle: TextStyle(
+                        color: selected ? Colors.white : AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 11,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      showCheckmark: false,
                     ),
-                    labelStyle: TextStyle(
-                      color: selected ? Colors.white : AppColors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 7),
-                    showCheckmark: false,
                   );
                 },
               ),
@@ -220,30 +232,32 @@ class _MenuScreenState extends State<MenuScreen> {
                   top: false,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(18, 3, 18, 8),
-                    child: SizedBox(
-                      height: 48,
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () =>
-                            Navigator.of(context).pushNamed('/cart'),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.shopping_bag_outlined, size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${cart.items.fold<int>(0, (sum, item) => sum + item.quantity)} items',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
+                    child: AnimatedPressScale(
+                      child: SizedBox(
+                        height: 48,
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              Navigator.of(context).pushNamed('/cart'),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.shopping_bag_outlined, size: 18),
+                              const SizedBox(width: 8),
+                              AnimatedValueText(
+                                '${cart.items.fold<int>(0, (sum, item) => sum + item.quantity)} items',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              'View cart · ₱${cart.total.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
+                              const Spacer(),
+                              AnimatedValueText(
+                                'View cart · ₱${cart.total.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -306,24 +320,9 @@ class _MenuOffer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.brandOrange,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'SPECIAL OFFER',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 8,
-                      letterSpacing: .5,
-                    ),
-                  ),
+                const BrandGradientBadge(
+                  label: 'SPECIAL OFFER',
+                  icon: Icons.bolt_rounded,
                 ),
                 const Spacer(),
                 const Text(
@@ -378,21 +377,29 @@ class MenuProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () =>
-          Navigator.of(context)
-              .pushNamed('/product-details', arguments: product),
-      borderRadius: BorderRadius.circular(17),
-      child: Container(
-        padding: const EdgeInsets.all(9),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(17),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return AnimatedPressScale(
+      child: InkWell(
+        onTap: () => Navigator.of(
+          context,
+        ).pushNamed('/product-details', arguments: product),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.textPrimary.withValues(alpha: 0.04),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Expanded(
               child: Stack(
                 children: [
@@ -526,6 +533,7 @@ class MenuProductCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

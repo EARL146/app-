@@ -4,15 +4,16 @@
 
 ## Agent roles
 
-| ID | Role | Status |
-| --- | --- | --- |
-| Agent 1 | Frontend Developer | Assigned |
-| Agent 2 | Backend/API Developer | Assigned |
-| Agent 3 | QA Tester | Assigned |
-| Agent 4 | Code Reviewer | Assigned |
-| Agent 5 | Customer/Admin Debugger | Assigned |
+| ID | Role | Station | Mode | Status |
+| --- | --- | --- | --- | --- |
+| Agent 1 | Frontend Developer | UI Studio Desk | Isolated Codex Worker + Role Ledger | Assigned |
+| Agent 2 | Backend/API Developer | API & SQL Console | Explicit Role Ledger | Assigned |
+| Agent 3 | QA Tester | Verification Lab | Isolated Codex Worker + Role Ledger | Assigned |
+| Agent 4 | Code Reviewer | Security & Diff Desk | Explicit Role Ledger | Assigned |
+| Agent 5 | Customer/Admin Debugger | Auth Diagnostics Bay | Isolated Codex Worker + Role Ledger | Assigned |
+| Agent 6 | Security Engineer | Cyber Shield Vault | Isolated Codex Worker + Role Ledger | Assigned |
 
-The role registry is `tools/agent-monitor/agents.json`. Agent 1, Agent 3, and Agent 5 can run through the monitor's isolated Codex worker adapter; Agent 5 focuses on customer/admin sign-in and account creation. Agent 5 cannot read a live browser console automatically, so include redacted console/API errors in the task when available. Agent 2 and Agent 4 remain explicit-log roles. The local monitor does not guess that an anonymous Codex session belongs to a role.
+The role registry is `tools/agent-monitor/agents.json`. Each role has a distinct character outfit, role gear, accent color, and assigned station in Agent City (`tools/agent-monitor/index.html`, `city.js`, `city.css`). When available, agents stroll through office zones (`Frontend Room`, `Command Center`, `Backend Room`, `Main Hallway`, `Coffee & Bites Lounge`, `QA Testing Room`, `Code Review Room`, `Debugging Room`); when a task is active (`preparing`, `running`, `active`, `blocked`), the agent walks to its assigned office desk and animates at work. Agent 1, Agent 3, Agent 5, and Agent 6 can run through the monitor's isolated Codex worker adapter; Agent 5 focuses on customer/admin sign-in and account creation, while Agent 6 (her role: System-Wide Security Engineer at the Cyber Shield Vault) protects the entire BurgerBites system across Flutter client storage/auth, PHP/PDO prepared statements, CORS/rate-limiting guards, Docker/Redis isolation, and secret hygiene. Agent 5 cannot read a live browser console automatically, so include redacted console/API errors in the task when available. Agent 2 and Agent 4 remain explicit-log roles. The local monitor does not guess that an anonymous Codex session belongs to a role.
 
 ## Agent task records and performance
 

@@ -137,9 +137,26 @@ class WorkerRuntimeTests(unittest.TestCase):
                 thread.return_value.start.assert_called_once()
 
             self.assertEqual(task["role"], "Customer/Admin Debugger")
+            self.assertEqual(task["station"], "Auth Diagnostics Bay")
             self.assertEqual(task["kind"], "debugging")
             self.assertIn(error_text, thread.call_args.kwargs["args"][1])
             self.assertNotIn(error_text, json.dumps(task))
+
+    def test_agent6_is_a_scoped_security_worker_and_records_security_kind(self):
+        self.assertEqual(ALLOWED_WORKERS["agent-6"], "Security Engineer")
+        prompt = _worker_prompt("agent-6", "Audit SQL and auth security", "Verify prepared statements and CORS headers")
+        self.assertIn("Security Engineer (System-Wide Security Guardian)", prompt)
+        self.assertIn("Never read or print `.env` files", prompt)
+        self.assertIn("Verify prepared statements and CORS headers", prompt)
+        with tempfile.TemporaryDirectory() as temp:
+            manager = self.make_repo(Path(temp) / "repo")
+            with patch.object(manager, "_check_cli", return_value={"available": True, "authenticated": True, "model": "model-a"}), patch("worker_runtime.threading.Thread") as thread:
+                task = manager.start_coding_task("agent-6", "System security audit", "Verify PDO prepared statements and token storage")
+                thread.return_value.start.assert_called_once()
+            self.assertEqual(task["role"], "Security Engineer")
+            self.assertEqual(task["station"], "Cyber Shield Vault")
+            self.assertEqual(task["kind"], "security")
+            self.assertNotIn("Verify PDO prepared statements", json.dumps(task))
 
     def test_qa_worker_reuses_completed_coding_worktree_and_baseline(self):
         with tempfile.TemporaryDirectory() as temp:

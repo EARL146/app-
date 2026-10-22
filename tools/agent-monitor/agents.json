@@ -1,7 +1,56 @@
 [
-  {"agent_id": "agent-1", "name": "Agent 1", "role": "Frontend Developer"},
-  {"agent_id": "agent-2", "name": "Agent 2", "role": "Backend/API Developer"},
-  {"agent_id": "agent-3", "name": "Agent 3", "role": "QA Tester"},
-  {"agent_id": "agent-4", "name": "Agent 4", "role": "Code Reviewer"},
-  {"agent_id": "agent-5", "name": "Agent 5", "role": "Customer/Admin Debugger"}
+  {
+    "agent_id": "agent-1",
+    "name": "Agent 1",
+    "role": "Frontend Developer",
+    "station": "UI Studio Desk",
+    "specialty": "Flutter screens, animations, and responsive layout",
+    "badge": "UI · CODEX WORKER",
+    "accent": "#ff642e"
+  },
+  {
+    "agent_id": "agent-2",
+    "name": "Agent 2",
+    "role": "Backend/API Developer",
+    "station": "API & SQL Console",
+    "specialty": "PHP/PDO endpoints, MySQL schema, and monitor services",
+    "badge": "API · LOG LEDGER",
+    "accent": "#4d9de0"
+  },
+  {
+    "agent_id": "agent-3",
+    "name": "Agent 3",
+    "role": "QA Tester",
+    "station": "Verification Lab",
+    "specialty": "Widget suites, regression checks, and isolated QA runs",
+    "badge": "QA · CODEX WORKER",
+    "accent": "#3dd6a3"
+  },
+  {
+    "agent_id": "agent-4",
+    "name": "Agent 4",
+    "role": "Code Reviewer",
+    "station": "Security & Diff Desk",
+    "specialty": "Privacy audit, diff inspection, and architecture review",
+    "badge": "REVIEW · LOG LEDGER",
+    "accent": "#a77bff"
+  },
+  {
+    "agent_id": "agent-5",
+    "name": "Agent 5",
+    "role": "Customer/Admin Debugger",
+    "station": "Auth Diagnostics Bay",
+    "specialty": "Customer/admin sign-in, registration, and session recovery",
+    "badge": "DEBUG · CODEX WORKER",
+    "accent": "#ff9b42"
+  },
+  {
+    "agent_id": "agent-6",
+    "name": "Agent 6",
+    "role": "Security Engineer",
+    "station": "Cyber Shield Vault",
+    "specialty": "System-wide AppSec, API/SQL injection defense, auth/session hardening, and secret protection",
+    "badge": "SECURITY · CODEX WORKER",
+    "accent": "#e11d48"
+  }
 ]

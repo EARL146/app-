@@ -17,6 +17,7 @@ import re
 import subprocess
 import threading
 import time
+import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -36,6 +37,202 @@ NOTE_FILES = (
     "docs/KNOWN_ISSUES.md",
     "docs/TESTING.md",
     "docs/INTEGRATION_MAP.md",
+    "docs/SCREEN_DESIGN_SPEC.md",
+    "docs/SCREEN_FLOW.md",
+    "docs/SCREEN_IMPLEMENTATION_STATUS.md",
+)
+
+DESIGN_SYSTEM_SCREENS = (
+    {
+        "id": "splash",
+        "group": "Customer",
+        "title": "Splash & Ingredient Intro",
+        "route": "/",
+        "file": "lib/screens/customer/splash_screen.dart",
+        "primary_cta": "Auto-routes to Guest Menu / Role Home",
+        "accent": "#ff4f24",
+        "highlights": ["4.5s AnimatedBurgerAssembly", "Session restore (/me)", "Reduced-motion aware"],
+    },
+    {
+        "id": "welcome",
+        "group": "Customer",
+        "title": "Welcome Hero",
+        "route": "/welcome",
+        "file": "lib/screens/customer/welcome_screen.dart",
+        "primary_cta": "Get Started / Log In",
+        "accent": "#ff4f24",
+        "highlights": ["Floating burger cutout", "Studio glow backdrop", "320–430px responsive"],
+    },
+    {
+        "id": "sign-in",
+        "group": "Customer",
+        "title": "Sign In",
+        "route": "/sign-in",
+        "file": "lib/screens/customer/sign_in_screen.dart",
+        "primary_cta": "Sign In",
+        "accent": "#ff4f24",
+        "highlights": ["Role-aware routing", "Floating BrandLogo", "AnimatedPressScale CTA"],
+    },
+    {
+        "id": "register",
+        "group": "Customer",
+        "title": "Create Account",
+        "route": "/register",
+        "file": "lib/screens/customer/register_screen.dart",
+        "primary_cta": "Create Account",
+        "accent": "#ef2f2b",
+        "highlights": ["Argon2id API registration", "Pending action resume", "Validated inputs"],
+    },
+    {
+        "id": "customer-home",
+        "group": "Customer",
+        "title": "Customer Home",
+        "route": "/customer-home",
+        "file": "lib/screens/customer/home_screen.dart",
+        "primary_cta": "Order now",
+        "accent": "#ff4f24",
+        "highlights": ["Smash burger hero banner", "Category bubbles", "SQL recent orders"],
+    },
+    {
+        "id": "menu",
+        "group": "Customer",
+        "title": "Menu Catalog",
+        "route": "/menu",
+        "file": "lib/screens/customer/menu_screen.dart",
+        "primary_cta": "View cart · ₱total",
+        "accent": "#ff4f24",
+        "highlights": ["Guest-first browsing", "ChoiceChip filter bar", "Animated add-to-cart"],
+    },
+    {
+        "id": "search",
+        "group": "Customer",
+        "title": "Catalog Search",
+        "route": "/search",
+        "file": "lib/screens/customer/search_screen.dart",
+        "primary_cta": "Filter & Add",
+        "accent": "#ff6b35",
+        "highlights": ["Live SQL product filter", "Honest empty/error states", "Compact phone grid"],
+    },
+    {
+        "id": "product-details",
+        "group": "Customer",
+        "title": "Product Details & Customizer",
+        "route": "/product-details",
+        "file": "lib/screens/customer/product_details_screen.dart",
+        "primary_cta": "Add to cart",
+        "accent": "#ff4f24",
+        "highlights": ["Burger/fries size & drink choices", "Server-validated toppings", "Pop FavoriteButton"],
+    },
+    {
+        "id": "favorites",
+        "group": "Customer",
+        "title": "Saved Favorites",
+        "route": "/favorites",
+        "file": "lib/screens/customer/favorites_screen.dart",
+        "primary_cta": "Browse menu",
+        "accent": "#ef2f2b",
+        "highlights": ["User-scoped /me/favorites", "Quick add to cart", "Animated heart toggle"],
+    },
+    {
+        "id": "cart",
+        "group": "Customer",
+        "title": "Shopping Cart",
+        "route": "/cart",
+        "file": "lib/screens/customer/cart_screen.dart",
+        "primary_cta": "Proceed to checkout",
+        "accent": "#ff4f24",
+        "highlights": ["SQL /me/cart sync", "Quantity stepper", "Saved profile address"],
+    },
+    {
+        "id": "checkout",
+        "group": "Customer",
+        "title": "Checkout & Payment",
+        "route": "/checkout",
+        "file": "lib/screens/customer/checkout_screen.dart",
+        "primary_cta": "Place COD Order",
+        "accent": "#24935b",
+        "highlights": ["Transactional COD order", "GCash/Maya sandbox status", "Server price revalidation"],
+    },
+    {
+        "id": "order-history",
+        "group": "Customer",
+        "title": "Order History",
+        "route": "/order-history",
+        "file": "lib/screens/customer/order_history_screen.dart",
+        "primary_cta": "Reorder / Cancel",
+        "accent": "#3789c9",
+        "highlights": ["Active & completed tabs", "Pending order cancellation", "One-tap reorder"],
+    },
+    {
+        "id": "profile",
+        "group": "Customer",
+        "title": "Customer Profile",
+        "route": "/profile",
+        "file": "lib/screens/customer/profile_screen.dart",
+        "primary_cta": "Sign in / Edit profile",
+        "accent": "#ff4f24",
+        "highlights": ["Guest sign-in card", "Account & preferences", "Calendar & support links"],
+    },
+    {
+        "id": "settings-preferences",
+        "group": "Customer",
+        "title": "Settings, Theme, Language & Calendar",
+        "route": "/settings",
+        "file": "lib/screens/customer/settings_screen.dart",
+        "primary_cta": "Save preferences",
+        "accent": "#f0a323",
+        "highlights": ["Address & password update", "SQL calendar reminders", "Explicit delivery notices"],
+    },
+    {
+        "id": "contact-about",
+        "group": "Customer",
+        "title": "Contact & About",
+        "route": "/contact",
+        "file": "lib/screens/customer/contact_screen.dart",
+        "primary_cta": "Send message",
+        "accent": "#24935b",
+        "highlights": ["Public /store-profile data", "SQL support ticket form", "Verified store hours"],
+    },
+    {
+        "id": "admin-home",
+        "group": "Admin",
+        "title": "Admin Dashboard",
+        "route": "/admin",
+        "file": "lib/screens/admin/admin_home_screen.dart",
+        "primary_cta": "Manage Orders & Menu",
+        "accent": "#ff4f24",
+        "highlights": ["7-day SQL sales series", "Pending-order bell badge", "Live/placeholder state labels"],
+    },
+    {
+        "id": "admin-orders",
+        "group": "Admin",
+        "title": "Admin Orders",
+        "route": "/admin/orders",
+        "file": "lib/screens/admin/admin_orders_screen.dart",
+        "primary_cta": "Update Order Status",
+        "accent": "#3789c9",
+        "highlights": ["Status lifecycle controls", "Stock restock on cancel", "Search & status chips"],
+    },
+    {
+        "id": "admin-products",
+        "group": "Admin",
+        "title": "Admin Products & Editor",
+        "route": "/admin/products",
+        "file": "lib/screens/admin/admin_products_screen.dart",
+        "primary_cta": "Add / Save Product",
+        "accent": "#24935b",
+        "highlights": ["CRUD & archive flow", "Stock & availability toggle", "Fries/Drinks/Burgers categories"],
+    },
+    {
+        "id": "admin-customers-more",
+        "group": "Admin",
+        "title": "Customers, Support, Store Profile & More",
+        "route": "/admin/more",
+        "file": "lib/screens/admin/admin_more_screen.dart",
+        "primary_cta": "Save Store Profile",
+        "accent": "#a77bff",
+        "highlights": ["Migration 003 readiness check", "Store profile editor", "Support inbox & customer status"],
+    },
 )
 SECRET_PATH_PARTS = {"secrets", "credentials", "private_keys"}
 SECRET_ASSIGNMENT = re.compile(
@@ -524,6 +721,59 @@ def _safe_repo_file(root: Path, relative: str, allowed_roots: tuple[str, ...], e
     return candidate
 
 
+def design_system_snapshot(root: Path) -> dict:
+    """Return local UI design tokens, screen catalog, and Figma connection readiness."""
+    figma_url = os.environ.get("BURGER_BITES_FIGMA_URL", "").strip()
+    figma_key_match = re.search(r"figma\.com/(?:design|file|proto)/([A-Za-z0-9_-]{10,64})", figma_url)
+    figma_file_key = figma_key_match.group(1) if figma_key_match else ""
+    screens = []
+    for item in DESIGN_SYSTEM_SCREENS:
+        file_path = root / item["file"]
+        screens.append({
+            **item,
+            "exists": file_path.is_file(),
+        })
+    return {
+        "figma": {
+            "connected": bool(figma_file_key),
+            "file_key": figma_file_key,
+            "mode": "Local interactive Figma Artboard Studio + SVG Vector Export",
+            "note": (
+                "Paste your Figma file URL in the dashboard to bind frame deep-links in this browser, "
+                "or export the vector SVG artboard sheet to drag-and-drop all BurgerBites screens directly into Figma."
+            ),
+        },
+        "tokens": {
+            "colors": [
+                {"name": "brandOrange", "hex": "#FF4F24", "usage": "Primary CTAs, active tabs, price emphasis"},
+                {"name": "brandOrangeDark", "hex": "#E84018", "usage": "Pressed CTA state, gradient stops"},
+                {"name": "brandRed", "hex": "#EF2F2B", "usage": "Wordmark accent, heart badges"},
+                {"name": "pageBackground", "hex": "#FAF7F5", "usage": "Warm cream mobile scaffold"},
+                {"name": "surface", "hex": "#FFFFFF", "usage": "Elevated product & order cards"},
+                {"name": "surfaceMuted", "hex": "#FFF0E9", "usage": "Soft coral icon wells & selected chips"},
+                {"name": "textPrimary", "hex": "#261C18", "usage": "Espresso headings & primary copy"},
+                {"name": "textSecondary", "hex": "#81756F", "usage": "Warm muted descriptions & metadata"},
+                {"name": "darkSurface", "hex": "#1C1715", "usage": "Hero offer banners & dark snackbars"},
+                {"name": "success", "hex": "#24935B", "usage": "Order completed & schema ready badges"},
+            ],
+            "typography": [
+                {"role": "Display Large", "spec": "Roboto · 32px · w800 · -0.8px tracking"},
+                {"role": "Headline Medium", "spec": "Roboto · 24px · w900 · -0.5px tracking"},
+                {"role": "Title Large", "spec": "Roboto · 19px · w800 · -0.3px tracking"},
+                {"role": "Body Large", "spec": "Roboto · 15px · w500 · 1.45 line-height"},
+                {"role": "Label Large / Button", "spec": "Roboto · 13px · w800 · +0.2px tracking"},
+            ],
+            "animations": [
+                {"name": "AnimatedPressScale", "spec": "140ms Curves.easeOutCubic scale 1.0 → 0.96 on tap with reduced-motion guard"},
+                {"name": "AnimatedBrandButton", "spec": "Warm coral gradient (#FF4F24 → #FF7838), soft glow shadow, and tactile press state"},
+                {"name": "FavoriteButton Pop", "spec": "220ms TweenSequence heart bounce (1.0 → 1.24 → 1.0) on favorite toggle"},
+                {"name": "Splash Ingredient Assembly", "spec": "4.5s staggered burger layer drop + floating BrandLogo cutout"},
+            ],
+        },
+        "screens": screens,
+    }
+
+
 def list_images(root: Path) -> list[dict]:
     results = []
     for folder in IMAGE_ROOTS:
@@ -661,6 +911,7 @@ class MonitorHandler(BaseHTTPRequestHandler):
                     "sessions": self.sessions.list(),
                     "codex_processes": codex_process_snapshot(),
                     "agents": agent_overview(),
+                    "design_system": design_system_snapshot(self.project_root),
                     "notes": [path for path in NOTE_FILES if (self.project_root / path).is_file()],
                     "images": list_images(self.project_root),
                     "limits": [
@@ -672,6 +923,8 @@ class MonitorHandler(BaseHTTPRequestHandler):
                         "Coding, debugging, and QA workers run one at a time in isolated worktrees based on committed HEAD. The main worktree is not changed by workers.",
                     ],
                 })
+            elif parsed.path == "/api/design-system":
+                self._json(design_system_snapshot(self.project_root))
             elif parsed.path == "/api/tasks":
                 self._json(self.server.worker_manager.list_tasks())
             elif parsed.path.startswith("/api/tasks/") and re.fullmatch(r"/api/tasks/[0-9a-f]{32}", parsed.path):
@@ -776,6 +1029,7 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1", help="Loopback address only (default: 127.0.0.1).")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT, help="BurgerBites project root.")
+    parser.add_argument("--open", action="store_true", help="Open the local Agent Monitor in the default browser on startup.")
     args = parser.parse_args()
     try:
         if args.host != "127.0.0.1" or not ipaddress.ip_address(args.host).is_loopback:
@@ -787,9 +1041,13 @@ def main() -> None:
         parser.error("Project root must be a Git working tree.")
     codex_home = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex")).expanduser()
     server = MonitorServer((args.host, args.port), root, codex_home)
-    print(f"Local Agent Monitor: http://{args.host}:{args.port}")
+    url = f"http://{args.host}:{args.port}"
+    print(f"Local Agent Monitor: {url}")
+    print(f"Agent City 2D Office Simulation: {url}/#city")
     print(f"Project: {root}")
     print("Press Ctrl+C to stop. Worker controls are loopback-only and use isolated Git worktrees.")
+    if args.open:
+        threading.Timer(0.25, lambda: webbrowser.open(f"{url}/#city")).start()
     try:
         server.serve_forever(poll_interval=0.5)
     except KeyboardInterrupt:

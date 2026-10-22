@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../models/product_model.dart';
 import '../providers/favorites_provider.dart';
+import 'animated_brand_button.dart';
 import 'customer_account_prompt.dart';
 
 class FavoriteButton extends StatelessWidget {
@@ -17,44 +18,57 @@ class FavoriteButton extends StatelessWidget {
     return Consumer<FavoritesProvider>(
       builder: (context, favorites, _) {
         final selected = favorites.isFavorite(product.id);
-        return IconButton(
-          tooltip: selected ? 'Remove from favorites' : 'Add to favorites',
-          visualDensity: VisualDensity.compact,
-          constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-          padding: EdgeInsets.zero,
-          onPressed: favorites.isLoading
-              ? null
-              : () async {
-                  if (!await requireCustomerAccount(
-                    context,
-                    action: 'save this favorite',
-                  )) {
-                    return;
-                  }
-                  if (!context.mounted) return;
-                  final changed = await context
-                      .read<FavoritesProvider>()
-                      .toggleFavorite(product);
-                  if (!context.mounted || changed) return;
-                  final error = context.read<FavoritesProvider>().errorMessage;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(error ?? 'Unable to update favorites.'),
-                      behavior: SnackBarBehavior.floating,
-                      action: (error?.startsWith('Sign in') ?? false)
-                          ? SnackBarAction(
-                              label: 'Sign in',
-                              onPressed: () =>
-                                  Navigator.of(context).pushNamed('/sign-in'),
-                            )
-                          : null,
-                    ),
-                  );
-                },
-          icon: Icon(
-            selected ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-            size: iconSize,
-            color: selected ? AppColors.brandRed : AppColors.textSecondary,
+        return AnimatedPressScale(
+          pressedScale: 0.86,
+          hoverScale: 1.08,
+          child: IconButton(
+            tooltip: selected ? 'Remove from favorites' : 'Add to favorites',
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+            padding: EdgeInsets.zero,
+            onPressed: favorites.isLoading
+                ? null
+                : () async {
+                    if (!await requireCustomerAccount(
+                      context,
+                      action: 'save this favorite',
+                    )) {
+                      return;
+                    }
+                    if (!context.mounted) return;
+                    final changed = await context
+                        .read<FavoritesProvider>()
+                        .toggleFavorite(product);
+                    if (!context.mounted || changed) return;
+                    final error =
+                        context.read<FavoritesProvider>().errorMessage;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(error ?? 'Unable to update favorites.'),
+                        behavior: SnackBarBehavior.floating,
+                        action: (error?.startsWith('Sign in') ?? false)
+                            ? SnackBarAction(
+                                label: 'Sign in',
+                                onPressed: () =>
+                                    Navigator.of(context).pushNamed('/sign-in'),
+                              )
+                            : null,
+                      ),
+                    );
+                  },
+            icon: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 190),
+              transitionBuilder: (child, animation) =>
+                  ScaleTransition(scale: animation, child: child),
+              child: Icon(
+                selected
+                    ? Icons.favorite_rounded
+                    : Icons.favorite_border_rounded,
+                key: ValueKey<bool>(selected),
+                size: iconSize,
+                color: selected ? AppColors.brandRed : AppColors.textSecondary,
+              ),
+            ),
           ),
         );
       },

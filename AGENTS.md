@@ -32,7 +32,7 @@
 
 - When using a named Codex subagent for BurgerBites, start a local record with `py -3 tools/agent-monitor/agent_events.py start --agent agent-N --task "short label"`. Record actual checks with `verify`, then record the verified outcome and changed paths with `finish`.
 - Record only a short task label, check label, counts, status, and project-relative file paths. Never pass prompts, customer data, secrets, full command output, or tool arguments to the logger.
-- The monitor's agent metrics are only as complete as these explicit records. Do not infer a role from anonymous Codex session IDs. Agent 2 is Backend/API Developer, as assigned by the user.
+- The monitor's agent metrics are only as complete as these explicit records. Do not infer a role from anonymous Codex session IDs. The six registered roles in `tools/agent-monitor/agents.json` are Agent 1 (Frontend Developer), Agent 2 (Backend/API Developer), Agent 3 (QA Tester), Agent 4 (Code Reviewer), Agent 5 (Customer/Admin Debugger), and Agent 6 (Security Engineer).
 
 @RTK.md
 

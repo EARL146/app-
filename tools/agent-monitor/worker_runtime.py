@@ -29,6 +29,13 @@ ALLOWED_WORKERS = {
     "agent-1": "Frontend Developer",
     "agent-3": "QA Tester",
     "agent-5": "Customer/Admin Debugger",
+    "agent-6": "Security Engineer",
+}
+WORKER_STATIONS = {
+    "agent-1": "UI Studio Desk",
+    "agent-3": "Verification Lab",
+    "agent-5": "Auth Diagnostics Bay",
+    "agent-6": "Cyber Shield Vault",
 }
 ACTIVE_STATES = {"queued", "preparing", "running"}
 TERMINAL_STATES = {"completed", "failed", "cancelled", "blocked", "timed_out", "interrupted"}
@@ -211,6 +218,19 @@ def _worker_prompt(role: str, label: str, user_prompt: str | None = None) -> str
             f"Debug task: {_safe_label(label)}\n\nUser-provided issue details and optional redacted console output:\n"
             f"{user_prompt or ''}\n\n{guardrails}"
         )
+    if role == "agent-6":
+        return (
+            "You are Agent 6, the Security Engineer (System-Wide Security Guardian) for BurgerBites. Your role is to "
+            "audit and harden security across the entire BurgerBites system: Flutter client storage/auth/routing, "
+            "PHP/PDO backend API endpoints, MySQL prepared statements and input validation, CORS/rate-limiting "
+            "controls, Docker/Redis isolation, and local Agent Monitor privacy guards. Inspect the relevant project "
+            "instructions and code first. Never read or print `.env` files, real passwords, customer PII, or production "
+            "tokens. Fix only vulnerabilities or hardening gaps supported by the repository code, keep edits focused, "
+            "and run relevant existing checks without installing dependencies. Report findings, exact files changed, "
+            "and actual verification results. Do not commit or push.\n\n"
+            f"Security task: {_safe_label(label)}\n\nSecurity audit or hardening instructions:\n"
+            f"{user_prompt or ''}\n\n{guardrails}"
+        )
     return (
         "You are Agent 1, the Frontend Developer. Implement only the user's task in this isolated worktree. Inspect "
         "the relevant project instructions and files first, keep the change focused, and run a relevant existing check "
@@ -373,8 +393,20 @@ class WorkerManager:
             "created_at", "started_at", "finished_at", "baseline_commit", "exit_code",
             "changed_files", "error", "approval_required", "source",
         )}
+        result["station"] = WORKER_STATIONS.get(str(task.get("agent_id") or ""), "Shared Office Desk")
         result["changed_files"] = task.get("changed_files", []) if isinstance(task.get("changed_files"), list) else []
         result["error"] = _safe_text(task.get("error"), 500) if task.get("error") else ""
+        started_raw = task.get("started_at") or task.get("created_at") or ""
+        finished_raw = task.get("finished_at") or ""
+        if isinstance(started_raw, str) and isinstance(finished_raw, str) and started_raw and finished_raw:
+            try:
+                s_dt = dt.datetime.fromisoformat(started_raw.replace("Z", "+00:00"))
+                f_dt = dt.datetime.fromisoformat(finished_raw.replace("Z", "+00:00"))
+                result["duration_seconds"] = max(0, int((f_dt - s_dt).total_seconds()))
+            except ValueError:
+                result["duration_seconds"] = None
+        else:
+            result["duration_seconds"] = None
         try:
             result["worktree"] = self._worktree_dir(task).relative_to(self.project_root).as_posix()
         except (ValueError, OSError):
@@ -405,15 +437,15 @@ class WorkerManager:
                 raise RuntimeError("A Codex worker is already active. Wait for it to finish or cancel it first.")
 
     def start_coding_task(self, agent_id: str, label: str, prompt: str) -> dict:
-        if agent_id not in {"agent-1", "agent-5"}:
-            raise ValueError("Only Agent 1 and Agent 5 can start coding or debugging tasks.")
+        if agent_id not in {"agent-1", "agent-5", "agent-6"}:
+            raise ValueError("Only Agent 1, Agent 5, and Agent 6 can start coding, debugging, or security tasks.")
         if not isinstance(prompt, str):
             raise ValueError("Task instructions must be text.")
         prompt = prompt.strip()
         if not prompt or len(prompt) > MAX_TASK_PROMPT:
             raise ValueError(f"Task instructions must contain 1–{MAX_TASK_PROMPT} characters.")
         self._assert_available()
-        kind = "debugging" if agent_id == "agent-5" else "coding"
+        kind = "security" if agent_id == "agent-6" else "debugging" if agent_id == "agent-5" else "coding"
         task = self._create_task(agent_id, _safe_label(label), kind, None, None)
         thread = threading.Thread(target=self._run, args=(task["task_id"], _worker_prompt(agent_id, task["label"], prompt)), daemon=True)
         thread.start()

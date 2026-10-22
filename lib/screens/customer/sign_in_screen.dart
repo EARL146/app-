@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../services/auth_service.dart';
 import '../../navigation/app_routes.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/animated_brand_button.dart';
 import '../../widgets/brand_logo.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -45,10 +46,10 @@ class _SignInScreenState extends State<SignInScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 2),
-                    Center(
+                    const Center(
                       child: Column(
                         children: [
-                          const BrandLogo(
+                          BrandLogo(
                             width: 142,
                             height: 142,
                             animate: true,
@@ -62,7 +63,8 @@ class _SignInScreenState extends State<SignInScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 22,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -87,15 +89,18 @@ class _SignInScreenState extends State<SignInScreen> {
                         fillColor: Colors.white,
                         prefixIcon: Icon(Icons.email_outlined),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: AppColors.border),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.brandOrange),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide(
+                            color: AppColors.brandOrange,
+                            width: 1.6,
+                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                       ),
                       validator: (value) {
@@ -129,15 +134,18 @@ class _SignInScreenState extends State<SignInScreen> {
                           ),
                         ),
                         border: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                         enabledBorder: const OutlineInputBorder(
                           borderSide: BorderSide(color: AppColors.border),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                         focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.brandOrange),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide(
+                            color: AppColors.brandOrange,
+                            width: 1.6,
+                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                       ),
                       validator: (value) {
@@ -148,33 +156,40 @@ class _SignInScreenState extends State<SignInScreen> {
                       },
                     ),
                     const SizedBox(height: 20),
-                    SizedBox(
-                      height: 45,
-                      child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    AnimatedPressScale(
+                      enabled: !_isSubmitting,
+                      child: SizedBox(
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: _isSubmitting ? null : _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.darkSurface,
+                            foregroundColor: Colors.white,
+                            elevation: 3,
+                            shadowColor:
+                                AppColors.darkSurface.withValues(alpha: 0.25),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
+                          child: _isSubmitting
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Continue',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
                         ),
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Continue',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
                       ),
                     ),
                     const SizedBox(height: 15),
@@ -239,13 +254,15 @@ class _SignInScreenState extends State<SignInScreen> {
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        TextButton(
-                          onPressed: _openRegistration,
-                          child: const Text(
-                            'Create one',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.brandOrange,
+                        AnimatedPressScale(
+                          child: TextButton(
+                            onPressed: _openRegistration,
+                            child: const Text(
+                              'Create one',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.brandOrange,
+                              ),
                             ),
                           ),
                         ),
@@ -320,41 +337,45 @@ class _SignInScreenState extends State<SignInScreen> {
     required Widget icon,
     required String label,
   }) {
-    return SizedBox(
-      height: 40,
-      child: OutlinedButton(
-        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '$label is not configured yet. Use your email and password to sign in.',
+    return AnimatedPressScale(
+      child: SizedBox(
+        height: 40,
+        child: OutlinedButton(
+          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '$label is not configured yet. Use your email and password to sign in.',
+              ),
+              behavior: SnackBarBehavior.floating,
             ),
-            behavior: SnackBarBehavior.floating,
           ),
-        ),
-        style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          side: BorderSide.none,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            side: const BorderSide(color: AppColors.border),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(11),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              icon,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

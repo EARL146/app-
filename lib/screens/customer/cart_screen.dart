@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/animated_brand_button.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/customer_account_prompt.dart';
 
@@ -212,9 +213,16 @@ class CartScreen extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          gradient: AppColors.warmSurfaceGradient,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: AppColors.border),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.textPrimary.withValues(alpha: 0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Row(
                           children: [
@@ -249,7 +257,7 @@ class CartScreen extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 6),
-                                  Text(
+                                  AnimatedValueText(
                                     '₱${item.subtotal.toStringAsFixed(0)}',
                                     style: const TextStyle(
                                       color: AppColors.brandOrange,
@@ -265,39 +273,46 @@ class CartScreen extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: AppColors.pageBackground,
                                 borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.border),
                               ),
                               child: Row(
                                 children: [
-                                  IconButton(
-                                    visualDensity: VisualDensity.compact,
-                                    onPressed: () =>
-                                        cart.updateCartItemQuantity(
-                                          item,
-                                          item.quantity - 1,
-                                        ),
-                                    icon: const Icon(
-                                      Icons.remove_rounded,
-                                      size: 16,
+                                  AnimatedPressScale(
+                                    pressedScale: 0.88,
+                                    child: IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: () =>
+                                          cart.updateCartItemQuantity(
+                                            item,
+                                            item.quantity - 1,
+                                          ),
+                                      icon: const Icon(
+                                        Icons.remove_rounded,
+                                        size: 16,
+                                      ),
                                     ),
                                   ),
-                                  Text(
+                                  AnimatedValueText(
                                     '${item.quantity}',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w900,
                                       fontSize: 12,
                                     ),
                                   ),
-                                  IconButton(
-                                    visualDensity: VisualDensity.compact,
-                                    onPressed: () =>
-                                        cart.updateCartItemQuantity(
-                                          item,
-                                          item.quantity + 1,
-                                        ),
-                                    icon: const Icon(
-                                      Icons.add_rounded,
-                                      color: AppColors.brandOrange,
-                                      size: 16,
+                                  AnimatedPressScale(
+                                    pressedScale: 0.88,
+                                    child: IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      onPressed: () =>
+                                          cart.updateCartItemQuantity(
+                                            item,
+                                            item.quantity + 1,
+                                          ),
+                                      icon: const Icon(
+                                        Icons.add_rounded,
+                                        color: AppColors.brandOrange,
+                                        size: 16,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -329,41 +344,50 @@ class CartScreen extends StatelessWidget {
               ),
               Container(
                 padding: const EdgeInsets.fromLTRB(18, 11, 18, 10),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surface,
-                  border: Border(top: BorderSide(color: AppColors.border)),
+                  border: const Border(top: BorderSide(color: AppColors.border)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.textPrimary.withValues(alpha: 0.05),
+                      blurRadius: 16,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
                 ),
                 child: SafeArea(
                   top: false,
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (!await requireCustomerAccount(
-                          context,
-                          action: 'continue to checkout',
-                        )) {
-                          return;
-                        }
-                        if (!context.mounted) return;
-                        Navigator.of(context).pushNamed('/checkout');
-                      },
-                      child: Row(
-                        children: [
-                          const Icon(Icons.lock_outline_rounded, size: 17),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Continue to checkout',
-                              style: TextStyle(fontWeight: FontWeight.w900),
+                  child: AnimatedPressScale(
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          if (!await requireCustomerAccount(
+                            context,
+                            action: 'continue to checkout',
+                          )) {
+                            return;
+                          }
+                          if (!context.mounted) return;
+                          Navigator.of(context).pushNamed('/checkout');
+                        },
+                        child: Row(
+                          children: [
+                            const Icon(Icons.lock_outline_rounded, size: 17),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Continue to checkout',
+                                style: TextStyle(fontWeight: FontWeight.w900),
+                              ),
                             ),
-                          ),
-                          Text(
-                            '₱${cart.total.toStringAsFixed(0)}',
-                            style: const TextStyle(fontWeight: FontWeight.w900),
-                          ),
-                        ],
+                            AnimatedValueText(
+                              '₱${cart.total.toStringAsFixed(0)}',
+                              style: const TextStyle(fontWeight: FontWeight.w900),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

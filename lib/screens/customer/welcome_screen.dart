@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_colors.dart';
+import '../../widgets/animated_brand_button.dart';
 import '../../widgets/brand_logo.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -45,12 +46,18 @@ class WelcomeScreen extends StatelessWidget {
                                 height: 44,
                                 animate: true,
                               ),
-                              const Text(
-                                'BurgerBites',
-                                style: TextStyle(
-                                  color: AppColors.brandRed,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
+                              ShaderMask(
+                                shaderCallback: (bounds) => AppColors
+                                    .primaryButtonGradient
+                                    .createShader(bounds),
+                                child: const Text(
+                                  'BurgerBites',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.4,
+                                  ),
                                 ),
                               ),
                             ],
@@ -90,36 +97,54 @@ class WelcomeScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 22),
-                          SizedBox(
-                            height: 58,
-                            child: ElevatedButton(
-                              onPressed: () =>
-                                  Navigator.of(context)
-                                      .pushReplacementNamed('/customer-home'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.brandOrange,
-                                foregroundColor: Colors.white,
-                                elevation: 2,
-                                shadowColor: AppColors.brandOrange.withValues(
-                                  alpha: 0.25,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
+                          AnimatedPressScale(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: AppColors.primaryButtonGradient,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.brandOrange.withValues(
+                                      alpha: 0.30,
+                                    ),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
                               ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Browse Menu',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
+                              child: SizedBox(
+                                height: 58,
+                                child: ElevatedButton(
+                                  onPressed: () => Navigator.of(context)
+                                      .pushReplacementNamed('/customer-home'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: Colors.white,
+                                    shadowColor: Colors.transparent,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
                                     ),
                                   ),
-                                  SizedBox(width: 9),
-                                  Icon(Icons.arrow_forward_rounded, size: 19),
-                                ],
+                                  child: const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Browse Menu',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                      SizedBox(width: 9),
+                                      Icon(
+                                        Icons.arrow_forward_rounded,
+                                        size: 19,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -135,17 +160,19 @@ class WelcomeScreen extends StatelessWidget {
                                   fontSize: 14,
                                 ),
                               ),
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(context).pushNamed('/sign-in'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: AppColors.brandOrangeDark,
-                                  textStyle: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14,
+                              AnimatedPressScale(
+                                child: TextButton(
+                                  onPressed: () => Navigator.of(context)
+                                      .pushNamed('/sign-in'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppColors.brandOrangeDark,
+                                    textStyle: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14,
+                                    ),
                                   ),
+                                  child: const Text('Log In'),
                                 ),
-                                child: const Text('Log In'),
                               ),
                             ],
                           ),

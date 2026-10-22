@@ -7,11 +7,16 @@ import agent_events
 
 
 class AgentEventTests(unittest.TestCase):
-    def test_registry_preserves_five_assigned_roles(self):
+    def test_registry_preserves_assigned_roles(self):
         agents = agent_events.load_agents()
-        self.assertEqual([agent["agent_id"] for agent in agents], ["agent-1", "agent-2", "agent-3", "agent-4", "agent-5"])
+        self.assertEqual([agent["agent_id"] for agent in agents], ["agent-1", "agent-2", "agent-3", "agent-4", "agent-5", "agent-6"])
         self.assertEqual(agents[1]["role"], "Backend/API Developer")
         self.assertEqual(agents[4]["role"], "Customer/Admin Debugger")
+        self.assertEqual(agents[5]["role"], "Security Engineer")
+        self.assertEqual(agents[0]["station"], "UI Studio Desk")
+        self.assertEqual(agents[2]["station"], "Verification Lab")
+        self.assertEqual(agents[5]["station"], "Cyber Shield Vault")
+        self.assertTrue(all(agent.get("accent", "").startswith("#") for agent in agents))
 
     def test_metrics_use_only_recorded_run_events(self):
         agents = agent_events.load_agents()
@@ -55,7 +60,7 @@ class AgentEventTests(unittest.TestCase):
         result = agent_events.build_overview(agent_events.load_agents(), [])
         self.assertFalse(result["available"])
         self.assertEqual(result["event_count"], 0)
-        self.assertEqual(len(result["roles"]), 5)
+        self.assertEqual(len(result["roles"]), 6)
 
     def test_malformed_finished_status_is_unknown_instead_of_crashing(self):
         agents = agent_events.load_agents()

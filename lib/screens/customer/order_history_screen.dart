@@ -7,6 +7,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../providers/customer_orders_provider.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/animated_brand_button.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/customer_account_prompt.dart';
 
@@ -83,17 +84,38 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFE6D9),
-              borderRadius: BorderRadius.circular(17),
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFEFE6), Color(0xFFFFE1CF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AppColors.brandOrange.withValues(alpha: .16),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0D1E130C),
+                  blurRadius: 14,
+                  offset: Offset(0, 6),
+                ),
+              ],
             ),
             child: Row(
               children: [
                 Container(
-                  width: 37,
-                  height: 37,
+                  width: 39,
+                  height: 39,
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x14FF6422),
+                        blurRadius: 8,
+                        offset: Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: const Icon(
                     Icons.delivery_dining_rounded,
@@ -360,19 +382,32 @@ class _OrderTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Expanded(
-    child: GestureDetector(
+    child: AnimatedPressScale(
       onTap: onTap,
-      child: Container(
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? AppColors.surface : Colors.transparent,
+          gradient: selected ? AppColors.primaryButtonGradient : null,
+          color: selected ? null : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
+          boxShadow: selected
+              ? const [
+                  BoxShadow(
+                    color: Color(0x22FF6422),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ]
+              : const [],
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+            color: selected ? Colors.white : AppColors.textSecondary,
             fontWeight: FontWeight.w900,
             fontSize: 10,
           ),
@@ -396,17 +431,25 @@ class _OrderCard extends StatelessWidget {
       OrderStatus.canceled => AppColors.danger,
       _ => AppColors.warning,
     };
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return AnimatedEntranceCard(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          gradient: AppColors.warmSurfaceGradient,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0D1E130C),
+              blurRadius: 14,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             children: [
               Expanded(
@@ -537,13 +580,16 @@ class _OrderCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _reorder(context),
-                  icon: const Icon(Icons.replay_rounded, size: 14),
-                  label: const Text('Reorder', style: TextStyle(fontSize: 9)),
-                  style: ElevatedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: AnimatedPressScale(
+                  borderRadius: BorderRadius.circular(12),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _reorder(context),
+                    icon: const Icon(Icons.replay_rounded, size: 14),
+                    label: const Text('Reorder', style: TextStyle(fontSize: 9)),
+                    style: ElevatedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
                   ),
                 ),
               ),
@@ -551,6 +597,7 @@ class _OrderCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../widgets/animated_brand_button.dart';
 import '../../widgets/favorite_button.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/customer_account_prompt.dart';
@@ -370,9 +371,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             ),
             Container(
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.surface,
-                border: Border(top: BorderSide(color: AppColors.border)),
+                border: const Border(top: BorderSide(color: AppColors.border)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.textPrimary.withValues(alpha: 0.05),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
               ),
               child: SafeArea(
                 top: false,
@@ -383,94 +391,103 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.pageBackground,
                         borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Row(
                         children: [
-                          IconButton(
-                            onPressed: () => setState(
-                              () => _quantity = (_quantity - 1).clamp(1, 99),
+                          AnimatedPressScale(
+                            pressedScale: 0.88,
+                            child: IconButton(
+                              onPressed: () => setState(
+                                () => _quantity = (_quantity - 1).clamp(1, 99),
+                              ),
+                              icon: const Icon(Icons.remove_rounded, size: 17),
                             ),
-                            icon: const Icon(Icons.remove_rounded, size: 17),
                           ),
-                          Text(
+                          AnimatedValueText(
                             '$_quantity',
                             style: const TextStyle(fontWeight: FontWeight.w900),
                           ),
-                          IconButton(
-                            onPressed: () => setState(() => _quantity++),
-                            icon: const Icon(Icons.add_rounded, size: 17),
+                          AnimatedPressScale(
+                            pressedScale: 0.88,
+                            child: IconButton(
+                              onPressed: () => setState(() => _quantity++),
+                              icon: const Icon(Icons.add_rounded, size: 17),
+                            ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 11),
                     Expanded(
-                      child: SizedBox(
-                        height: 49,
-                        child: Consumer<CartProvider>(
-                          builder: (context, cart, _) => ElevatedButton(
-                            onPressed: product.available
-                                ? () async {
-                                    if (!await requireCustomerAccount(
-                                      context,
-                                      action: 'add this item to your cart',
-                                    )) {
-                                      return;
-                                    }
-                                    if (!context.mounted) return;
-                                    final toppings = _extras.toList()..sort();
-                                    final displayName = isDrinkProduct
-                                        ? '$_drinkBrand ${product.name}'
-                                        : '${(isBurgerProduct && _size != 'Regular') || isFriesProduct ? '$_size ' : ''}${product.name}${toppings.isEmpty ? '' : ' + ${toppings.join(', ')}'}';
-                                    cart.addItem(
-                                      product,
-                                      quantity: _quantity,
-                                      unitPrice: _unitPrice,
-                                      displayName: displayName,
-                                      customizations: isBurgerProduct
-                                          ? {
-                                              'size': _size,
-                                              'toppings': toppings,
-                                            }
-                                          : isFriesProduct
-                                          ? {'size': _size}
-                                          : isDrinkProduct
-                                          ? {'drink_brand': _drinkBrand}
-                                          : const {},
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          '$displayName added to cart',
+                      child: AnimatedPressScale(
+                        child: SizedBox(
+                          height: 49,
+                          child: Consumer<CartProvider>(
+                            builder: (context, cart, _) => ElevatedButton(
+                              onPressed: product.available
+                                  ? () async {
+                                      if (!await requireCustomerAccount(
+                                        context,
+                                        action: 'add this item to your cart',
+                                      )) {
+                                        return;
+                                      }
+                                      if (!context.mounted) return;
+                                      final toppings = _extras.toList()..sort();
+                                      final displayName = isDrinkProduct
+                                          ? '$_drinkBrand ${product.name}'
+                                          : '${(isBurgerProduct && _size != 'Regular') || isFriesProduct ? '$_size ' : ''}${product.name}${toppings.isEmpty ? '' : ' + ${toppings.join(', ')}'}';
+                                      cart.addItem(
+                                        product,
+                                        quantity: _quantity,
+                                        unitPrice: _unitPrice,
+                                        displayName: displayName,
+                                        customizations: isBurgerProduct
+                                            ? {
+                                                'size': _size,
+                                                'toppings': toppings,
+                                              }
+                                            : isFriesProduct
+                                            ? {'size': _size}
+                                            : isDrinkProduct
+                                            ? {'drink_brand': _drinkBrand}
+                                            : const {},
+                                      );
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            '$displayName added to cart',
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                          duration: const Duration(seconds: 1),
                                         ),
-                                        behavior: SnackBarBehavior.floating,
-                                        duration: const Duration(seconds: 1),
+                                      );
+                                    }
+                                  : null,
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.shopping_bag_outlined,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
+                                      'Add to cart',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w900,
                                       ),
-                                    );
-                                  }
-                                : null,
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.shopping_bag_outlined,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                const Expanded(
-                                  child: Text(
-                                    'Add to cart',
-                                    style: TextStyle(
+                                    ),
+                                  ),
+                                  AnimatedValueText(
+                                    '₱${(_unitPrice * _quantity).toStringAsFixed(0)}',
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w900,
                                     ),
                                   ),
-                                ),
-                                Text(
-                                  '₱${(_unitPrice * _quantity).toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -565,37 +582,51 @@ class _SizeOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(13),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.darkSurface : AppColors.surface,
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(
-              color: selected ? AppColors.darkSurface : AppColors.border,
+      child: AnimatedPressScale(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.darkSurface : AppColors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected ? AppColors.brandOrange : AppColors.border,
+                width: selected ? 1.5 : 1.0,
+              ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.brandOrange.withValues(alpha: 0.16),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : const [],
             ),
-          ),
-          child: Column(
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: selected ? Colors.white : AppColors.textPrimary,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 11,
+            child: Column(
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: selected ? Colors.white : AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                detail,
-                style: TextStyle(
-                  color: selected ? Colors.white70 : AppColors.textSecondary,
-                  fontSize: 9,
+                const SizedBox(height: 3),
+                Text(
+                  detail,
+                  style: TextStyle(
+                    color: selected ? Colors.white70 : AppColors.textSecondary,
+                    fontSize: 9,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -618,20 +649,39 @@ class _ExtraOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CheckboxListTile(
-      value: selected,
-      onChanged: (value) => onChanged(value ?? false),
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      activeColor: AppColors.brandOrange,
-      controlAffinity: ListTileControlAffinity.trailing,
-      title: Text(
-        label,
-        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      margin: const EdgeInsets.only(bottom: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: selected ? AppColors.surfaceMuted : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: selected ? AppColors.brandOrange : AppColors.border,
+        ),
       ),
-      subtitle: Text(
-        detail,
-        style: const TextStyle(color: AppColors.textSecondary, fontSize: 10),
+      child: Material(
+        color: Colors.transparent,
+        child: CheckboxListTile(
+          value: selected,
+          onChanged: (value) => onChanged(value ?? false),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          activeColor: AppColors.brandOrange,
+          controlAffinity: ListTileControlAffinity.trailing,
+          title: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+          ),
+          subtitle: Text(
+            detail,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 10,
+            ),
+          ),
+        ),
       ),
     );
   }

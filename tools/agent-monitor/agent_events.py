@@ -56,11 +56,20 @@ def load_agents(path: Path = REGISTRY_PATH) -> list[dict]:
         if not isinstance(agent_id, str) or not AGENT_ID.fullmatch(agent_id) or agent_id in seen:
             raise ValueError("Agent registry contains an invalid or duplicate ID.")
         seen.add(agent_id)
-        agents.append({
+        entry = {
             "agent_id": agent_id,
             "name": _label(item.get("name"), "agent name", 40),
             "role": _label(item.get("role"), "agent role", 80),
-        })
+        }
+        if isinstance(item.get("station"), str) and item.get("station").strip():
+            entry["station"] = _label(item.get("station"), "agent station", 60)
+        if isinstance(item.get("specialty"), str) and item.get("specialty").strip():
+            entry["specialty"] = _label(item.get("specialty"), "agent specialty", 120)
+        if isinstance(item.get("badge"), str) and item.get("badge").strip():
+            entry["badge"] = _label(item.get("badge"), "agent badge", 40)
+        if isinstance(item.get("accent"), str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", item.get("accent", "")):
+            entry["accent"] = item["accent"].lower()
+        agents.append(entry)
     return agents
 
 
@@ -196,6 +205,7 @@ def build_overview(agents: list[dict], events: list[dict]) -> dict:
         durations = [item["duration_seconds"] for item in completed if isinstance(item["duration_seconds"], int)]
         passed = sum(check["passed"] for run in own for check in run["checks"])
         failed = sum(check["failed"] for run in own for check in run["checks"])
+        latest_run = own[0] if own else None
         role_summaries.append({
             **agent,
             "metrics": {
@@ -209,6 +219,8 @@ def build_overview(agents: list[dict], events: list[dict]) -> dict:
                 "verification_passed": passed,
                 "verification_failed": failed,
                 "reported_changed_files": len({file for run in own for file in run["files"]}),
+                "last_task": latest_run["task"] if latest_run else "",
+                "last_status": latest_run["status"] if latest_run else "idle",
             },
         })
     return {

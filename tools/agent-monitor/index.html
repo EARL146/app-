@@ -4,256 +4,245 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>BurgerBites · Agent Monitor</title>
-  <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/city.css">
+  <title>BurgerBites · Agent Monitor &amp; UI Studio</title>
+  <link rel="stylesheet" href="/style.css?v=6">
+  <link rel="stylesheet" href="/city.css?v=6">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="brand-mark">BB</span><div><strong>BurgerBites</strong><small>Agent monitor</small></div></div>
-    <div class="top-meta"><span class="local-dot"></span><span>Local monitor · isolated workers</span><span id="updated">Loading…</span></div>
+    <div class="brand">
+      <span class="brand-mark">BB</span>
+      <div>
+        <strong>BurgerBites</strong>
+        <small>Agent Monitor · Agent City · Figma UI Studio</small>
+      </div>
+    </div>
+    <div class="top-meta">
+      <span class="local-dot"></span>
+      <span>127.0.0.1 loopback · isolated workers</span>
+      <span id="updated">Loading…</span>
+    </div>
   </header>
   <main>
     <section class="intro">
-      <div><p class="eyebrow">DEVELOPMENT WORKSPACE</p><h1>Activity, without the guesswork.</h1><p class="muted">Observed Codex session records, this worktree’s Git state, and selected project references.</p></div>
-      <button id="refresh" class="quiet-button" type="button">Refresh now</button>
+      <div>
+        <p class="eyebrow">BURGERBITES COMMAND &amp; DESIGN CENTER</p>
+        <h1>Activity, walk-around agents, and live UI specs.</h1>
+        <p class="muted">Observed Codex session records, 6 unique autonomous office agents, worktree Git state, and the complete BurgerBites Figma UI screen gallery.</p>
+      </div>
+      <div class="intro-actions">
+        <button id="refresh" class="quiet-button" type="button">Refresh now</button>
+      </div>
     </section>
     <nav class="tabs" aria-label="Dashboard sections">
       <button class="tab active" data-tab="overview">Overview</button>
       <button class="tab" data-tab="agents">Agents</button>
       <button class="tab" data-tab="city">Agent City</button>
+      <button class="tab" data-tab="figma">Figma &amp; UI Studio</button>
       <button class="tab" data-tab="activity">Activity</button>
       <button class="tab" data-tab="changes">Git changes</button>
       <button class="tab" data-tab="memory">Project notes</button>
       <button class="tab" data-tab="images">Images</button>
     </nav>
     <div id="error" class="error hidden" role="status"></div>
+
     <section id="panel-overview" class="panel active">
       <div id="summary" class="summary-grid"></div>
       <article class="card process-card">
-        <div class="card-heading"><div><p class="eyebrow">OS PROCESS SNAPSHOT</p><h2>Codex processes running now</h2></div><span class="tag process-tag">OS observed</span></div>
+        <div class="card-heading">
+          <div>
+            <p class="eyebrow">OS PROCESS SNAPSHOT</p>
+            <h2>Codex processes running now</h2>
+          </div>
+          <span class="tag process-tag">OS observed</span>
+        </div>
         <p class="muted">This is a point-in-time OS snapshot matched by executable basename (codex.exe or codex). It does not verify the executable path or publisher, identify agent roles, or match processes to JSONL sessions.</p>
         <div id="codex-processes" class="process-list" aria-live="polite"></div>
       </article>
       <div class="two-col">
-        <article class="card"><div class="card-heading"><div><p class="eyebrow">JSONL SESSION ACTIVITY</p><h2>Codex session logs</h2></div><span class="tag">log-derived</span></div><p class="fineprint session-source-note">Activity status is inferred from local JSONL records and file timestamps; it does not confirm a running process.</p><div id="sessions" class="session-list"></div></article>
-        <article class="card"><div class="card-heading"><div><p class="eyebrow">GIT</p><h2>Worktree snapshot</h2></div><span id="branch" class="tag">—</span></div><div id="git-summary" class="git-summary"></div><p class="fineprint">Remote counts use locally cached refs. This dashboard never fetches, commits, stages, or pushes.</p></article>
+        <article class="card">
+          <div class="card-heading">
+            <div><p class="eyebrow">JSONL SESSION ACTIVITY</p><h2>Codex session logs</h2></div>
+            <span class="tag">log-derived</span>
+          </div>
+          <p class="fineprint session-source-note">Activity status is inferred from local JSONL records and file timestamps; it does not confirm a running process.</p>
+          <div id="sessions" class="session-list"></div>
+        </article>
+        <article class="card">
+          <div class="card-heading">
+            <div><p class="eyebrow">GIT</p><h2>Worktree snapshot</h2></div>
+            <span id="branch" class="tag">—</span>
+          </div>
+          <div id="git-summary" class="git-summary"></div>
+          <p class="fineprint">Remote counts use locally cached refs. This dashboard never fetches, commits, stages, or pushes.</p>
+        </article>
       </div>
       <div class="two-col">
-        <article class="card"><div class="card-heading"><div><p class="eyebrow">TASK HISTORY</p><h2>Latest task markers</h2></div></div><div id="tasks" class="task-list"></div></article>
-        <article class="card"><div class="card-heading"><div><p class="eyebrow">RECORDED USAGE</p><h2>Codex usage totals</h2></div></div><div id="usage" class="usage-grid"></div><p class="fineprint">Shown only when the local log provides a thread usage record. These are Codex-reported figures, not estimates.</p></article>
+        <article class="card">
+          <div class="card-heading"><div><p class="eyebrow">TASK HISTORY</p><h2>Latest task markers</h2></div></div>
+          <div id="tasks" class="task-list"></div>
+        </article>
+        <article class="card">
+          <div class="card-heading"><div><p class="eyebrow">RECORDED USAGE</p><h2>Codex usage totals</h2></div></div>
+          <div id="usage" class="usage-grid"></div>
+          <p class="fineprint">Shown only when the local log provides a thread usage record. These are Codex-reported figures, not estimates.</p>
+        </article>
       </div>
-      <article class="card"><div class="card-heading"><div><p class="eyebrow">SCOPE</p><h2>What this dashboard can see</h2></div></div><ul id="limits" class="limit-list"></ul></article>
+      <article class="card">
+        <div class="card-heading"><div><p class="eyebrow">SCOPE</p><h2>What this dashboard can see</h2></div></div>
+        <ul id="limits" class="limit-list"></ul>
+      </article>
     </section>
+
     <section id="panel-agents" class="panel">
       <article class="card">
-        <div class="card-heading"><div><p class="eyebrow">NAMED ROLE ACTIVITY</p><h2>Agent runs and recorded outcomes</h2></div><span class="tag">explicit local log</span></div>
+        <div class="card-heading">
+          <div><p class="eyebrow">NAMED ROLE ACTIVITY</p><h2>Agent runs and recorded outcomes</h2></div>
+          <span class="tag">explicit local log</span>
+        </div>
         <p class="muted">These figures come from task events deliberately recorded in the local agent ledger. They are not a live agent API, a complete view of every Codex session, or an automated quality score. Verification counts include every recorded attempt, including retries.</p>
         <div id="agents-source" class="agents-source" role="status"></div>
       </article>
       <div id="agent-role-grid" class="agent-role-grid"></div>
       <article class="card">
-        <div class="card-heading"><div><p class="eyebrow">RECENT TASK HISTORY</p><h2>Explicitly recorded runs</h2></div><span id="agent-event-count" class="tag">0 events</span></div>
+        <div class="card-heading">
+          <div><p class="eyebrow">RECENT TASK HISTORY</p><h2>Explicitly recorded runs</h2></div>
+          <span id="agent-event-count" class="tag">0 events</span>
+        </div>
         <div id="agent-runs" class="agent-runs"></div>
       </article>
     </section>
+
     <section id="panel-city" class="panel">
       <div class="city-layout">
         <div class="city-main">
           <article class="card city-scene-card">
-            <div class="card-heading city-heading"><div><p class="eyebrow">LIVE RECORDED AGENT ACTIVITY</p><h2>Agent City</h2></div><span class="tag">2D open office</span></div>
-            <div id="pixel-city-scene" class="city-scene city-pixel-scene" aria-label="Isometric 2D open office. Five people represent the registered roles; Agents 1, 3, and 5 are connected Codex workers.">
+            <div class="card-heading city-heading">
+              <div>
+                <p class="eyebrow">INTERACTIVE 2D OFFICE MAP SIMULATION · A* MULTI-ROOM NAVIGATION</p>
+                <h2>Agent City</h2>
+              </div>
+              <div class="city-heading-controls">
+                <button id="city-patrol-toggle" class="quiet-button city-patrol-btn active" type="button" aria-pressed="true">Simulation: RUNNING</button>
+                <button id="city-patrol-step" class="quiet-button city-patrol-btn" type="button">Next patrol stop</button>
+                <button id="city-paths-toggle" class="quiet-button city-patrol-btn active" type="button" aria-pressed="true">Paths: ON</button>
+                <label class="city-speed-label" for="city-speed-select">
+                  <span>Speed</span>
+                  <select id="city-speed-select" class="city-speed-select" aria-label="Simulation walking speed">
+                    <option value="0.5">0.5x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2x</option>
+                  </select>
+                </label>
+                <span class="tag">2D open office</span>
+              </div>
+            </div>
+            <div id="city-room-chips" class="city-room-chips" role="toolbar" aria-label="Jump camera to office room"></div>
+            <div id="pixel-city-scene" class="city-scene city-pixel-scene" aria-label="Interactive 2D office simulation map with Frontend Room, Command Center, Backend Room, Main Hallway, Coffee and Bites Lounge, QA Testing Room, Code Review Room, and Debugging Room.">
               <div class="office-map">
-              <svg id="pixel-city-svg" class="pixel-city-svg" viewBox="0 0 780 580" role="img" aria-labelledby="pixel-city-title pixel-city-description" preserveAspectRatio="xMidYMid meet">
-                <title id="pixel-city-title">BurgerBites Agent City, open office</title>
-                <desc id="pixel-city-description">A 2D isometric open office with multiple shared work desks. All five human agent figures move only when task records show active work. Agents 1, 3, and 5 are Codex workers; Agents 2 and 4 follow explicit local task logs.</desc>
-                <defs>
-                  <pattern id="office-floor" width="42" height="26" patternUnits="userSpaceOnUse" patternTransform="skewY(-24)"><rect width="42" height="26" fill="#eee3cb"/><path d="M0 1H42M0 25H42M21 1V13M8 13V25" fill="none" stroke="#d7c9ad" stroke-width="1.4"/></pattern>
-                  <filter id="office-shadow" x="-30%" y="-30%" width="170%" height="180%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#6e8277" flood-opacity=".28"/></filter>
-                  <pattern id="pixel-bricks" width="48" height="28" patternUnits="userSpaceOnUse"><rect width="48" height="28" fill="#70443c"/><path d="M0 1H48M0 27H48M24 1V14M8 14V27M40 14V27" stroke="#3a2b32" stroke-width="3"/><path d="M2 3H22M27 3H45M2 16H6M12 16H38M43 16H46" stroke="#a36751" stroke-width="2"/></pattern>
-                  <pattern id="pixel-floor" width="94" height="42" patternUnits="userSpaceOnUse" patternTransform="skewY(10)"><rect width="94" height="42" fill="#98613e"/><path d="M0 2H94M0 40H94M46 2V21M74 21V40" stroke="#563a34" stroke-width="3"/><path d="M4 6H42M51 6H89M4 25H69M79 25H90" stroke="#bd8050" stroke-width="2"/></pattern>
-                  <pattern id="pixel-server" width="16" height="18" patternUnits="userSpaceOnUse"><rect width="16" height="18" fill="#273542"/><rect x="3" y="3" width="10" height="2" fill="#4d7890"/><rect x="3" y="8" width="4" height="3" fill="#79d5bd"/><rect x="9" y="8" width="4" height="3" fill="#ffbd70"/><path d="M3 15H13" stroke="#121c25" stroke-width="2"/></pattern>
-                  <filter id="pixel-shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="2" flood-color="#1b2028" flood-opacity=".55"/></filter>
-                </defs>
-                <g id="office-room" aria-hidden="true">
-                  <rect width="780" height="580" fill="#dcebe1"/>
-                  <path d="M26 222V118L400 16v48Z" fill="#f5f0df" stroke="#d7d0bc" stroke-width="4"/>
-                  <path d="M400 64V16l354 157v47Z" fill="#faf6e9" stroke="#d7d0bc" stroke-width="4"/>
-                  <path d="M26 222 400 64 754 220 388 520Z" fill="url(#office-floor)" stroke="#c2b89f" stroke-width="5"/>
-                  <path d="m51 220 348-147 330 146" fill="none" stroke="#c8bda5" stroke-width="3" opacity=".8"/>
-                  <g stroke="#bbc8bc" stroke-width="5">
-                    <path d="m408 55 70 31v72l-70-31z" fill="#a9d8dd"/><path d="m491 91 68 30v72l-68-30z" fill="#a9d8dd"/><path d="m573 127 67 30v72l-67-30z" fill="#a9d8dd"/><path d="m654 163 74 32v70l-74-32z" fill="#a9d8dd"/>
-                    <path d="m441 69 1 73m81-37 1 72m80-36 1 72m80-36 1 71" fill="none" stroke="#f8fbf3" stroke-width="3"/>
-                  </g>
-                  <path d="M52 120 106 105v35l-54 15z" fill="#f4faf3" stroke="#b6c5b9" stroke-width="3"/><path d="m117 102 54-15v35l-54 15z" fill="#f4faf3" stroke="#b6c5b9" stroke-width="3"/>
-                  <g fill="#f8f4e8" stroke="#b8aa8c" stroke-width="3"><path d="m92 173 76-33 82 36-78 35z"/><path d="m212 125 75-33 81 36-77 35z"/><path d="m384 117 71-32 80 35-74 34z"/></g>
-                  <g fill="#436369"><path d="m124 169 28-12v19l-28 12z"/><path d="m244 121 28-12v19l-28 12z"/><path d="m414 113 28-12v19l-28 12z"/></g>
-                  <g fill="#f3a75c" opacity=".9"><path d="m139 168 12-5v9l-12 5z"/><path d="m259 120 12-5v9l-12 5z"/><path d="m429 112 12-5v9l-12 5z"/></g>
-                  <text x="128" y="216" fill="#78867b" font-family="Arial,sans-serif" font-size="13" font-weight="700">TEAM LOUNGE</text>
-                  <g filter="url(#office-shadow)" stroke="#8a7256" stroke-width="2">
-                    <g class="office-desk" transform="translate(190 238)"><path d="m0 0 48-24 61 27-49 26z" fill="#d8bc8d"/><path d="m0 0v22l60 29V29z" fill="#b99265"/><path d="m60 29 49-26v22L60 51z" fill="#9d7957"/><path d="m37-6 25-12 22 10-25 13z" fill="#596e70"/><path d="m48-8 15-7 12 6-15 8z" fill="#8fd1db"/><path d="m69 18 15 7" stroke="#efe5d0" stroke-width="4"/></g>
-                    <g class="office-desk" transform="translate(333 180)"><path d="m0 0 48-24 61 27-49 26z" fill="#d8bc8d"/><path d="m0 0v22l60 29V29z" fill="#b99265"/><path d="m60 29 49-26v22L60 51z" fill="#9d7957"/><path d="m37-6 25-12 22 10-25 13z" fill="#596e70"/><path d="m48-8 15-7 12 6-15 8z" fill="#8fd1db"/><path d="m69 18 15 7" stroke="#efe5d0" stroke-width="4"/></g>
-                    <g class="office-desk" transform="translate(474 137)"><path d="m0 0 48-24 61 27-49 26z" fill="#d8bc8d"/><path d="m0 0v22l60 29V29z" fill="#b99265"/><path d="m60 29 49-26v22L60 51z" fill="#9d7957"/><path d="m37-6 25-12 22 10-25 13z" fill="#596e70"/><path d="m48-8 15-7 12 6-15 8z" fill="#8fd1db"/><path d="m69 18 15 7" stroke="#efe5d0" stroke-width="4"/></g>
-                    <g class="office-desk" transform="translate(533 246)"><path d="m0 0 48-24 61 27-49 26z" fill="#d8bc8d"/><path d="m0 0v22l60 29V29z" fill="#b99265"/><path d="m60 29 49-26v22L60 51z" fill="#9d7957"/><path d="m37-6 25-12 22 10-25 13z" fill="#596e70"/><path d="m48-8 15-7 12 6-15 8z" fill="#8fd1db"/><path d="m69 18 15 7" stroke="#efe5d0" stroke-width="4"/></g>
-                    <g class="office-desk" transform="translate(580 270)"><path d="m0 0 48-24 61 27-49 26z" fill="#d8bc8d"/><path d="m0 0v22l60 29V29z" fill="#b99265"/><path d="m60 29 49-26v22L60 51z" fill="#9d7957"/><path d="m37-6 25-12 22 10-25 13z" fill="#596e70"/><path d="m48-8 15-7 12 6-15 8z" fill="#8fd1db"/><path d="m69 18 15 7" stroke="#efe5d0" stroke-width="4"/></g>
-                    <g class="office-desk" transform="translate(249 321)"><path d="m0 0 48-24 61 27-49 26z" fill="#d8bc8d"/><path d="m0 0v22l60 29V29z" fill="#b99265"/><path d="m60 29 49-26v22L60 51z" fill="#9d7957"/><path d="m37-6 25-12 22 10-25 13z" fill="#596e70"/><path d="m48-8 15-7 12 6-15 8z" fill="#8fd1db"/><path d="m69 18 15 7" stroke="#efe5d0" stroke-width="4"/></g>
-                    <g class="office-desk" transform="translate(397 281)"><path d="m0 0 48-24 61 27-49 26z" fill="#d8bc8d"/><path d="m0 0v22l60 29V29z" fill="#b99265"/><path d="m60 29 49-26v22L60 51z" fill="#9d7957"/><path d="m37-6 25-12 22 10-25 13z" fill="#596e70"/><path d="m48-8 15-7 12 6-15 8z" fill="#8fd1db"/><path d="m69 18 15 7" stroke="#efe5d0" stroke-width="4"/></g>
-                    <g class="office-desk" transform="translate(450 340)"><path d="m0 0 48-24 61 27-49 26z" fill="#d8bc8d"/><path d="m0 0v22l60 29V29z" fill="#b99265"/><path d="m60 29 49-26v22L60 51z" fill="#9d7957"/><path d="m37-6 25-12 22 10-25 13z" fill="#596e70"/><path d="m48-8 15-7 12 6-15 8z" fill="#8fd1db"/><path d="m69 18 15 7" stroke="#efe5d0" stroke-width="4"/></g>
-                  </g>
-                  <g fill="#7baf87" stroke="#6d9878" stroke-width="3"><path d="M64 300q-17-24-3-39 13 9 12 28 10-27 26-25 0 24-24 39z"/><path d="M700 151q-13-22 1-36 12 9 9 26 11-22 25-18 0 22-21 34z"/><path d="M82 388q-14-22-1-36 12 9 9 26 11-22 25-18 0 22-21 34z"/></g>
-                  <g fill="#bf8b62"><path d="m52 311 24 10-2 20-23-9z"/><path d="m691 161 25 10-2 21-24-10z"/><path d="m69 397 24 10-2 20-23-9z"/></g>
-                  <g transform="translate(405 67)"><path d="m0 0 76-33 65 29-77 35z" fill="#d9c49b" stroke="#9f8c6b" stroke-width="3"/><path d="m19-2 50-21 40 18-51 22z" fill="#647f78"/><circle cx="78" cy="-8" r="7" fill="#f4be6d"/><text x="74" y="48" text-anchor="middle" fill="#65766c" font-family="Arial,sans-serif" font-size="12" font-weight="700">COMMAND DESK</text></g>
-                </g>
-                <rect width="1000" height="620" fill="#222a33"/>
-                <path d="M0 22 510 108v247L0 272Z" fill="url(#pixel-bricks)" stroke="#261f28" stroke-width="8"/>
-                <path d="m510 108 490-86v250l-490 83Z" fill="url(#pixel-bricks)" stroke="#261f28" stroke-width="8"/>
-                <path d="M0 272 510 355l490-83-490 348Z" fill="url(#pixel-floor)" stroke="#35282d" stroke-width="8"/>
-                <g aria-hidden="true">
-                  <path d="M46 63 371 118v111L46 176Z" fill="#9bd8e6" stroke="#24313b" stroke-width="12"/>
-                  <path d="m46 150 74-32 72 34 68-40 111 50v54L46 166Z" fill="#beddd2"/>
-                  <path d="M155 82v112M265 101v113M47 121l324 56" stroke="#24313b" stroke-width="10"/>
-                  <path d="M65 72 354 122" stroke="#fff0c3" stroke-width="6" opacity=".7"/>
-                  <g transform="translate(395 42)"><path d="M0 8 152 32v61L0 69Z" fill="#19232d" stroke="#b07c52" stroke-width="7"/><text x="76" y="54" fill="#f2c876" text-anchor="middle" font-family="monospace" font-size="20" font-weight="bold">AGENT TOWN HQ</text></g>
-                  <g transform="translate(695 40)"><path d="m0 8 155-26v60L0 68Z" fill="#19232d" stroke="#b07c52" stroke-width="7"/><text x="78" y="31" fill="#f2c876" text-anchor="middle" font-family="monospace" font-size="18" font-weight="bold">MISSION CONTROL</text></g>
-                  <g transform="translate(25 192)"><path d="M0 0 92 15v44L0 44Z" fill="#262e37" stroke="#c18c62" stroke-width="5"/><text x="45" y="31" fill="#f3d394" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold">COFFEE</text></g>
-                  <g transform="translate(862 137)"><path d="m0 0 99-18v50L0 49Z" fill="#262e37" stroke="#c18c62" stroke-width="5"/><text x="49" y="21" fill="#f3d394" text-anchor="middle" font-family="monospace" font-size="12" font-weight="bold">DATA CENTER</text></g>
-                  <g fill="#67a77e" stroke="#30483e" stroke-width="4">
-                    <path d="M24 282h24v26H24zM15 276q-7-30 8-37 2 21 12 28-3-33 12-43 6 28 0 49 17-21 27-20 0 20-21 32H26Z"/>
-                    <path d="M910 310h24v27h-24zM902 306q-8-26 7-38 6 20 12 29 0-31 15-39 4 27-2 46 16-17 26-15-1 19-22 31h-30Z"/>
-                  </g>
-                  <g fill="#a5a9ae" stroke="#26313a" stroke-width="5">
-                    <path d="M850 190h68v94h-68zM930 177h49v98h-49z"/>
-                    <path d="M860 202h48v25h-48zM860 236h48v25h-48zM938 189h32v24h-32zM938 222h32v24h-32z" fill="url(#pixel-server)"/>
-                  </g>
-                  <g fill="#efe3cf" stroke="#493a39" stroke-width="5">
-                    <path d="M603 137 794 103v104l-191 33Z"/><path d="m615 146 164-29v72l-164 29Z" fill="#182734"/>
-                  </g>
-                  <g font-family="monospace" font-size="13" font-weight="bold" fill="#84d9ba"><text x="630" y="160">TASK QUEUE</text><text x="630" y="181">CODE · TEST · REVIEW</text><text x="630" y="202" fill="#ffc77b">LOCAL WORKERS ONLY</text></g>
-                  <g fill="#a5a9ae" stroke="#293541" stroke-width="5">
-                    <path d="M481 169h45v107h-45zM533 158h44v112h-44zM584 146h42v112h-42z"/>
-                    <path d="M488 177h31v28h-31zM540 166h30v29h-30zM591 154h28v30h-28z" fill="url(#pixel-server)"/>
-                  </g>
-                  <text x="550" y="302" fill="#f6d699" text-anchor="middle" font-family="monospace" font-size="15" font-weight="bold">CODING TOWER · TEST LAB</text>
-                </g>
-
-                <g class="pixel-building" data-building="hq" tabindex="0" role="button" aria-label="Command headquarters">
-                  <path d="m389 281 102-20 88 36-104 23Z" fill="#7c4d38" stroke="#362c30" stroke-width="5"/>
-                  <path d="m399 279 91-18 72 29-92 21Z" fill="#c48a55" stroke="#704637" stroke-width="4"/>
-                  <path d="M418 283v57m113-31v58" stroke="#543a34" stroke-width="9"/><path d="m489 305 13 40" stroke="#5d4037" stroke-width="8"/>
-                  <path d="m433 266 16-45 52-9 18 39-51 21Z" fill="#535b65" stroke="#242d35" stroke-width="7"/>
-                  <path d="m445 259 12-31 39-7 12 29-39 16Z" fill="#54b4cd" stroke="#18232d" stroke-width="5"/>
-                  <path d="m505 273 39-8 28 12-42 10Z" fill="#d8d6c7" stroke="#39404a" stroke-width="4"/>
-                  <text x="477" y="368" text-anchor="middle" class="pixel-building-label">COMMAND HQ</text>
-                </g>
-
-                <g class="pixel-building" data-building="code" tabindex="0" role="button" aria-label="Coding Tower, Agent 1 Frontend Developer">
-                  <path d="m105 375 157-37 137 56-159 41Z" fill="#714936" stroke="#392d32" stroke-width="6" filter="url(#pixel-shadow)"/>
-                  <path d="m116 372 146-34 121 50-146 38Z" fill="#cc905b" stroke="#744936" stroke-width="5"/>
-                  <path d="M147 388v96m200-78v88m-99-45v88" stroke="#573b34" stroke-width="12"/>
-                  <path d="m174 369 17-51 64-13 25 47-62 22Z" fill="#616773" stroke="#282f3a" stroke-width="8"/>
-                  <path d="m187 363 13-35 50-10 17 33-49 18Z" fill="#5bb8cf" stroke="#172b37" stroke-width="6"/>
-                  <path d="m282 357 36-11 38 16-39 14Z" fill="#e9dfcd" stroke="#4d4542" stroke-width="4"/>
-                  <path d="m295 357 25-7 23 10-25 8Z" fill="#526271"/>
-                  <text x="249" y="508" text-anchor="middle" class="pixel-building-label">CODING TOWER</text>
-                </g>
-
-                <g class="pixel-building" data-building="lab" tabindex="0" role="button" aria-label="Testing laboratory, Agent 3 QA Tester">
-                  <path d="m575 368 161-41 145 55-167 45Z" fill="#724936" stroke="#392d32" stroke-width="6" filter="url(#pixel-shadow)"/>
-                  <path d="m586 365 150-38 128 48-154 41Z" fill="#cc905b" stroke="#744936" stroke-width="5"/>
-                  <path d="M611 386v87m211-85v95m-108-51v105" stroke="#573b34" stroke-width="12"/>
-                  <path d="m649 356 11-46 61-12 27 42-61 20Z" fill="#626b76" stroke="#29343d" stroke-width="7"/>
-                  <path d="m659 349 9-31 48-9 18 29-48 16Z" fill="#82c2df" stroke="#1a2e3b" stroke-width="6"/>
-                  <path d="m752 352 39-12 37 14-43 15Z" fill="#ede2cb" stroke="#4d4542" stroke-width="4"/>
-                  <circle cx="803" cy="338" r="11" fill="#70d2b4" stroke="#314c47" stroke-width="4"/>
-                  <text x="725" y="511" text-anchor="middle" class="pixel-building-label">TESTING LAB</text>
-                </g>
-
-                <g class="pixel-building" data-building="database" tabindex="0" role="button" aria-label="Database center, no connected database worker">
-                  <path d="m806 296 94-17 78 32-95 22Z" fill="#4a5360" stroke="#232c35" stroke-width="5"/>
-                  <path d="M826 298v83m45-93v83m47-91v83" stroke="#313d49" stroke-width="10"/>
-                  <path d="m816 296 84-16 64 27-85 19Z" fill="#6e7e8b" stroke="#293641" stroke-width="5"/>
-                  <path d="m832 297 68-13 41 18-69 16Z" fill="url(#pixel-server)"/>
-                  <text x="891" y="417" text-anchor="middle" class="pixel-building-label">DATABASE CENTER</text>
-                </g>
-
-                <g class="pixel-agent pixel-agent-worker" id="pixel-agent-agent-1" data-agent-id="agent-1" data-status="idle" data-idle-transform="translate(150 270)" data-work-transform="translate(250 285)" transform="translate(150 270)" aria-label="Agent 1 Frontend Developer, idle">
-                  <g class="pixel-person">
-                    <path d="M-24 57h48v19h-48z" fill="#353b45"/><path d="M-28 75h56v10h-56z" fill="#242d36"/>
-                    <path d="M-18 20h36v34h-36z" fill="#ed7b42"/><path d="M-24 26h9v24h-9zM15 26h9v24h-9z" fill="#db6c39"/>
-                    <path d="M-13 50h11v24h-11zM3 50h11v24H3z" fill="#384757"/><path d="M-15 75h15v7h-15zM2 75h16v7H2z" fill="#222a32"/>
-                    <path d="M-17 0h34v22h-34z" fill="#f2c89d"/><path d="M-19 1h38v8h-38zM-17-7h31v10h-31zM11-3h9v12h-9z" fill="#51352f"/>
-                    <path d="M-9 8h4v4h-4zM6 8h4v4H6z" fill="#202730"/><path d="M-5 17h10v3H-5z" fill="#a8554a"/>
-                    <g class="pixel-arm pixel-arm-left"><path d="M-24 28h9v20h-9z" fill="#ed7b42"/><path d="M-27 45h10v7h-10z" fill="#f2c89d"/></g>
-                    <g class="pixel-arm pixel-arm-right"><path d="M15 28h9v20h-9z" fill="#ed7b42"/><path d="M17 45h10v7H17z" fill="#f2c89d"/></g>
-                  </g>
-                  <g class="pixel-agent-label" transform="translate(-65 -35)"><rect width="130" height="24" rx="3"/><text x="65" y="16" text-anchor="middle">AGENT 1 · FRONTEND</text></g>
-                  <g class="pixel-agent-state" transform="translate(-58 88)"><rect width="116" height="18" rx="3"/><text id="pixel-agent-1-state" x="58" y="13" text-anchor="middle">NO ACTIVE TASK</text></g>
-                </g>
-
-                <g class="pixel-agent pixel-agent-worker" id="pixel-agent-agent-3" data-agent-id="agent-3" data-status="idle" data-idle-transform="translate(384 438)" data-work-transform="translate(390 230)" transform="translate(384 438)" aria-label="Agent 3 QA Tester, idle">
-                  <g class="pixel-person">
-                    <path d="M-24 57h48v19h-48z" fill="#353b45"/><path d="M-28 75h56v10h-56z" fill="#242d36"/>
-                    <path d="M-18 20h36v34h-36z" fill="#65b8a5"/><path d="M-24 26h9v24h-9zM15 26h9v24h-9z" fill="#56a690"/>
-                    <path d="M-13 50h11v24h-11zM3 50h11v24H3z" fill="#384757"/><path d="M-15 75h15v7h-15zM2 75h16v7H2z" fill="#222a32"/>
-                    <path d="M-17 0h34v22h-34z" fill="#f1c59e"/><path d="M-20 1h40v8h-40zM-17-6h34v10h-34zM11-2h9v11h-9z" fill="#3a2d34"/>
-                    <path d="M-9 8h4v4h-4zM6 8h4v4H6z" fill="#202730"/><path d="M-5 17h10v3H-5z" fill="#a8554a"/>
-                    <g class="pixel-arm pixel-arm-left"><path d="M-24 28h9v20h-9z" fill="#65b8a5"/><path d="M-27 45h10v7h-10z" fill="#f1c59e"/></g>
-                    <g class="pixel-arm pixel-arm-right"><path d="M15 28h9v20h-9z" fill="#65b8a5"/><path d="M17 45h10v7H17z" fill="#f1c59e"/></g>
-                  </g>
-                  <g class="pixel-agent-label" transform="translate(-58 -35)"><rect width="116" height="24" rx="3"/><text x="58" y="16" text-anchor="middle">AGENT 3 · QA TESTER</text></g>
-                  <g class="pixel-agent-state" transform="translate(-58 88)"><rect width="116" height="18" rx="3"/><text id="pixel-agent-3-state" x="58" y="13" text-anchor="middle">NO ACTIVE TASK</text></g>
-                </g>
-
-                <g class="pixel-agent pixel-agent-record-only" id="pixel-agent-agent-2" data-agent-id="agent-2" data-status="idle" data-idle-transform="translate(250 349)" data-work-transform="translate(535 185)" transform="translate(250 349)" aria-label="Agent 2 Backend API Developer, idle, explicit task log only, no Codex worker enabled">
-                  <g class="pixel-person"><path d="M-16 13h32v30h-32z" fill="#657387"/><path d="M-14-8h28v22h-28z" fill="#d7b594"/><path d="M-16-8h32v8h-32zM-10-16h23v9h-23z" fill="#493c3b"/><path d="M-7 0h3v4h-3zM5 0h3v4H5z" fill="#25303b"/><path d="M-12 40h10v24h-10zM3 40h10v24H3z" fill="#3c4652"/></g>
-                  <g class="pixel-agent-label" transform="translate(-90 -38)"><rect width="180" height="24" rx="3"/><text x="90" y="16" text-anchor="middle">AGENT 2 · API LOG ONLY</text></g>
-                  <g class="pixel-agent-state" transform="translate(-58 69)"><rect width="116" height="18" rx="3"/><text id="pixel-agent-2-state" x="58" y="13" text-anchor="middle">NO ACTIVE TASK</text></g>
-                </g>
-
-                <g class="pixel-agent pixel-agent-record-only" id="pixel-agent-agent-4" data-agent-id="agent-4" data-status="idle" data-idle-transform="translate(535 367)" data-work-transform="translate(590 287)" transform="translate(535 367)" aria-label="Agent 4 Code Reviewer, idle, explicit task log only, no Codex worker enabled">
-                  <g class="pixel-person"><path d="M-16 13h32v30h-32z" fill="#8d72a4"/><path d="M-14-8h28v22h-28z" fill="#edc49f"/><path d="M-16-8h32v8h-32zM-10-16h23v9h-23z" fill="#49333a"/><path d="M-7 0h3v4h-3zM5 0h3v4H5z" fill="#25303b"/><path d="M-12 40h10v24h-10zM3 40h10v24H3z" fill="#3c4652"/></g>
-                  <g class="pixel-agent-label" transform="translate(-98 -39)"><rect width="196" height="24" rx="3"/><text x="98" y="16" text-anchor="middle">AGENT 4 · REVIEW LOG ONLY</text></g>
-                  <g class="pixel-agent-state" transform="translate(-58 69)"><rect width="116" height="18" rx="3"/><text id="pixel-agent-4-state" x="58" y="13" text-anchor="middle">NO ACTIVE TASK</text></g>
-                </g>
-                <g class="pixel-agent pixel-agent-worker" id="pixel-agent-agent-5" data-agent-id="agent-5" data-status="idle" data-idle-transform="translate(630 269)" data-work-transform="translate(610 325)" transform="translate(630 269)" aria-label="Agent 5 Customer/Admin Debugger, idle, Codex CLI worker">
-                  <g class="pixel-person"><path d="M-18 20h36v34h-36z" fill="#e97845"/><path d="M-24 26h9v24h-9zM15 26h9v24h-9z" fill="#ce6039"/><path d="M-13 50h11v24h-11zM3 50h11v24H3z" fill="#384757"/><path d="M-15 75h15v7h-15zM2 75h16v7H2z" fill="#222a32"/><path d="M-17 0h34v22h-34z" fill="#d7a77f"/><path d="M-19 1h38v8h-38zM-17-7h31v10h-31zM11-3h9v12h-9z" fill="#303746"/><path d="M-9 8h4v4h-4zM6 8h4v4H6z" fill="#202730"/><path d="M-5 17h10v3H-5z" fill="#a8554a"/><g class="pixel-arm pixel-arm-left"><path d="M-24 28h9v20h-9z" fill="#e97845"/><path d="M-27 45h10v7h-10z" fill="#d7a77f"/></g><g class="pixel-arm pixel-arm-right"><path d="M15 28h9v20h-9z" fill="#e97845"/><path d="M17 45h10v7H17z" fill="#d7a77f"/></g></g>
-                  <g class="pixel-agent-label" transform="translate(-98 -39)"><rect width="196" height="24" rx="3"/><text x="98" y="16" text-anchor="middle">AGENT 5 · DEBUGGER</text></g>
-                  <g class="pixel-agent-state" transform="translate(-58 88)"><rect width="116" height="18" rx="3"/><text id="pixel-agent-5-state" x="58" y="13" text-anchor="middle">NO ACTIVE TASK</text></g>
-                </g>
-              </svg>
+                <canvas
+                  id="office-sim-canvas"
+                  class="office-sim-canvas"
+                  width="960"
+                  height="640"
+                  tabindex="0"
+                  role="application"
+                  aria-label="Interactive 2D BurgerBites Office Simulation Map. Drag to pan, scroll or use plus and minus keys to zoom, and click any agent character or room chip to focus."
+                ></canvas>
+                <div class="city-zoom-controls" role="group" aria-label="Map zoom and camera controls">
+                  <button id="city-zoom-in" class="city-zoom-btn" type="button" title="Zoom in (+)" aria-label="Zoom in">+</button>
+                  <button id="city-zoom-out" class="city-zoom-btn" type="button" title="Zoom out (-)" aria-label="Zoom out">&minus;</button>
+                  <button id="city-zoom-reset" class="city-zoom-btn city-zoom-reset" type="button" title="Reset camera to full office (0)" aria-label="Reset map view">Fit</button>
+                </div>
+                <div class="city-map-hint" aria-hidden="true">Drag to pan · Scroll to zoom · Click agent or room to follow</div>
+                <div class="sr-only office-a11y-mirror" aria-live="polite">
+                  <p>Explorable rooms: Frontend Room (FRONTEND DESK), Command Center, Backend Room, Main Hallway, Coffee &amp; Bites Lounge, QA Testing Room, Code Review Room (SECURITY &amp; DIFF DESK), Security Vault (CYBER SHIELD VAULT), and Debugging Room (AUTH DIAGNOSTICS BAY).</p>
+                  <div id="pixel-agent-agent-1" data-agent-id="agent-1" data-status="idle" data-room="frontend">
+                    <span>AGENT 1 · FRONTEND</span>
+                    <span id="pixel-agent-1-zone">FRONTEND ROOM</span>
+                    <span id="pixel-agent-1-state">AVAILABLE</span>
+                  </div>
+                  <div id="pixel-agent-agent-2" data-agent-id="agent-2" data-status="idle" data-room="backend">
+                    <span>AGENT 2 · API LOG ONLY</span>
+                    <span id="pixel-agent-2-zone">BACKEND ROOM</span>
+                    <span id="pixel-agent-2-state">AVAILABLE</span>
+                  </div>
+                  <div id="pixel-agent-agent-3" data-agent-id="agent-3" data-status="idle" data-room="qa">
+                    <span>AGENT 3 · QA TESTER</span>
+                    <span id="pixel-agent-3-zone">QA TESTING ROOM</span>
+                    <span id="pixel-agent-3-state">AVAILABLE</span>
+                  </div>
+                  <div id="pixel-agent-agent-4" data-agent-id="agent-4" data-status="idle" data-room="review">
+                    <span>AGENT 4 · REVIEW LOG ONLY</span>
+                    <span id="pixel-agent-4-zone">CODE REVIEW ROOM</span>
+                    <span id="pixel-agent-4-state">AVAILABLE</span>
+                  </div>
+                  <div id="pixel-agent-agent-5" data-agent-id="agent-5" data-status="idle" data-room="debug">
+                    <span>AGENT 5 · DEBUGGER</span>
+                    <span id="pixel-agent-5-zone">DEBUGGING ROOM</span>
+                    <span id="pixel-agent-5-state">AVAILABLE</span>
+                  </div>
+                  <div id="pixel-agent-agent-6" data-agent-id="agent-6" data-status="idle" data-room="security">
+                    <span>AGENT 6 · SECURITY</span>
+                    <span id="pixel-agent-6-zone">SECURITY VAULT</span>
+                    <span id="pixel-agent-6-state">AVAILABLE</span>
+                  </div>
+                </div>
               </div>
               <aside class="office-roster" aria-label="Live agent roster">
-                <div class="office-roster-header"><div><strong>Agent team</strong><span>Activity updates from recorded task events</span></div><span class="office-live-dot">LIVE · 5s</span></div>
-                <div id="city-agent-live-status" class="city-agent-live-status" role="group" aria-label="Recorded status, task, and work location for all five agents"></div>
-                <div class="office-roster-note">Agent movement reflects recorded activity. Idle agents are not shown as working.</div>
+                <div class="office-roster-header">
+                  <div>
+                    <strong>Agent team</strong>
+                    <span>Click any card to follow agent in the map</span>
+                  </div>
+                  <span class="office-live-dot">LIVE · 5s</span>
+                </div>
+                <div id="city-agent-live-status" class="city-agent-live-status" role="group" aria-label="Recorded status, task, and work location for all six agents"></div>
+                <div class="office-roster-note">Active tasks route agents through hallways and doors to their assigned room desks. Available agents patrol between rooms using A* collision-free paths.</div>
               </aside>
             </div>
-            <p class="fineprint office-activity-note">Five human figures are registered roles. Agent 1, Agent 3, and Agent 5 are Codex workers; Agent 2 and Agent 4 follow explicit local task logs. Status is not estimated.</p>
+            <p class="fineprint office-activity-note">Six unique figures represent the registered roles. Agent 1, Agent 3, Agent 5, and Agent 6 are Codex workers; Agent 2 and Agent 4 follow explicit local task logs. Task status is never estimated.</p>
           </article>
           <article class="card">
-            <div class="card-heading"><div><p class="eyebrow">EXECUTION HISTORY</p><h2>Worker tasks</h2></div><span class="tag">actual Codex CLI events</span></div>
+            <div class="card-heading">
+              <div><p class="eyebrow">EXECUTION HISTORY</p><h2>Worker tasks</h2></div>
+              <span class="tag">actual Codex CLI events</span>
+            </div>
             <div id="city-task-history" class="city-task-history"></div>
           </article>
         </div>
         <aside class="city-side">
           <article class="card">
-            <div class="card-heading"><div><p class="eyebrow">LOCAL CLI CHECK</p><h2>Worker availability</h2></div><span id="city-codex-status" class="city-availability unavailable">Checking…</span></div>
+            <div class="card-heading">
+              <div><p class="eyebrow">LOCAL CLI CHECK</p><h2>Worker availability</h2></div>
+              <span id="city-codex-status" class="city-availability unavailable">Checking…</span>
+            </div>
             <p id="city-worker-note" class="muted">Checking the installed Codex CLI and local authentication status.</p>
             <div class="city-worker-roster">
-              <div><b>Agent 1</b><span>Frontend Developer · Codex CLI worker</span></div>
-              <div><b>Agent 3</b><span>QA Tester · Codex CLI worker</span></div>
-              <div><b>Agent 5</b><span>Customer/Admin Debugger · Codex CLI worker</span></div>
-              <p class="fineprint">Agents 1, 3, and 5 are enabled. One Codex process runs at a time. Agent 3 can test a completed Agent 1 worktree. Agent 5 can inspect supplied console errors and relevant code in its isolated worktree; it cannot read your browser DevTools automatically.</p>
+              <div><b>Agent 1</b><span>Frontend Developer · UI Studio Desk · Codex CLI worker</span></div>
+              <div><b>Agent 3</b><span>QA Tester · Verification Lab · Codex CLI worker</span></div>
+              <div><b>Agent 5</b><span>Customer/Admin Debugger · Auth Diagnostics Bay · Codex CLI worker</span></div>
+              <div><b>Agent 6</b><span>Security Engineer · Cyber Shield Vault · Codex CLI worker</span></div>
+              <p class="fineprint">Agents 1, 3, 5, and 6 are enabled. One Codex process runs at a time. Agent 3 can test a completed Agent 1 worktree. Agent 5 diagnoses auth/API issues, and Agent 6 audits and hardens system-wide security across Flutter, PHP/PDO, MySQL, and Docker/Redis in its isolated worktree.</p>
             </div>
           </article>
           <article class="card">
-            <div class="card-heading"><div><p class="eyebrow">CONTROLLED EXECUTION</p><h2 id="city-worker-form-title">Start the coding worker</h2></div><span class="tag">isolated worktree</span></div>
+            <div class="card-heading">
+              <div><p class="eyebrow">CONTROLLED EXECUTION</p><h2 id="city-worker-form-title">Start the coding worker</h2></div>
+              <span class="tag">isolated worktree</span>
+            </div>
             <form id="city-worker-form" class="city-worker-form">
               <label for="city-agent">Worker</label>
-              <select id="city-agent"><option value="agent-1">Agent 1 · Frontend Developer</option><option value="agent-3">Agent 3 · QA Tester</option><option value="agent-5">Agent 5 · Customer/Admin Debugger</option></select>
+              <select id="city-agent">
+                <option value="agent-1">Agent 1 · Frontend Developer</option>
+                <option value="agent-3">Agent 3 · QA Tester</option>
+                <option value="agent-5">Agent 5 · Customer/Admin Debugger</option>
+                <option value="agent-6">Agent 6 · Security Engineer</option>
+              </select>
               <div id="city-prompt-fields">
                 <label for="city-task-label">Short task label</label>
-                <input id="city-task-label" maxlength="100" required placeholder="e.g. Fix menu layout" autocomplete="off">
+                <input id="city-task-label" maxlength="100" required placeholder="e.g. Refine menu card animations" autocomplete="off">
                 <label id="city-task-prompt-label" for="city-task-prompt">Instructions for Agent 1</label>
                 <textarea id="city-task-prompt" maxlength="12000" rows="5" required placeholder="Describe the focused change. Do not include passwords, tokens, or customer data."></textarea>
                 <p id="city-debug-limit" class="fineprint hidden">Paste only relevant console/API errors after removing passwords, tokens, email addresses, and customer data. Without supplied logs, Agent 5 can inspect code and existing checks but cannot see the live browser console.</p>
@@ -263,7 +252,10 @@
                 <select id="city-qa-target"></select>
                 <p class="fineprint">The QA worker gets the selected isolated worktree and is instructed to run existing checks without changing source or installing dependencies.</p>
               </div>
-              <label class="city-confirm"><input id="city-confirm" type="checkbox" required><span>I reviewed this task. Codex may run in the isolated worktree and can change files there. The main BurgerBites worktree stays untouched.</span></label>
+              <label class="city-confirm">
+                <input id="city-confirm" type="checkbox" required>
+                <span>I reviewed this task. Codex may run in the isolated worktree and can change files there. The main BurgerBites worktree stays untouched.</span>
+              </label>
               <p class="fineprint">Tasks start from committed HEAD, so uncommitted BurgerBites changes are not copied into the worker. Codex uses workspace sandboxing and requests approval for elevated actions; the dashboard never auto-approves.</p>
               <button id="city-start-worker" class="city-start-button" type="submit">Start Agent 1</button>
               <p id="city-request-error" class="city-request-error" role="alert"></p>
@@ -277,23 +269,131 @@
         </aside>
       </div>
     </section>
+
+    <section id="panel-figma" class="panel">
+      <article class="card figma-hero-card">
+        <div class="card-heading">
+          <div>
+            <p class="eyebrow">FIGMA BRIDGE &amp; VECTOR ARTBOARD EXPORT</p>
+            <h2>BurgerBites Complete App Design System &amp; Screen Gallery</h2>
+          </div>
+          <span id="figma-connection-badge" class="tag">SVG Artboards Ready</span>
+        </div>
+        <p class="muted">Connect your Figma file URL to link directly to your canvas, or export the complete multi-frame vector SVG sheet to drag and drop all 19 Customer &amp; Admin artboards, color tokens, and animated button components straight into Figma.</p>
+        <div class="figma-connect-bar">
+          <input id="figma-url-input" type="url" placeholder="Paste your Figma file URL (e.g. https://www.figma.com/design/FILE_KEY/BurgerBites-UI) — stored locally in browser only" autocomplete="off">
+          <button id="figma-connect-btn" class="quiet-button" type="button">Bind Figma URL</button>
+          <button id="figma-export-svg" class="city-start-button figma-export-btn" type="button">Download All Screens for Figma (.svg)</button>
+        </div>
+        <div id="figma-status-note" class="fineprint">No external network requests or token uploads are made. Exported `.svg` artboards import natively into any Figma file via drag-and-drop.</div>
+      </article>
+
+      <div class="two-col">
+        <article class="card">
+          <div class="card-heading">
+            <div><p class="eyebrow">LIVE COMPONENT LAB</p><h2>Animated buttons &amp; micro-interactions</h2></div>
+            <span class="tag">Flutter UI parity</span>
+          </div>
+          <div class="figma-button-showcase">
+            <button class="bb-demo-btn bb-demo-primary" type="button">Order now · ₱220 <span class="bb-demo-arrow">→</span></button>
+            <button class="bb-demo-btn bb-demo-secondary" type="button">Customize toppings</button>
+            <button id="bb-demo-fav" class="bb-demo-btn bb-demo-fav" type="button" aria-pressed="false">♥ Save Favorite</button>
+          </div>
+          <div id="figma-animations-list" class="figma-token-list"></div>
+        </article>
+        <article class="card">
+          <div class="card-heading">
+            <div><p class="eyebrow">BRAND TOKENS</p><h2>Color palette &amp; typography scale</h2></div>
+            <span class="tag">lib/constants/</span>
+          </div>
+          <div id="figma-colors-grid" class="figma-colors-grid"></div>
+          <div id="figma-typography-list" class="figma-token-list"></div>
+        </article>
+      </div>
+
+      <article class="card">
+        <div class="card-heading">
+          <div>
+            <p class="eyebrow">COMPLETE APP ARTBOARDS</p>
+            <h2>Customer &amp; Admin screen frames</h2>
+          </div>
+          <div class="figma-filter-group" role="group" aria-label="Filter screen artboards">
+            <button class="quiet-button figma-filter active" data-group="all" type="button">All (19)</button>
+            <button class="quiet-button figma-filter" data-group="Customer" type="button">Customer (15)</button>
+            <button class="quiet-button figma-filter" data-group="Admin" type="button">Admin (4)</button>
+          </div>
+        </div>
+        <div id="figma-screens-grid" class="figma-screens-grid"></div>
+      </article>
+    </section>
+
     <section id="panel-activity" class="panel">
-      <article class="card"><div class="card-heading"><div><p class="eyebrow">TIMELINE</p><h2>Recorded task and tool events</h2></div><span class="fineprint">Arguments and outputs are hidden</span></div><div id="timeline" class="timeline"></div></article>
-      <article class="card"><div class="card-heading"><div><p class="eyebrow">ERRORS & BLOCKERS</p><h2>Recorded failures</h2></div></div><div id="errors" class="error-list"></div></article>
+      <article class="card">
+        <div class="card-heading">
+          <div><p class="eyebrow">TIMELINE</p><h2>Recorded task and tool events</h2></div>
+          <span class="fineprint">Arguments and outputs are hidden</span>
+        </div>
+        <div id="timeline" class="timeline"></div>
+      </article>
+      <article class="card">
+        <div class="card-heading"><div><p class="eyebrow">ERRORS &amp; BLOCKERS</p><h2>Recorded failures</h2></div></div>
+        <div id="errors" class="error-list"></div>
+      </article>
     </section>
+
     <section id="panel-changes" class="panel">
-      <article class="card"><div class="card-heading"><div><p class="eyebrow">GIT WORKTREE</p><h2>Changed files</h2></div><span id="change-count" class="tag">0 files</span></div><div class="split"><div id="file-list" class="file-list"></div><pre id="diff" class="diff">Select a tracked file to preview its redacted diff.</pre></div></article>
+      <article class="card">
+        <div class="card-heading">
+          <div><p class="eyebrow">GIT WORKTREE</p><h2>Changed files</h2></div>
+          <span id="change-count" class="tag">0 files</span>
+        </div>
+        <div class="split">
+          <div id="file-list" class="file-list"></div>
+          <pre id="diff" class="diff">Select a tracked file to preview its redacted diff.</pre>
+        </div>
+      </article>
     </section>
+
     <section id="panel-memory" class="panel">
-      <article class="card"><div class="card-heading"><div><p class="eyebrow">OBSIDIAN REMAINS THE MEMORY SOURCE</p><h2>Selected project note preview</h2></div><span class="tag">read-only</span></div><div class="preview-bar"><select id="note-select" aria-label="Choose project note"></select><span class="fineprint">Only selected notes are read for this preview.</span></div><pre id="note-preview" class="markdown-preview">Choose a note…</pre></article>
+      <article class="card">
+        <div class="card-heading">
+          <div><p class="eyebrow">OBSIDIAN REMAINS THE MEMORY SOURCE</p><h2>Selected project note preview</h2></div>
+          <span class="tag">read-only</span>
+        </div>
+        <div class="preview-bar">
+          <select id="note-select" aria-label="Choose project note"></select>
+          <span class="fineprint">Only selected notes are read for this preview.</span>
+        </div>
+        <pre id="note-preview" class="markdown-preview">Choose a note…</pre>
+      </article>
     </section>
+
     <section id="panel-images" class="panel">
-      <article class="card"><div class="card-heading"><div><p class="eyebrow">ATTACHMENT PREVIEW</p><h2>Open a local image or Markdown note</h2></div><span class="tag">browser-only</span></div><p class="muted">The selected file is previewed in this browser and is not sent to the dashboard server.</p><label class="file-picker" for="attachment-file">Choose a local file</label><input id="attachment-file" type="file" accept="image/*,.md,text/markdown"><div id="attachment-preview" class="attachment-preview"></div></article>
-      <article class="card"><div class="card-heading"><div><p class="eyebrow">PROJECT ASSETS</p><h2>Existing image previews</h2></div><span class="tag">local files</span></div><div id="image-grid" class="image-grid"></div></article>
+      <article class="card">
+        <div class="card-heading">
+          <div><p class="eyebrow">ATTACHMENT PREVIEW</p><h2>Open a local image or Markdown note</h2></div>
+          <span class="tag">browser-only</span>
+        </div>
+        <p class="muted">The selected file is previewed in this browser and is not sent to the dashboard server.</p>
+        <label class="file-picker" for="attachment-file">Choose a local file</label>
+        <input id="attachment-file" type="file" accept="image/*,.md,text/markdown">
+        <div id="attachment-preview" class="attachment-preview"></div>
+      </article>
+      <article class="card">
+        <div class="card-heading">
+          <div><p class="eyebrow">PROJECT ASSETS</p><h2>Existing image previews</h2></div>
+          <span class="tag">local files</span>
+        </div>
+        <div id="image-grid" class="image-grid"></div>
+      </article>
     </section>
-    <footer><span>Bound to 127.0.0.1 · no external requests</span><span>Obsidian is not modified or mirrored here.</span></footer>
+
+    <footer>
+      <span>Bound to 127.0.0.1 · no external requests</span>
+      <span>Obsidian is not modified or mirrored here.</span>
+    </footer>
   </main>
-  <script src="/app.js" defer></script>
-  <script type="module" src="/city.js"></script>
+  <script src="/app.js?v=6" defer></script>
+  <script type="module" src="/city.js?v=6"></script>
 </body>
 </html>

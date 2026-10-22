@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/animated_brand_button.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/customer_account_prompt.dart';
 
@@ -234,51 +235,61 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 Container(
                   padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.surface,
-                    border: Border(top: BorderSide(color: AppColors.border)),
+                    border: const Border(top: BorderSide(color: AppColors.border)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.textPrimary.withValues(alpha: 0.05),
+                        blurRadius: 16,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
                   ),
                   child: SafeArea(
                     top: false,
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 51,
-                      child: ElevatedButton(
-                        onPressed: cart.isSubmitting
-                            ? null
-                            : () => _submit(context, cart),
-                        child: cart.isSubmitting
-                            ? const SizedBox(
-                                width: 19,
-                                height: 19,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Row(
-                                children: [
-                                  const Icon(
-                                    Icons.lock_outline_rounded,
-                                    size: 17,
+                    child: AnimatedPressScale(
+                      enabled: !cart.isSubmitting,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 51,
+                        child: ElevatedButton(
+                          onPressed: cart.isSubmitting
+                              ? null
+                              : () => _submit(context, cart),
+                          child: cart.isSubmitting
+                              ? const SizedBox(
+                                  width: 19,
+                                  height: 19,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
                                   ),
-                                  const SizedBox(width: 8),
-                                  const Expanded(
-                                    child: Text(
-                                      'Submit COD order',
-                                      style: TextStyle(
+                                )
+                              : Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.lock_outline_rounded,
+                                      size: 17,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Expanded(
+                                      child: Text(
+                                        'Submit COD order',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                    AnimatedValueText(
+                                      '₱${cart.total.toStringAsFixed(0)}',
+                                      style: const TextStyle(
                                         fontWeight: FontWeight.w900,
                                       ),
                                     ),
-                                  ),
-                                  Text(
-                                    '₱${cart.total.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                  ],
+                                ),
+                        ),
                       ),
                     ),
                   ),
@@ -451,62 +462,75 @@ class _PaymentOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 7),
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? AppColors.brandOrange : AppColors.border,
-            width: selected ? 1.4 : 1,
+    return AnimatedPressScale(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          margin: const EdgeInsets.only(bottom: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.surfaceElevated : AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? AppColors.brandOrange : AppColors.border,
+              width: selected ? 1.5 : 1,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.brandOrange.withValues(alpha: 0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : const [],
           ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceMuted,
-                borderRadius: BorderRadius.circular(11),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(icon, color: AppColors.brandOrange, size: 17),
               ),
-              child: Icon(icon, color: AppColors.brandOrange, size: 17),
-            ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 8,
-                      color: AppColors.textSecondary,
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 8,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(
-              selected
-                  ? Icons.radio_button_checked_rounded
-                  : Icons.radio_button_off_rounded,
-              size: 18,
-              color: selected ? AppColors.brandOrange : AppColors.textSecondary,
-            ),
-          ],
+              Icon(
+                selected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                size: 18,
+                color: selected ? AppColors.brandOrange : AppColors.textSecondary,
+              ),
+            ],
+          ),
         ),
       ),
     );

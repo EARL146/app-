@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../services/auth_service.dart';
-import '../../widgets/brand_logo.dart';
 import '../../navigation/app_routes.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/animated_brand_button.dart';
+import '../../widgets/brand_logo.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key, this.returnToCaller = false});
@@ -47,10 +48,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 8),
-                    Center(
+                    const Center(
                       child: Column(
                         children: [
-                          const BrandLogo(
+                          BrandLogo(
                             width: 120,
                             height: 120,
                             animate: true,
@@ -64,7 +65,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 22,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -87,15 +89,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         fillColor: Colors.white,
                         prefixIcon: Icon(Icons.person_outline),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: AppColors.border),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.brandOrange),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide(
+                            color: AppColors.brandOrange,
+                            width: 1.6,
+                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                       ),
                       validator: (value) {
@@ -115,15 +120,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         fillColor: Colors.white,
                         prefixIcon: Icon(Icons.email_outlined),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: AppColors.border),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.brandOrange),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide(
+                            color: AppColors.brandOrange,
+                            width: 1.6,
+                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                       ),
                       validator: (value) {
@@ -157,15 +165,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         border: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                         enabledBorder: const OutlineInputBorder(
                           borderSide: BorderSide(color: AppColors.border),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                         focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.brandOrange),
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderSide: BorderSide(
+                            color: AppColors.brandOrange,
+                            width: 1.6,
+                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
                       ),
                       validator: (value) {
@@ -176,33 +187,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                     ),
                     const SizedBox(height: 20),
-                    SizedBox(
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.brandOrange,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                    AnimatedPressScale(
+                      enabled: !_isSubmitting,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryButtonGradient,
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.brandOrange.withValues(
+                                alpha: 0.28,
+                              ),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: SizedBox(
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: _isSubmitting ? null : _submit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              shadowColor: Colors.transparent,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Create account',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
                           ),
                         ),
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Create account',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -217,13 +249,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        TextButton(
-                          onPressed: _openSignIn,
-                          child: const Text(
-                            'Sign in',
-                            style: TextStyle(
-                              color: AppColors.brandOrange,
-                              fontWeight: FontWeight.w700,
+                        AnimatedPressScale(
+                          child: TextButton(
+                            onPressed: _openSignIn,
+                            child: const Text(
+                              'Sign in',
+                              style: TextStyle(
+                                color: AppColors.brandOrange,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ),

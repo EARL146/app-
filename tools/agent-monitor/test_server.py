@@ -158,16 +158,51 @@ class MonitorTests(unittest.TestCase):
             try:
                 with urllib.request.urlopen(base + "/") as response:
                     page = response.read()
-                for marker in (b"2D open office", b"office-map", b"id=\"pixel-agent-agent-1\"", b"id=\"pixel-agent-agent-3\"", b"id=\"pixel-agent-agent-5\"", b"AGENT 2 \xc2\xb7 API LOG ONLY"):
+                for marker in (
+                    b"2D open office",
+                    b"office-map",
+                    b"office-sim-canvas",
+                    b"city-zoom-in",
+                    b"city-zoom-out",
+                    b"city-zoom-reset",
+                    b"city-room-chips",
+                    b"id=\"pixel-agent-agent-1\"",
+                    b"id=\"pixel-agent-agent-3\"",
+                    b"id=\"pixel-agent-agent-5\"",
+                    b"id=\"pixel-agent-agent-6\"",
+                    b"AGENT 2 \xc2\xb7 API LOG ONLY",
+                    b"AGENT 6 \xc2\xb7 SECURITY",
+                    b"city-patrol-toggle",
+                    b"city-paths-toggle",
+                    b"city-speed-select",
+                    b"Frontend Room",
+                    b"Command Center",
+                    b"Backend Room",
+                    b"QA Testing Room",
+                    b"Security Vault",
+                    b"Debugging Room",
+                    b"FRONTEND DESK",
+                    b"SECURITY &amp; DIFF DESK",
+                    b"CYBER SHIELD VAULT",
+                    b"AUTH DIAGNOSTICS BAY",
+                    b"panel-figma",
+                ):
                     self.assertIn(marker, page)
                 self.assertNotIn(b"data-city-mode", page)
                 self.assertNotIn(b"city-canvas", page)
                 with urllib.request.urlopen(base + "/api/overview") as response:
                     overview = json.load(response)
                 self.assertEqual(overview["notes"], ["docs/AGENT_TEAM.md", "docs/NEXT_SESSION.md"])
-                self.assertEqual(len(overview["agents"]["roles"]), 5)
+                self.assertEqual(len(overview["agents"]["roles"]), 6)
                 self.assertEqual(overview["agents"]["roles"][1]["role"], "Backend/API Developer")
+                self.assertEqual(overview["agents"]["roles"][5]["role"], "Security Engineer")
                 self.assertEqual(overview["images"][0]["path"], "assets/sample.png")
+                self.assertIn("design_system", overview)
+                self.assertEqual(len(overview["design_system"]["screens"]), 19)
+                with urllib.request.urlopen(base + "/api/design-system") as response:
+                    design_system = json.load(response)
+                self.assertEqual(len(design_system["tokens"]["colors"]), 10)
+                self.assertEqual(len(design_system["screens"]), 19)
                 with urllib.request.urlopen(base + "/api/note?path=docs%2FAGENT_TEAM.md") as response:
                     self.assertIn("Safe role definitions", json.load(response)["content"])
                 with urllib.request.urlopen(base + "/api/note?path=docs%2FNEXT_SESSION.md") as response:
@@ -176,7 +211,17 @@ class MonitorTests(unittest.TestCase):
                     self.assertEqual(response.read(), b"actual image bytes")
                 with urllib.request.urlopen(base + "/city.js") as response:
                     self.assertIn("text/javascript", response.headers["Content-Type"])
-                    self.assertIn(b"monitor:city-visible", response.read())
+                    city_js = response.read()
+                    self.assertIn(b"monitor:city-visible", city_js)
+                    self.assertIn(b"buildOfficeMap", city_js)
+                    self.assertIn(b"OfficeSimulation", city_js)
+                    self.assertIn(b"findPath", city_js)
+                    self.assertIn(b"findWaypointPath", city_js)
+                    self.assertIn(b"requestAnimationFrame", city_js)
+                    self.assertIn(b"resolveAgentActivity", city_js)
+                    self.assertIn(b"Frontend Room", city_js)
+                    self.assertIn(b"QA Testing Room", city_js)
+                    self.assertIn(b"Debugging Room", city_js)
                 with self.assertRaises(urllib.error.HTTPError) as error:
                     urllib.request.urlopen(base + "/api/note?path=..%2Foutside.md")
                 self.assertEqual(error.exception.code, 400)
@@ -240,6 +285,61 @@ class MonitorTests(unittest.TestCase):
                 srv.shutdown()
                 srv.server_close()
                 thread.join(timeout=2)
+
+    def test_office_simulation_multi_room_navigation_and_collision_detection(self):
+        city_js_path = (Path(__file__).resolve().parent / "city.js").as_posix()
+        script = f"""
+const assert = require("assert");
+const {{ WALL, FURNITURE, DOOR, buildOfficeMap, findPath, OfficeSimulation }} = require({json.dumps(city_js_path)});
+const map = buildOfficeMap();
+assert.strictEqual(map.rooms.length, 9);
+const sim = new OfficeSimulation(map);
+const visited = Object.fromEntries(sim.agents.map((a) => [a.id, new Set([a.roomId])]));
+let usedDoor = false;
+for (let i = 0; i < 600; i += 1) {{
+  sim.step(0.05);
+  const occupied = new Set();
+  for (const agent of sim.agents) {{
+    const cell = map.cell(agent.tileX, agent.tileY);
+    assert.notStrictEqual(cell, WALL, `Agent ${{agent.id}} stepped on wall`);
+    assert.notStrictEqual(cell, FURNITURE, `Agent ${{agent.id}} stepped on furniture`);
+    if (cell === DOOR) usedDoor = true;
+    const key = `${{agent.tileX}},${{agent.tileY}}`;
+    assert.ok(!occupied.has(key), `Agents overlapped on ${{key}}`);
+    occupied.add(key);
+    visited[agent.id].add(agent.roomId);
+  }}
+}}
+assert.ok(usedDoor, "Expected agents to walk through doorway tiles between rooms");
+for (const agent of sim.agents) {{
+  assert.ok(visited[agent.id].size >= 2, `Expected ${{agent.id}} to visit multiple rooms`);
+}}
+sim.setTasks({{
+  "agent-1": {{ status: "running", task: "Build UI buttons" }},
+  "agent-2": {{ status: "active", task: "Update SQL endpoint" }},
+  "agent-3": {{ status: "running", task: "Run QA test suite" }},
+  "agent-4": {{ status: "active", task: "Review diff security" }},
+  "agent-5": {{ status: "running", task: "Debug auth login" }},
+  "agent-6": {{ status: "running", task: "Harden system security and SQL shield" }},
+}});
+for (let i = 0; i < 600; i += 1) sim.step(0.05);
+const expectedRooms = {{
+  "agent-1": "frontend",
+  "agent-2": "backend",
+  "agent-3": "qa",
+  "agent-4": "review",
+  "agent-5": "debug",
+  "agent-6": "security",
+}};
+for (const agent of sim.agents) {{
+  assert.strictEqual(agent.roomId, expectedRooms[agent.id]);
+  assert.strictEqual(agent.mode, "working");
+}}
+assert.strictEqual(sim.agentById("agent-6").activity, "securing");
+assert.strictEqual(sim.statusLabel(sim.agentById("agent-6")), "SECURING SYSTEM");
+"""
+        proc = subprocess.run(["node", "-e", script], capture_output=True, text=True, check=False)
+        self.assertEqual(proc.returncode, 0, msg=proc.stderr or proc.stdout)
 
 
 if __name__ == "__main__":
