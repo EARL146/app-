@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -88,6 +91,263 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   }
 }
 
+Future<void> _showHomeNavigationMenu(BuildContext context) async {
+  const items = <({IconData icon, String label, String route})>[
+    (icon: Icons.home_outlined, label: 'Home', route: ''),
+    (icon: Icons.menu_rounded, label: 'Menu', route: '/menu'),
+    (icon: Icons.mail_outline_rounded, label: 'Contact', route: '/contact'),
+    (icon: Icons.info_outline_rounded, label: 'About', route: '/about'),
+    (icon: Icons.palette_outlined, label: 'Color themes', route: '/themes'),
+    (
+      icon: Icons.translate_rounded,
+      label: 'Change language',
+      route: '/language',
+    ),
+    (icon: Icons.calendar_month_outlined, label: 'Calendar', route: '/calendar'),
+    (icon: Icons.settings_outlined, label: 'Settings', route: '/settings'),
+  ];
+
+  final destination = await showGeneralDialog<String>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Close navigation menu',
+    barrierColor: Colors.black.withValues(alpha: 0.48),
+    transitionDuration: const Duration(milliseconds: 240),
+    pageBuilder: (dialogContext, animation, secondaryAnimation) {
+      final screen = MediaQuery.sizeOf(dialogContext);
+      final menuWidth = math.min(340.0, screen.width * 0.88);
+      return SafeArea(
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: menuWidth,
+            height: double.infinity,
+            child: Material(
+              color: AppColors.surfaceElevated,
+              elevation: 20,
+              shadowColor: Colors.black.withValues(alpha: 0.2),
+              borderRadius: const BorderRadius.horizontal(
+                right: Radius.circular(26),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 14, 10, 16),
+                    child: Row(
+                      children: [
+                        const BrandLogo(width: 58, height: 58),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'BurgerBites',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              SizedBox(height: 3),
+                              Text(
+                                'Explore your app',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Close menu',
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          icon: const Icon(Icons.close_rounded),
+                          color: AppColors.textSecondary,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, color: AppColors.border),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(14, 18, 14, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const _HomeNavigationSectionLabel('DISCOVER'),
+                          for (var index = 0; index < 4; index++) ...[
+                            if (index > 0) const SizedBox(height: 4),
+                            _HomeNavigationMenuButton(
+                              icon: items[index].icon,
+                              label: items[index].label,
+                              selected: index == 0,
+                              onPressed: () => Navigator.of(dialogContext).pop(
+                                items[index].route,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 20),
+                          const _HomeNavigationSectionLabel('PREFERENCES'),
+                          for (var index = 4; index < items.length; index++) ...[
+                            if (index > 4) const SizedBox(height: 4),
+                            _HomeNavigationMenuButton(
+                              icon: items[index].icon,
+                              label: items[index].label,
+                              onPressed: () => Navigator.of(dialogContext).pop(
+                                items[index].route,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceMuted,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.favorite_rounded,
+                          color: AppColors.brandOrange,
+                          size: 19,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Fresh bites, happy moments',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      final slide = Tween<Offset>(
+        begin: const Offset(-0.24, 0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+      return FadeTransition(
+        opacity: animation,
+        child: SlideTransition(position: slide, child: child),
+      );
+    },
+  );
+
+  if (!context.mounted || destination == null || destination.isEmpty) return;
+  Navigator.of(context).pushNamed(destination);
+}
+
+class _HomeNavigationMenuButton extends StatelessWidget {
+  const _HomeNavigationMenuButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final tileColor = selected
+        ? AppColors.brandOrange.withValues(alpha: 0.1)
+        : Colors.transparent;
+    final iconColor = selected
+        ? AppColors.brandOrange
+        : AppColors.textSecondary;
+
+    return Material(
+      color: tileColor,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white : AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 19),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected
+                        ? AppColors.brandOrangeDark
+                        : AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary.withValues(alpha: 0.65),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeNavigationSectionLabel extends StatelessWidget {
+  const _HomeNavigationSectionLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
 class _HomeTab extends StatelessWidget {
   const _HomeTab();
 
@@ -142,8 +402,7 @@ class _HomeTab extends StatelessWidget {
                         ),
                         child: IconButton(
                           tooltip: 'Open menu',
-                          onPressed: () =>
-                              Navigator.of(context).pushNamed('/menu'),
+                          onPressed: () => _showHomeNavigationMenu(context),
                           icon: const Icon(Icons.menu_rounded, size: 22),
                         ),
                       ),
@@ -377,9 +636,9 @@ class _HomeTab extends StatelessWidget {
 
                   // 6. 4-Category Illustrated Showcase Grid (Burgers, Drinks, Fries, Combo Meals — Image 4)
                   _MenuCategoryShowcase(
-                    onSelectCategory: (category) => Navigator.of(
-                      context,
-                    ).pushNamed('/menu', arguments: category),
+                    onSelectCategory: (category) =>
+                        Navigator.of(context)
+                            .pushNamed('/menu', arguments: category),
                   ),
                   const SizedBox(height: 20),
 
@@ -510,10 +769,60 @@ class _HomeTab extends StatelessWidget {
 }
 
 /// Hero Banner + Auto-Moving "Burger Bites" Marquee Ticker from Image 4 & Image 5.
-class _HeroOfferWithTicker extends StatelessWidget {
+class _HeroOfferWithTicker extends StatefulWidget {
   const _HeroOfferWithTicker({required this.onOrder});
 
   final VoidCallback onOrder;
+
+  @override
+  State<_HeroOfferWithTicker> createState() => _HeroOfferWithTickerState();
+}
+
+class _HeroOfferWithTickerState extends State<_HeroOfferWithTicker> {
+  static const _heroImages = [
+    'assets/products/hero_burger_lifestyle.webp',
+    'assets/products/hero_drinks_showcase.jpg',
+    'assets/products/hero_loaded_fries.jpg',
+  ];
+  static const _heroLabels = ['Burger', 'Drinks', 'Loaded fries'];
+  static const _indicatorLabels = ['burger', 'drinks', 'fries'];
+
+  Timer? _autoAdvanceTimer;
+  int _activeSlide = 0;
+  bool _reduceMotion = false;
+
+  bool get _isWidgetTest =>
+      WidgetsBinding.instance.runtimeType.toString().contains('Test');
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (_isWidgetTest) {
+      _autoAdvanceTimer?.cancel();
+      _autoAdvanceTimer = null;
+    } else {
+      _autoAdvanceTimer ??= Timer.periodic(
+        const Duration(seconds: 4),
+        (_) => _advanceSlide(),
+      );
+    }
+  }
+
+  void _advanceSlide() {
+    if (!mounted) return;
+    setState(() => _activeSlide = (_activeSlide + 1) % _heroImages.length);
+  }
+
+  void _selectSlide(int index) {
+    setState(() => _activeSlide = index);
+  }
+
+  @override
+  void dispose() {
+    _autoAdvanceTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -539,17 +848,14 @@ class _HeroOfferWithTicker extends StatelessWidget {
                 final accessibleText = textScale > 1.15;
                 final compactLayout = constraints.maxWidth < 335;
                 final heroHeight = accessibleText
-                    ? (236 + ((textScale - 1.15) * 48))
-                          .clamp(236.0, 300.0)
+                    ? (260 + ((textScale - 1.15) * 48))
+                          .clamp(260.0, 320.0)
                           .toDouble()
                     : compactLayout
-                    ? 216.0
-                    : 244.0;
-                final imageWidth = compactLayout
-                    ? (constraints.maxWidth * .44).clamp(110.0, 145.0).toDouble()
-                    : (constraints.maxWidth * .52).clamp(148.0, 240.0).toDouble();
-                final textWidth = (constraints.maxWidth - (imageWidth * 0.56) - 20)
-                    .clamp(148.0, 268.0)
+                    ? 240.0
+                    : 282.0;
+                final textWidth = (constraints.maxWidth - 32)
+                    .clamp(128.0, 310.0)
                     .toDouble();
 
                 return SizedBox(
@@ -557,66 +863,84 @@ class _HeroOfferWithTicker extends StatelessWidget {
                   width: double.infinity,
                   child: Stack(
                     children: [
-                      // Studio dark slate/wood background
+                      // One full-bleed photo per slide; the three supplied
+                      // photos still rotate through this single image area.
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onHorizontalDragEnd: (details) {
+                            final velocity = details.primaryVelocity ?? 0;
+                            if (velocity < 0) {
+                              _selectSlide(
+                                (_activeSlide + 1) % _heroImages.length,
+                              );
+                            } else if (velocity > 0) {
+                              _selectSlide(
+                                (_activeSlide - 1 + _heroImages.length) %
+                                    _heroImages.length,
+                              );
+                            }
+                          },
+                          child: AnimatedSwitcher(
+                            duration: _reduceMotion
+                                ? Duration.zero
+                                : const Duration(milliseconds: 700),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            transitionBuilder: (child, animation) {
+                              final slide = Tween<Offset>(
+                                begin: const Offset(0.12, 0),
+                                end: Offset.zero,
+                              ).animate(animation);
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: slide,
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: Semantics(
+                              key: ValueKey(_heroImages[_activeSlide]),
+                              image: true,
+                              label: _heroLabels[_activeSlide],
+                              child: FoodImage(
+                                imageUrl: _heroImages[_activeSlide],
+                                borderRadius: 0,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                       const Positioned.fill(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                Color(0xFF23272D),
-                                Color(0xFF393E46),
-                                Color(0xFF2B2118),
+                                Color(0xD91A1715),
+                                Color(0xA61A1715),
+                                Color(0x001A1715),
                               ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                              stops: [0, 0.55, 1],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
                             ),
                           ),
                         ),
                       ),
-                      // Wooden table board at bottom
                       Positioned(
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        height: 44,
+                        height: 42,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                const Color(0xFF5D3A1A).withValues(alpha: 0.85),
-                                const Color(0xFF8B5A2B),
-                                const Color(0xFF4A2C11),
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.48),
                               ],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Fries + Burger right visual
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: imageWidth,
-                        child: FoodImage(
-                          imageUrl: 'assets/products/smash_burger.jpg',
-                          borderRadius: 0,
-                        ),
-                      ),
-                      // Smooth gradient vignette for crisp text readability
-                      Positioned.fill(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFF1F2227).withValues(alpha: 0.94),
-                                const Color(0xFF1F2227).withValues(alpha: 0.72),
-                                const Color(0xFF1F2227).withValues(alpha: 0.05),
-                              ],
-                              stops: const [0.0, 0.52, 1.0],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
                             ),
                           ),
                         ),
@@ -678,7 +1002,7 @@ class _HeroOfferWithTicker extends StatelessWidget {
                               child: SizedBox(
                                 height: 40,
                                 child: ElevatedButton(
-                                  onPressed: onOrder,
+                                  onPressed: widget.onOrder,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFF3EFFB),
                                     foregroundColor: const Color(0xFF5E3B96),
@@ -704,41 +1028,47 @@ class _HeroOfferWithTicker extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Carousel indicator dot at bottom center
+                      // Tappable carousel indicators track the visible food image.
                       Positioned(
                         left: 0,
                         right: 0,
                         bottom: 7,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 7,
-                              height: 7,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
+                          children: List.generate(_heroImages.length, (index) {
+                            final isActive = index == _activeSlide;
+                            return Semantics(
+                              button: true,
+                              selected: isActive,
+                              label:
+                                  'Show ${_indicatorLabels[index]} hero image',
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 3,
+                                ),
+                                child: InkWell(
+                                  onTap: () => _selectSlide(index),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4),
+                                    child: AnimatedContainer(
+                                      duration: _reduceMotion
+                                          ? Duration.zero
+                                          : const Duration(milliseconds: 180),
+                                      width: isActive ? 10 : 7,
+                                      height: 7,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: isActive ? 1 : 0.5,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 5),
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.45),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.45),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ],
+                            );
+                          }),
                         ),
                       ),
                     ],
@@ -777,7 +1107,8 @@ class _AutoMovingBrandTickerState extends State<_AutoMovingBrandTicker>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 12),
+      duration: const Duration(seconds: 3),
+      animationBehavior: AnimationBehavior.preserve,
     );
     if (!_isWidgetTest) {
       _controller.repeat();
@@ -787,8 +1118,7 @@ class _AutoMovingBrandTickerState extends State<_AutoMovingBrandTicker>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final disableAnimations = MediaQuery.disableAnimationsOf(context);
-    if (disableAnimations || _isWidgetTest) {
+    if (_isWidgetTest) {
       if (_controller.isAnimating) {
         _controller.stop();
       }
@@ -947,15 +1277,18 @@ class _OurStorySection extends StatelessWidget {
               );
 
               if (stackVertically) {
-                return const Column(
+                final collageHeight = (constraints.maxWidth / .85)
+                    .clamp(220.0, 360.0)
+                    .toDouble();
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     storyTextColumn,
-                    SizedBox(height: 14),
+                    const SizedBox(height: 14),
                     SizedBox(
-                      height: 195,
+                      height: collageHeight,
                       width: double.infinity,
-                      child: _StorefrontAndGrillCollage(),
+                      child: const _StorefrontAndGrillCollage(),
                     ),
                   ],
                 );
@@ -989,124 +1322,28 @@ class _StorefrontAndGrillCollage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        // Main BurgerBites Storefront Night Card
-        Positioned(
-          top: 0,
-          left: 4,
-          right: 0,
-          bottom: 26,
-          child: _BurgerBitesKioskScene(compact: true),
-        ),
-        // Left tilted polaroid: Toasted burger buns on grill
-        Positioned(
-          left: 0,
-          bottom: 14,
-          width: 74,
-          height: 54,
-          child: Transform.rotate(
-            angle: -0.14,
-            child: _PolaroidPhotoTile(
-              imageUrl: 'assets/products/classic_burger.jpg',
-              caption: 'FRESH BUNS',
-              badgeColor: const Color(0xFFD97706),
-            ),
-          ),
-        ),
-        // Right tilted polaroid: Flame-grilled burger patties
-        Positioned(
-          right: 0,
-          bottom: 14,
-          width: 74,
-          height: 54,
-          child: Transform.rotate(
-            angle: 0.13,
-            child: _PolaroidPhotoTile(
-              imageUrl: 'assets/products/smash_burger.jpg',
-              caption: 'FLAME GRILL',
-              badgeColor: const Color(0xFFDC2626),
-            ),
-          ),
-        ),
-        // Center bottom polaroid: Signature stacked burger
-        Positioned(
-          left: 34,
-          right: 34,
-          bottom: 0,
-          height: 48,
-          child: _PolaroidPhotoTile(
-            imageUrl: 'assets/products/classic_burger.jpg',
-            caption: 'SIGNATURE BITE',
-            badgeColor: AppColors.brandOrange,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PolaroidPhotoTile extends StatelessWidget {
-  const _PolaroidPhotoTile({
-    required this.imageUrl,
-    required this.caption,
-    required this.badgeColor,
-  });
-
-  final String imageUrl;
-  final String caption;
-  final Color badgeColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(2.5),
-      decoration: BoxDecoration(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: ColoredBox(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(7),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x38000000),
-            blurRadius: 8,
-            offset: Offset(0, 3),
+        child: Image.asset(
+          'assets/products/our_story_collage.png',
+          fit: BoxFit.contain,
+          alignment: Alignment.center,
+          semanticLabel:
+              'BurgerBites storefront with oven, flame grill, and burger photos',
+          errorBuilder: (context, error, stackTrace) => const Center(
+            child: Icon(Icons.storefront_rounded, color: AppColors.brandOrange),
           ),
-        ],
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          FoodImage(imageUrl: imageUrl, borderRadius: 5),
-          Positioned(
-            left: 3,
-            bottom: 3,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: badgeColor.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                caption,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 6.5,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Authentic BurgerBites Night Kiosk Storefront card (used in Our Story & Find Us, matching Images 5 & 6).
+/// Illustrated BurgerBites Night Kiosk Storefront used in the Find Us section.
 class _BurgerBitesKioskScene extends StatelessWidget {
-  const _BurgerBitesKioskScene({this.compact = false});
-
-  final bool compact;
+  const _BurgerBitesKioskScene();
 
   @override
   Widget build(BuildContext context) {
@@ -1135,7 +1372,7 @@ class _BurgerBitesKioskScene extends StatelessWidget {
             top: 0,
             left: 0,
             right: 0,
-            height: compact ? 22 : 28,
+            height: 28,
             child: DecoratedBox(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -1154,7 +1391,7 @@ class _BurgerBitesKioskScene extends StatelessWidget {
           ),
           // Glowing blue "OPEN WELCOME" neon sign at top-right
           Positioned(
-            top: compact ? 24 : 32,
+            top: 32,
             right: 8,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1180,7 +1417,7 @@ class _BurgerBitesKioskScene extends StatelessWidget {
           ),
           // Warm overhead kiosk light bar
           Positioned(
-            top: compact ? 42 : 52,
+            top: 52,
             left: 28,
             right: 8,
             height: 4,
@@ -1201,9 +1438,9 @@ class _BurgerBitesKioskScene extends StatelessWidget {
           // Left vertical standee banner ("FRIENDLY BURGERS")
           Positioned(
             left: 0,
-            top: compact ? 28 : 34,
+            top: 34,
             bottom: 18,
-            width: compact ? 32 : 42,
+            width: 42,
             child: Container(
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
@@ -1241,8 +1478,8 @@ class _BurgerBitesKioskScene extends StatelessWidget {
           Positioned(
             right: 6,
             bottom: 18,
-            width: compact ? 92 : 118,
-            height: compact ? 64 : 84,
+            width: 118,
+            height: 84,
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
@@ -1301,11 +1538,11 @@ class _BurgerBitesKioskScene extends StatelessWidget {
           ),
           // Iconic red customer chair in front of kiosk
           Positioned(
-            left: compact ? 38 : 48,
+            left: 48,
             bottom: 20,
             child: Container(
-              width: compact ? 18 : 22,
-              height: compact ? 24 : 28,
+              width: 22,
+              height: 28,
               decoration: BoxDecoration(
                 color: const Color(0xFFDC2626),
                 borderRadius: BorderRadius.circular(4),
@@ -1371,14 +1608,7 @@ class _MenuCategoryShowcase extends StatelessWidget {
       title: 'Drinks',
       categoryArg: 'Drinks',
       imageUrl: 'assets/products/cola.jpg',
-      items: [
-        'Coca-Cola',
-        'Sprite',
-        'Royal',
-        'Pepsi',
-        'Mountain Dew',
-        '7UP',
-      ],
+      items: ['Coca-Cola', 'Sprite', 'Royal', 'Pepsi', 'Mountain Dew', '7UP'],
       subtitle: null,
     ),
     (
@@ -1391,7 +1621,7 @@ class _MenuCategoryShowcase extends StatelessWidget {
     (
       title: 'Combo Meals',
       categoryArg: 'Burgers',
-      imageUrl: 'assets/products/classic_burger.jpg',
+      imageUrl: 'assets/products/smash_burger.jpg',
       items: ['Burger + Fries', '+ Drink'],
       subtitle: '(Available in all sizes)',
     ),
@@ -1482,12 +1712,15 @@ class _ShowcaseColumnCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedPressScale(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        height: 220,
+        width: double.infinity,
+        child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.border),
           boxShadow: const [
             BoxShadow(
@@ -1506,14 +1739,14 @@ class _ShowcaseColumnCard extends StatelessWidget {
               child: FoodImage(
                 imageUrl: data.imageUrl,
                 category: data.categoryArg,
-                borderRadius: 11,
+                borderRadius: 12,
               ),
             ),
             const SizedBox(height: 7),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
               decoration: BoxDecoration(
-                color: const Color(0xFF0F2942),
+                color: AppColors.darkSurfaceAlt,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -1530,7 +1763,7 @@ class _ShowcaseColumnCard extends StatelessWidget {
             const SizedBox(height: 6),
             ...data.items.map(
               (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 2.5),
+                padding: const EdgeInsets.only(bottom: 2),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1559,18 +1792,17 @@ class _ShowcaseColumnCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (data.subtitle != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                data.subtitle!,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w700,
-                ),
+            const Spacer(),
+            Text(
+              data.subtitle ?? '${data.items.length} options',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 8,
+                fontWeight: FontWeight.w700,
               ),
-            ],
+            ),
           ],
+        ),
         ),
       ),
     );
@@ -1608,7 +1840,7 @@ class _DifferenceAndCustomersSection extends StatelessWidget {
     ('Barkada Burger Night', 'Double Smash & Fries', 'assets/products/smash_burger.jpg'),
     ('Campus Lunch Trio', 'Crispy Chicken & Cola', 'assets/products/crispy_chicken.jpg'),
     ('Late-Night Cravings', 'Loaded Cheese Fries', 'assets/products/loaded_fries.jpg'),
-    ('Weekend Combo', 'Classic Burger Meal', 'assets/products/classic_burger.jpg'),
+    ('Weekend Combo', 'Classic Burger Meal', 'assets/products/smash_burger.jpg'),
   ];
 
   @override
@@ -1715,7 +1947,10 @@ class _DifferenceAndCustomersSection extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF0F2942),
                   borderRadius: BorderRadius.circular(20),
@@ -2146,321 +2381,282 @@ class _FindUsDraggableMapSectionState
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D1E130C),
-            blurRadius: 16,
-            offset: Offset(0, 6),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Find Us',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.brandOrange,
+            fontSize: 26,
+            fontWeight: FontWeight.w900,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        const SizedBox(height: 2),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.location_on_rounded, color: Color(0xFFB91C1C), size: 15),
+            SizedBox(width: 3),
+            Flexible(
+              child: Text(
+                'Location: Compostela, Davao de Oro PH',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Color(0xFFB91C1C),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final stackVertically = constraints.maxWidth < 520;
+            final mapHeight = stackVertically ? 235.0 : 320.0;
+            final storefrontHeight = stackVertically
+                ? (constraints.maxWidth * 0.84).clamp(230.0, 320.0).toDouble()
+                : mapHeight;
+            final mapWidget = SizedBox(
+              height: mapHeight,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: Stack(
                   children: [
-                    const Text(
-                      'Find Us',
-                      style: TextStyle(
-                        color: AppColors.brandOrange,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Location: Compostela Davao de oro PH',
-                      style: TextStyle(
-                        color: Color(0xFFB91C1C),
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () => Navigator.of(context).pushNamed('/contact'),
-                icon: const Icon(Icons.support_agent_rounded, size: 15),
-                label: const Text(
-                  'Contact us',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.brandOrange,
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final stackVertically = constraints.maxWidth < 360;
-              final mapWidget = SizedBox(
-                height: 195,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Stack(
-                    children: [
-                      // Draggable Map Surface ("Drag Map <---" in Image 6)
-                      Positioned.fill(
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.grab,
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onPanUpdate: (details) =>
-                                _updatePan(details.delta),
-                            onDoubleTap: () => _changeZoom(0.25),
-                            child: CustomPaint(
-                              painter: _CompostelaMapPainter(
-                                panOffset: _panOffset,
-                                zoom: _zoom,
-                                satelliteMode: _satelliteMode,
-                              ),
-                              child: const SizedBox.expand(),
+                    Positioned.fill(
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onPanUpdate: (details) => _updatePan(details.delta),
+                          onDoubleTap: () => _changeZoom(0.25),
+                          child: CustomPaint(
+                            painter: _CompostelaMapPainter(
+                              panOffset: _panOffset,
+                              zoom: _zoom,
+                              satelliteMode: _satelliteMode,
                             ),
+                            child: const SizedBox.expand(),
                           ),
                         ),
                       ),
-                      // Top-left white floating location card (matching Image 6)
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: Container(
-                          constraints: const BoxConstraints(maxWidth: 156),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.96),
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x26000000),
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                'BurgerBites',
-                                style: TextStyle(
-                                  color: Color(0xFF1E293B),
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const SizedBox(height: 1),
-                              const Text(
-                                'Compostela, Davao de Oro, Philippines',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Color(0xFF64748B),
-                                  fontSize: 7.5,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              InkWell(
-                                onTap: _resetMap,
-                                child: const Text(
-                                  'View larger map · Recenter',
-                                  style: TextStyle(
-                                    color: Color(0xFF2563EB),
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                    ),
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth * 0.48,
                         ),
-                      ),
-                      // Drag map hint pill at top-right
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.65),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.open_with_rounded,
-                                size: 10,
-                                color: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.97),
+                          borderRadius: BorderRadius.circular(7),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x26000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'BurgerBites',
+                              style: TextStyle(
+                                color: Color(0xFF1E293B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
                               ),
-                              SizedBox(width: 3),
-                              Text(
-                                'Drag map',
+                            ),
+                            const SizedBox(height: 2),
+                            const Text(
+                              'Compostela, Davao de Oro, Philippines',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            InkWell(
+                              onTap: _resetMap,
+                              child: const Text(
+                                'Recenter map',
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 7.5,
+                                  color: Color(0xFF2563EB),
+                                  fontSize: 9,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                      // Bottom-left satellite toggle thumbnail (matching Image 6)
-                      Positioned(
-                        left: 8,
-                        bottom: 8,
-                        child: InkWell(
-                          onTap: () => setState(
-                            () => _satelliteMode = !_satelliteMode,
-                          ),
-                          child: Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: _satelliteMode
-                                    ? const [
-                                        Color(0xFFE2E8F0),
-                                        Color(0xFFCBD5E1),
-                                      ]
-                                    : const [
-                                        Color(0xFF14532D),
-                                        Color(0xFF064E3B),
-                                      ],
-                              ),
-                              borderRadius: BorderRadius.circular(5),
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 1.5,
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x33000000),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              _satelliteMode
-                                  ? Icons.map_rounded
-                                  : Icons.satellite_alt_rounded,
-                              size: 14,
-                              color: _satelliteMode
-                                  ? const Color(0xFF1E293B)
-                                  : Colors.white,
-                            ),
-                          ),
+                    ),
+                    Positioned(
+                      left: 8,
+                      bottom: 8,
+                      child: InkWell(
+                        onTap: () => setState(
+                          () => _satelliteMode = !_satelliteMode,
                         ),
-                      ),
-                      // Bottom-right + / - zoom buttons (matching Image 6)
-                      Positioned(
-                        right: 8,
-                        bottom: 8,
+                        borderRadius: BorderRadius.circular(5),
                         child: Container(
+                          width: 34,
+                          height: 34,
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
+                            gradient: LinearGradient(
+                              colors: _satelliteMode
+                                  ? const [
+                                      Color(0xFFE2E8F0),
+                                      Color(0xFFCBD5E1),
+                                    ]
+                                  : const [
+                                      Color(0xFF14532D),
+                                      Color(0xFF064E3B),
+                                    ],
+                            ),
+                            borderRadius: BorderRadius.circular(5),
+                            border: Border.all(color: Colors.white, width: 2),
                             boxShadow: const [
                               BoxShadow(
-                                color: Color(0x26000000),
-                                blurRadius: 6,
-                                offset: Offset(0, 2),
+                                color: Color(0x33000000),
+                                blurRadius: 4,
                               ),
                             ],
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              InkWell(
-                                onTap: () => _changeZoom(0.2),
-                                child: const SizedBox(
-                                  width: 26,
-                                  height: 24,
-                                  child: Icon(
-                                    Icons.add_rounded,
-                                    size: 16,
-                                    color: Color(0xFF334155),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 20,
-                                height: 1,
-                                color: const Color(0xFFE2E8F0),
-                              ),
-                              InkWell(
-                                onTap: () => _changeZoom(-0.2),
-                                child: const SizedBox(
-                                  width: 26,
-                                  height: 24,
-                                  child: Icon(
-                                    Icons.remove_rounded,
-                                    size: 16,
-                                    color: Color(0xFF334155),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          child: Icon(
+                            _satelliteMode
+                                ? Icons.map_rounded
+                                : Icons.satellite_alt_rounded,
+                            size: 17,
+                            color: _satelliteMode
+                                ? const Color(0xFF1E293B)
+                                : Colors.white,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              );
-
-              if (stackVertically) {
-                return Column(
-                  children: [
-                    mapWidget,
-                    const SizedBox(height: 10),
-                    const SizedBox(
-                      height: 165,
-                      width: double.infinity,
-                      child: _BurgerBitesKioskScene(),
+                    ),
+                    Positioned(
+                      right: 10,
+                      bottom: 10,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(5),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x26000000),
+                              blurRadius: 6,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: () => _changeZoom(0.2),
+                              child: const SizedBox(
+                                width: 36,
+                                height: 31,
+                                child: Icon(
+                                  Icons.add_rounded,
+                                  size: 21,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 26,
+                              height: 1,
+                              color: const Color(0xFFE2E8F0),
+                            ),
+                            InkWell(
+                              onTap: () => _changeZoom(-0.2),
+                              child: const SizedBox(
+                                width: 36,
+                                height: 31,
+                                child: Icon(
+                                  Icons.remove_rounded,
+                                  size: 21,
+                                  color: Color(0xFF334155),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
-                );
-              }
+                ),
+              ),
+            );
 
-              return Row(
+            final storefront = _FindUsStorefrontPhoto(height: storefrontHeight);
+            if (stackVertically) {
+              return Column(
                 children: [
-                  Expanded(flex: 13, child: mapWidget),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    flex: 9,
-                    child: SizedBox(
-                      height: 195,
-                      child: _BurgerBitesKioskScene(),
-                    ),
-                  ),
+                  mapWidget,
+                  const SizedBox(height: 10),
+                  storefront,
                 ],
               );
-            },
+            }
+
+            return SizedBox(
+              height: mapHeight,
+              child: Row(
+                children: [
+                  Expanded(flex: 6, child: mapWidget),
+                  const SizedBox(width: 4),
+                  Expanded(flex: 4, child: storefront),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _FindUsStorefrontPhoto extends StatelessWidget {
+  const _FindUsStorefrontPhoto({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFF171717), width: 2),
+        ),
+        child: ClipRect(
+          child: Image.asset(
+            'assets/products/find_us_storefront.png',
+            fit: BoxFit.cover,
+            semanticLabel: 'BurgerBites storefront in Compostela',
+            errorBuilder: (context, error, stackTrace) =>
+                const _BurgerBitesKioskScene(),
           ),
-        ],
+        ),
       ),
     );
   }

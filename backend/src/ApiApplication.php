@@ -1149,7 +1149,7 @@ final class ApiApplication
         $drinkBrand = $customizations['drink_brand'] ?? null;
         $allowedToppings = ['Extra cheese', 'Crispy bacon'];
         $allowedDrinkBrands = ['Coca-Cola', 'Sprite', 'Pepsi', 'Royal', 'Mountain Dew', '7Up'];
-        if (!is_string($size) || !in_array($size, ['Regular', 'Small', 'Medium', 'Large', 'Double'], true) || !is_array($toppings) || !array_is_list($toppings) ||
+        if (!is_string($size) || !in_array($size, ['Regular', 'Small', 'Medium', 'Large', 'Double', 'XL'], true) || !is_array($toppings) || !array_is_list($toppings) ||
             count(array_filter($toppings, static fn($topping): bool => is_string($topping) && in_array($topping, $allowedToppings, true))) !== count($toppings) ||
             count(array_unique($toppings)) !== count($toppings) ||
             ($drinkBrand !== null && (!is_string($drinkBrand) || !in_array($drinkBrand, $allowedDrinkBrands, true)))) {
@@ -1173,7 +1173,8 @@ final class ApiApplication
             $valid = in_array($customizations['size'], ['Regular', 'Small', 'Medium', 'Large'], true) &&
                 $customizations['toppings'] === [] && $customizations['drink_brand'] === null;
         } elseif ($isDrink) {
-            $valid = $customizations['size'] === 'Regular' && $customizations['toppings'] === [];
+            $valid = in_array($customizations['size'], ['Regular', 'Large', 'XL'], true) &&
+                $customizations['toppings'] === [];
         } else {
             $valid = $customizations['size'] === 'Regular' && $customizations['toppings'] === [] &&
                 $customizations['drink_brand'] === null;
@@ -1200,7 +1201,8 @@ final class ApiApplication
         $category = strtolower(trim($category));
         $isFries = $category === 'fries' || ($category === 'sides' && str_contains(strtolower($name), 'fries'));
         if ($category === 'drinks' && $customizations['drink_brand'] !== null) {
-            return $customizations['drink_brand'] . ' ' . $name;
+            $size = $customizations['size'] === 'Regular' ? '' : $customizations['size'] . ' ';
+            return $customizations['drink_brand'] . ' ' . $size . $name;
         }
         if ($category !== 'burgers' && !$isFries) return $name;
         $showSize = $customizations['size'] !== 'Regular';

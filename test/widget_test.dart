@@ -4,6 +4,7 @@ import 'package:burger_bites/screens/admin/admin_profile_screen.dart';
 import 'package:burger_bites/screens/admin/admin_store_profile_screen.dart';
 import 'package:burger_bites/screens/admin/admin_home_screen.dart';
 import 'package:burger_bites/screens/customer/home_screen.dart';
+import 'package:burger_bites/screens/customer/menu_screen.dart';
 import 'package:burger_bites/screens/customer/register_screen.dart';
 import 'package:burger_bites/screens/customer/search_screen.dart';
 import 'package:burger_bites/screens/customer/sign_in_screen.dart';
@@ -64,6 +65,22 @@ void main() {
     expect(find.text('/customer-home:true'), findsOneWidget);
   });
 
+  testWidgets('splash intro fits a short viewport', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(440, 103);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(home: SplashScreen(restoreSession: false)),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('welcome and auth screens fit common phone widths', (
     WidgetTester tester,
   ) async {
@@ -116,6 +133,23 @@ void main() {
     await tester.tap(find.byTooltip('Open menu'));
     await tester.pumpAndSettle();
     expect(find.text('Menu'), findsOneWidget);
+  });
+
+  testWidgets('guest menu scrolls in a short viewport without overflow', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(440, 150);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _customerHomeHarness(AuthService(), openMenuInitially: true),
+    );
+    await tester.pump();
+
+    expect(find.byType(MenuScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('guest home identifies that order history needs sign in', (
@@ -372,7 +406,10 @@ void main() {
   );
 }
 
-Widget _customerHomeHarness(AuthService auth) => MultiProvider(
+Widget _customerHomeHarness(
+  AuthService auth, {
+  bool openMenuInitially = false,
+}) => MultiProvider(
   providers: [
     ChangeNotifierProvider<AuthService>.value(value: auth),
     ChangeNotifierProvider(create: (_) => CatalogProvider()),
@@ -381,7 +418,7 @@ Widget _customerHomeHarness(AuthService auth) => MultiProvider(
   ],
   child: MaterialApp(
     onGenerateRoute: AppRouter.generateRoute,
-    home: const CustomerHomeScreen(),
+    home: CustomerHomeScreen(openMenuInitially: openMenuInitially),
   ),
 );
 

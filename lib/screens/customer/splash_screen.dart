@@ -77,32 +77,45 @@ class _SplashScreenState extends State<SplashScreen>
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final compact = constraints.maxHeight < 320;
+            final showBrand = constraints.maxHeight >= 48;
+            final brandFontSize = compact
+                ? (constraints.maxHeight * 0.2).clamp(12.0, 20.0).toDouble()
+                : 27.0;
+            final brandGap = showBrand ? (compact ? 4.0 : 8.0) : 0.0;
+            final availableMarkSize =
+                (constraints.maxHeight -
+                        (showBrand ? brandFontSize + brandGap : 0))
+                    .clamp(0.0, 290.0);
             final markSize = (constraints.maxHeight * 0.39)
-                .clamp(160.0, 290.0)
+                .clamp(0.0, availableMarkSize)
                 .toDouble();
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 440),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     AnimatedBurgerAssembly(
                       animation: _introController,
                       size: markSize,
                     ),
-                    const SizedBox(height: 8),
-                    FadeTransition(
-                      opacity: _brandReveal,
-                      child: const Text(
-                        'BurgerBites',
-                        style: TextStyle(
-                          color: AppColors.brandRed,
-                          fontSize: 27,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.2,
+                    if (showBrand) ...[
+                      SizedBox(height: brandGap),
+                      FadeTransition(
+                        opacity: _brandReveal,
+                        child: Text(
+                          'BurgerBites',
+                          style: TextStyle(
+                            color: AppColors.brandRed,
+                            fontSize: brandFontSize,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.2,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

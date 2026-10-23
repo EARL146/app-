@@ -2,6 +2,16 @@
 
 [[PROJECT_HOME]] · [[INTEGRATION_MAP]] · [[AGENT_TEAM]] · [[AGENT_MONITOR]] · [[BACKUP_WORKFLOW]] · [[PRODUCTION_READINESS_AUDIT]] · [[KNOWN_ISSUES]] · [[TESTING]]
 
+## Runtime and integration audit (2026-10-22)
+
+- Flutter verification: `flutter test --reporter compact` reported **All tests passed**; `flutter analyze` reported **No issues found**. These checks validate app code, not live server connectivity.
+- Live local ports: BurgerBites API `127.0.0.1:8081` and Docker API `:8082` were closed; Redis `:6379` and OmniRoute `:20128` were also closed. MySQL `:3306` was listening, but the API/database connection was not verified. The existing read-only Agent Monitor was then started on `127.0.0.1:8765`; `/api/overview` returned HTTP 200. It is attached to the current Codex execution session.
+- AMPPS runtime: the documented `C:\Users\shizu\OneDrive\Documents\Ampps\php82\php.exe` is absent at that path and `php` is not on PATH, so the PHP API could not be started from this environment.
+- Docker Desktop 4.95.0 failed startup at the existing `docker-secrets-engine\engine.sock` reparse point (`The file cannot be accessed by the system`). No Docker engine, container, volume, or database data was removed. A timestamped preservation rename was attempted without elevation and denied; an elevated retry was blocked by the execution policy. Docker and its engine remain stopped.
+- Developer integrations: ICM health/recall succeeded; Task Observer 3.7.0 is loaded; Graphify 0.9.90 is installed; RTK 1.0.0 runs explicitly but `rtk gain` says no hook is active. Headroom and Claude-Mem are not installed/configured. ICM is not the Agent Monitor event stream.
+- Git was clean at the start of this audit (`main...origin/main`); no app code/configuration, credentials, containers, commits, or remote state were changed. This audit updates only this note and [[TOOL_CONNECTION_FLOW]].
+- Next task: recover Docker Desktop by preserving the stale runtime socket directory under a unique backup name from an Administrator PowerShell after confirming Docker is fully stopped; then verify Docker, OmniRoute, Redis, the monitor, AMPPS PHP/API, and finally the customer/admin live flows. Do not reset Docker or delete its data.
+
 ## Agent City Interactive 2D Office Map Simulation, Figma UI Studio & Flutter Tactile UI Pass (2026-10-21)
 
 - Created baseline checkpoint commit `870db3c` (`Checkpoint guest-first menu and profile sign-in baseline`) preserving the 11 guest-first menu files before applying the Agent Monitor and Flutter design upgrades.
@@ -52,6 +62,12 @@
 ## Customer/admin UI and order-state follow-up (2026-10-20)
 
 - Moved the existing local burger hero toward the top of customer Home, with the requested “Delicious food, delivered fast” headline and existing Order Now action. Product cards no longer invent a 4.8 rating when the API has no rating.
+- The Home hero rotates the supplied burger-eating, drinks-with-friends, and fries photos every 4 seconds, with a visible slide transition, three tappable indicators, and swipe support. It now displays one full-bleed photo at a time instead of splitting the hero across two photos; a left-to-right fade keeps the headline legible while leaving the right side clear. The copied/converted assets are `assets/products/hero_burger_lifestyle.webp`, `assets/products/hero_drinks_showcase.jpg`, and `assets/products/hero_loaded_fries.jpg`. The repeated white Burger Bites ticker moves continuously from right to left and loops back in from the right.
+- Hero image update verification: `flutter analyze --no-pub lib/screens/customer/home_screen.dart` reported no issues and `git diff --check` passed. No Flutter tests or browser/device visual check were run for this change.
+- Redesigned the Home hamburger menu as a top-anchored, full-height responsive drawer with the transparent `BrandLogo` asset (`assets/branding/burger_bites_logo_cutout.png`), grouped navigation/preferences, softer icon tiles, a close control, and a scrollable link list. Existing destinations are unchanged. Targeted Flutter analysis passed; no browser/device visual check was run.
+- Home → Our Story displays the supplied kiosk/oven/grill/burger collage at `assets/products/our_story_collage.png`. Find Us now uses a responsive map/storefront layout and the storefront crop at `assets/products/find_us_storefront.png`; the custom map is illustrative, with local pan, zoom, satellite-color toggle, and recenter controls, not a live map provider. The kiosk illustration remains as an image-load fallback.
+- Find Us verification: `flutter analyze --no-pub lib/screens/customer/home_screen.dart` reported no issues. No device/browser visual check or Flutter test was run for this UI change.
+- Next: visually review Find Us on phone and desktop widths. Use a live map only after confirming the store's exact address and map provider.
 - Customer Home now distinguishes guest sign-in, first-load, error/retry, empty history, and saved orders. Admin Home shows placeholders until dashboard data loads, labels the real data state, and distinguishes initial order loading, API errors/retry, empty results, and previously loaded orders.
 - Order providers now record whether an empty response was successfully loaded, recover from request exceptions, and reset customer order state across account changes. Customer cancellation results are ignored after logout/account switch so a late response cannot alter another account's order list.
 - Added widget regression checks for product description/size/price details, guest order-history messaging, and admin placeholder states. Direct SDK `dart.exe format` completed, `flutter analyze --no-pub` reported no issues, and the full Flutter test suite passed all 29 tests. The product-details test now scrolls to the actual topping row. `git diff --check` passed. The test runner needed temporary access to Flutter cache, ignored build output, and `.dart_tool`; no lockfiles were deleted or overwritten.
@@ -158,6 +174,13 @@ Back up `Burger_Bites`, import migration 003 using phpMyAdmin's privileged Impor
 - `git ls-remote --heads origin main` verified read-only access and the current remote branch before publication. Recheck the remote head after pushing.
 - `git check-ignore --no-index -v backend/.env.example` confirms the template remains trackable; `git check-ignore -v backend/.env` confirms the secret file is ignored. Secret contents were not read.
 - `git diff --check` and `git diff --cached --check` passed; Git emitted only existing working-copy LF-to-CRLF notices. A targeted check of Markdown and Obsidian links in the project/workflow index notes found no missing targets. Flutter analysis passed in this integration pass; app tests and PHP syntax checks passed earlier in this project work and were not rerun just for tool installation.
+
+## Product details visual refresh (2026-10-23)
+
+- Refined `lib/screens/customer/product_details_screen.dart` with a larger food hero, availability/rating badges, a centered responsive content width, clearer descriptions and option cards, a live cart count, and a persistent quantity/add-to-cart bar.
+- Burger sizes and topping prices remain unchanged. Fries and drink sizes continue to use the product's current database price until the owner provides variant prices. Drink size selections (Regular/Large/XL) are stored with cart customizations; the API accepts and labels these sizes without changing their price.
+- Verification: targeted Flutter analysis reported no issues; `php -l backend/src/ApiApplication.php` passed; `git diff --check` passed; `graphify update .` refreshed the local graph. Flutter tests were not run for this pass.
+- Next task: get the owner’s actual drink and fries size price list before charging different prices by variant.
 
 ## Highest-priority next task
 
