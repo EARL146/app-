@@ -366,164 +366,182 @@ class _MenuOfferState extends State<_MenuOffer> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 126,
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D1D16),
-        borderRadius: BorderRadius.circular(19),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: 140,
-              child: GestureDetector(
-                onHorizontalDragEnd: (details) {
-                  final velocity = details.primaryVelocity ?? 0;
-                  if (velocity < 0) {
-                    _selectImage((_activeImage + 1) % _images.length);
-                  } else if (velocity > 0) {
-                    _selectImage(
-                      (_activeImage - 1 + _images.length) % _images.length,
-                    );
-                  }
-                },
-                child: AnimatedSwitcher(
-                  duration: _reduceMotion
-                      ? Duration.zero
-                      : const Duration(milliseconds: 600),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, animation) {
-                    final position = Tween<Offset>(
-                      begin: const Offset(0.14, 0),
-                      end: Offset.zero,
-                    ).animate(animation);
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(position: position, child: child),
-                    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final imageWidth = (constraints.maxWidth * .36)
+            .clamp(104.0, 165.0)
+            .toDouble();
+        final textWidth = (constraints.maxWidth - imageWidth - 30)
+            .clamp(145.0, 250.0)
+            .toDouble();
+        return Container(
+          height: 126,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D1D16),
+            borderRadius: BorderRadius.circular(19),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: imageWidth,
+                child: GestureDetector(
+                  onHorizontalDragEnd: (details) {
+                    final velocity = details.primaryVelocity ?? 0;
+                    if (velocity < 0) {
+                      _selectImage((_activeImage + 1) % _images.length);
+                    } else if (velocity > 0) {
+                      _selectImage(
+                        (_activeImage - 1 + _images.length) % _images.length,
+                      );
+                    }
                   },
-                  child: Semantics(
-                    key: ValueKey(_images[_activeImage]),
-                    image: true,
-                    label: _labels[_activeImage],
-                    child: FoodImage(
-                      imageUrl: _images[_activeImage],
-                      borderRadius: 0,
+                  child: AnimatedSwitcher(
+                    duration: _reduceMotion
+                        ? Duration.zero
+                        : const Duration(milliseconds: 600),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      final position = Tween<Offset>(
+                        begin: const Offset(0.14, 0),
+                        end: Offset.zero,
+                      ).animate(animation);
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: position,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Semantics(
+                      key: ValueKey(_images[_activeImage]),
+                      image: true,
+                      label: _labels[_activeImage],
+                      child: FoodImage(
+                        imageUrl: _images[_activeImage],
+                        borderRadius: 0,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFF2D1D16),
-                        const Color(0xFF2D1D16).withValues(alpha: .92),
-                        const Color(0xFF2D1D16).withValues(alpha: .04),
-                      ],
-                      stops: const [0, .56, 1],
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF2D1D16),
+                          const Color(0xFF2D1D16).withValues(alpha: .92),
+                          const Color(0xFF2D1D16).withValues(alpha: .04),
+                        ],
+                        stops: const [0, .56, 1],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(15, 13, 15, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const BrandGradientBadge(
-                    label: 'SPECIAL OFFER',
-                    icon: Icons.bolt_rounded,
-                  ),
-                  const Spacer(),
-                  const Text(
-                    'Delicious food\ndelivered fast',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w900,
-                      height: 1.06,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Enjoy 20% off your first combo order',
-                    style: TextStyle(color: Colors.white70, fontSize: 9),
-                  ),
-                  const SizedBox(height: 7),
-                  InkWell(
-                    onTap: widget.onTap,
-                    child: const Row(
-                      children: [
-                        Text(
-                          'Order now',
-                          style: TextStyle(
-                            color: AppColors.brandOrange,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 10,
-                          ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(15, 13, 15, 12),
+                child: SizedBox(
+                  width: textWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const BrandGradientBadge(
+                        label: 'BURGERBITES MENU',
+                        icon: Icons.restaurant_rounded,
+                      ),
+                      const Spacer(),
+                      const Text(
+                        'Delicious food,\ndelivered fast',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          height: 1.06,
                         ),
-                        SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward_rounded,
-                          color: AppColors.brandOrange,
-                          size: 13,
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Burgers, fries & drinks',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.white70, fontSize: 9),
+                      ),
+                      const SizedBox(height: 7),
+                      InkWell(
+                        onTap: widget.onTap,
+                        child: const Row(
+                          children: [
+                            Text(
+                              'Browse menu',
+                              style: TextStyle(
+                                color: AppColors.brandOrange,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 10,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              color: AppColors.brandOrange,
+                              size: 13,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-            Positioned(
-              right: 9,
-              bottom: 7,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(_images.length, (index) {
-                  final selected = index == _activeImage;
-                  return Semantics(
-                    button: true,
-                    selected: selected,
-                    label: 'Show ${_labels[index]} menu image',
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: InkWell(
-                        onTap: () => _selectImage(index),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Padding(
-                          padding: const EdgeInsets.all(3),
-                          child: AnimatedContainer(
-                            duration: _reduceMotion
-                                ? Duration.zero
-                                : const Duration(milliseconds: 180),
-                            width: selected ? 9 : 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? AppColors.brandOrange
-                                  : Colors.white.withValues(alpha: .8),
-                              borderRadius: BorderRadius.circular(8),
+              Positioned(
+                right: 9,
+                bottom: 7,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(_images.length, (index) {
+                    final selected = index == _activeImage;
+                    return Semantics(
+                      button: true,
+                      selected: selected,
+                      label: 'Show ${_labels[index]} menu image',
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: InkWell(
+                          onTap: () => _selectImage(index),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.all(3),
+                            child: AnimatedContainer(
+                              duration: _reduceMotion
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 180),
+                              width: selected ? 9 : 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? AppColors.brandOrange
+                                    : Colors.white.withValues(alpha: .8),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  }),
+                ),
               ),
-            ),
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

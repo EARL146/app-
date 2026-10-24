@@ -103,7 +103,11 @@ Future<void> _showHomeNavigationMenu(BuildContext context) async {
       label: 'Change language',
       route: '/language',
     ),
-    (icon: Icons.calendar_month_outlined, label: 'Calendar', route: '/calendar'),
+    (
+      icon: Icons.calendar_month_outlined,
+      label: 'Calendar',
+      route: '/calendar',
+    ),
     (icon: Icons.settings_outlined, label: 'Settings', route: '/settings'),
   ];
 
@@ -185,21 +189,25 @@ Future<void> _showHomeNavigationMenu(BuildContext context) async {
                               icon: items[index].icon,
                               label: items[index].label,
                               selected: index == 0,
-                              onPressed: () => Navigator.of(dialogContext).pop(
-                                items[index].route,
-                              ),
+                              onPressed: () =>
+                                  Navigator.of(dialogContext)
+                                      .pop(items[index].route),
                             ),
                           ],
                           const SizedBox(height: 20),
                           const _HomeNavigationSectionLabel('PREFERENCES'),
-                          for (var index = 4; index < items.length; index++) ...[
+                          for (
+                            var index = 4;
+                            index < items.length;
+                            index++
+                          ) ...[
                             if (index > 4) const SizedBox(height: 4),
                             _HomeNavigationMenuButton(
                               icon: items[index].icon,
                               label: items[index].label,
-                              onPressed: () => Navigator.of(dialogContext).pop(
-                                items[index].route,
-                              ),
+                              onPressed: () =>
+                                  Navigator.of(dialogContext)
+                                      .pop(items[index].route),
                             ),
                           ],
                         ],
@@ -651,9 +659,7 @@ class _HomeTab extends StatelessWidget {
                   const SizedBox(height: 10),
                   if (categories.isEmpty)
                     Text(
-                      catalog.isLoading
-                          ? 'Loading menu categories…'
-                          : 'Menu categories will appear when products are available.',
+                      catalog.isLoading ? 'Loading menu categories…' : 'Menu categories will appear when products are available.',
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 11,
@@ -700,8 +706,7 @@ class _HomeTab extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            catalog.errorMessage ??
-                                'Our menu is being updated. Please check again soon.',
+                            catalog.errorMessage ?? 'Our menu is being updated. Please check again soon.',
                             style: const TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 11,
@@ -1330,8 +1335,7 @@ class _StorefrontAndGrillCollage extends StatelessWidget {
           'assets/products/our_story_collage.png',
           fit: BoxFit.contain,
           alignment: Alignment.center,
-          semanticLabel:
-              'BurgerBites storefront with oven, flame grill, and burger photos',
+          semanticLabel: 'BurgerBites storefront with oven, flame grill, and burger photos',
           errorBuilder: (context, error, stackTrace) => const Center(
             child: Icon(Icons.storefront_rounded, color: AppColors.brandOrange),
           ),
@@ -1717,92 +1721,95 @@ class _ShowcaseColumnCard extends StatelessWidget {
         height: 220,
         width: double.infinity,
         child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A1E130C),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 68,
-              width: double.infinity,
-              child: FoodImage(
-                imageUrl: data.imageUrl,
-                category: data.categoryArg,
-                borderRadius: 12,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A1E130C),
+                blurRadius: 10,
+                offset: Offset(0, 4),
               ),
-            ),
-            const SizedBox(height: 7),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
-              decoration: BoxDecoration(
-                color: AppColors.darkSurfaceAlt,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                data.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 68,
+                width: double.infinity,
+                child: FoodImage(
+                  imageUrl: data.imageUrl,
+                  category: data.categoryArg,
+                  borderRadius: 12,
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
-            ...data.items.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 4.5,
-                      height: 4.5,
-                      margin: const EdgeInsets.only(top: 4, right: 5),
-                      decoration: const BoxDecoration(
-                        color: AppColors.brandOrange,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        item,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF1E293B),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
+              const SizedBox(height: 7),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3.5,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.darkSurfaceAlt,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  data.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              ...data.items.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 4.5,
+                        height: 4.5,
+                        margin: const EdgeInsets.only(top: 4, right: 5),
+                        decoration: const BoxDecoration(
+                          color: AppColors.brandOrange,
+                          shape: BoxShape.circle,
                         ),
                       ),
-                    ),
-                  ],
+                      Expanded(
+                        child: Text(
+                          item,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF1E293B),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const Spacer(),
-            Text(
-              data.subtitle ?? '${data.items.length} options',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 8,
-                fontWeight: FontWeight.w700,
+              const Spacer(),
+              Text(
+                data.subtitle ?? '${data.items.length} options',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -1837,10 +1844,26 @@ class _DifferenceAndCustomersSection extends StatelessWidget {
   ];
 
   static const _customerMoments = [
-    ('Barkada Burger Night', 'Double Smash & Fries', 'assets/products/smash_burger.jpg'),
-    ('Campus Lunch Trio', 'Crispy Chicken & Cola', 'assets/products/crispy_chicken.jpg'),
-    ('Late-Night Cravings', 'Loaded Cheese Fries', 'assets/products/loaded_fries.jpg'),
-    ('Weekend Combo', 'Classic Burger Meal', 'assets/products/smash_burger.jpg'),
+    (
+      'Barkada Burger Night',
+      'Double Smash & Fries',
+      'assets/products/smash_burger.jpg',
+    ),
+    (
+      'Campus Lunch Trio',
+      'Crispy Chicken & Cola',
+      'assets/products/crispy_chicken.jpg',
+    ),
+    (
+      'Late-Night Cravings',
+      'Loaded Cheese Fries',
+      'assets/products/loaded_fries.jpg',
+    ),
+    (
+      'Weekend Combo',
+      'Classic Burger Meal',
+      'assets/products/smash_burger.jpg',
+    ),
   ];
 
   @override
@@ -2249,10 +2272,7 @@ class _RecentOrdersSection extends StatelessWidget {
         ),
         child: const Text(
           'No orders yet. Browse the menu to get started.',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 11,
-          ),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
         ),
       );
     }
@@ -2510,9 +2530,8 @@ class _FindUsDraggableMapSectionState
                       left: 8,
                       bottom: 8,
                       child: InkWell(
-                        onTap: () => setState(
-                          () => _satelliteMode = !_satelliteMode,
-                        ),
+                        onTap: () =>
+                            setState(() => _satelliteMode = !_satelliteMode),
                         borderRadius: BorderRadius.circular(5),
                         child: Container(
                           width: 34,
@@ -2520,10 +2539,7 @@ class _FindUsDraggableMapSectionState
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: _satelliteMode
-                                  ? const [
-                                      Color(0xFFE2E8F0),
-                                      Color(0xFFCBD5E1),
-                                    ]
+                                  ? const [Color(0xFFE2E8F0), Color(0xFFCBD5E1)]
                                   : const [
                                       Color(0xFF14532D),
                                       Color(0xFF064E3B),
@@ -2609,11 +2625,7 @@ class _FindUsDraggableMapSectionState
             final storefront = _FindUsStorefrontPhoto(height: storefrontHeight);
             if (stackVertically) {
               return Column(
-                children: [
-                  mapWidget,
-                  const SizedBox(height: 10),
-                  storefront,
-                ],
+                children: [mapWidget, const SizedBox(height: 10), storefront],
               );
             }
 
@@ -2812,11 +2824,7 @@ class _CompostelaMapPainter extends CustomPainter {
       8.5,
       Paint()..color = const Color(0xFFDC2626),
     );
-    canvas.drawCircle(
-      mainPinPos,
-      3.5,
-      Paint()..color = Colors.white,
-    );
+    canvas.drawCircle(mainPinPos, 3.5, Paint()..color = Colors.white);
 
     final tp = TextPainter(
       text: TextSpan(
@@ -2830,9 +2838,7 @@ class _CompostelaMapPainter extends CustomPainter {
           TextSpan(
             text: 'Compostela, Davao de Oro',
             style: TextStyle(
-              color: satelliteMode
-                  ? Colors.white70
-                  : const Color(0xFF475569),
+              color: satelliteMode ? Colors.white70 : const Color(0xFF475569),
               fontSize: 7.0,
               fontWeight: FontWeight.w700,
             ),
@@ -3029,10 +3035,7 @@ class _PerfectComboFooterBanner extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              const Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 12,
-                              ),
+                              const Icon(Icons.arrow_forward_rounded, size: 12),
                             ],
                           ),
                         ),
@@ -3225,9 +3228,9 @@ class _ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AnimatedPressScale(
       child: InkWell(
-        onTap: () => Navigator.of(
-          context,
-        ).pushNamed('/product-details', arguments: product),
+        onTap: () =>
+            Navigator.of(context)
+                .pushNamed('/product-details', arguments: product),
         borderRadius: BorderRadius.circular(18),
         child: Container(
           width: 156,

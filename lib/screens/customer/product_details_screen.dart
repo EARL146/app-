@@ -38,6 +38,70 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   void initState() {
     super.initState();
     if (_isFries(widget.product)) _size = 'Small';
+    _drinkBrand = _brandForProduct(widget.product);
+  }
+
+  @override
+  void didUpdateWidget(covariant ProductDetailsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.product.id == widget.product.id) return;
+    _quantity = 1;
+    _size = _isFries(widget.product) ? 'Small' : 'Regular';
+    _drinkBrand = _brandForProduct(widget.product);
+    _extras.clear();
+  }
+
+  String _brandForProduct(Product product) {
+    final normalizedName = product.name.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '',
+    );
+    return _drinkBrands.firstWhere(
+      (brand) => normalizedName.contains(
+        brand.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ''),
+      ),
+      orElse: () => _drinkBrands.first,
+    );
+  }
+
+  String _drinkDisplayName(Product product) {
+    final originalBrand = _brandForProduct(product);
+    final normalizedBrand = originalBrand.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '',
+    );
+    var remainder = product.name.trim();
+    final normalizedName = remainder.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '',
+    );
+    if (normalizedName.startsWith(normalizedBrand)) {
+      var matchedCharacters = 0;
+      var endIndex = 0;
+      for (
+        var index = 0;
+        index < remainder.length && matchedCharacters < normalizedBrand.length;
+        index++
+      ) {
+        if (RegExp(
+          r'[a-z0-9]',
+          caseSensitive: false,
+        ).hasMatch(remainder[index])) {
+          matchedCharacters++;
+        }
+        endIndex = index + 1;
+      }
+      remainder = remainder
+          .substring(endIndex)
+          .trim()
+          .replaceFirst(RegExp(r'^[\W_]+'), '')
+          .trim();
+    }
+    return [
+      _drinkBrand,
+      if (_size != 'Regular') _size,
+      if (remainder.isNotEmpty) remainder,
+    ].join(' ');
   }
 
   double get _unitPrice {
@@ -75,8 +139,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final isFriesProduct = _isFries(product);
     final isDrinkProduct = _isDrink(product);
     final categoryLabel = product.category?.trim();
-    final heroHeight = (MediaQuery.sizeOf(context).height * 0.34)
-        .clamp(220.0, 310.0)
+    final heroHeight = (MediaQuery.sizeOf(context).height * 0.33)
+        .clamp(220.0, 300.0)
         .toDouble();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
@@ -113,7 +177,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             Expanded(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
+                  constraints: const BoxConstraints(maxWidth: 680),
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
                     children: [
@@ -205,85 +269,102 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 18),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              product.name,
-                              style: const TextStyle(
-                                fontSize: 23,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '₱${product.price.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  color: AppColors.brandOrange,
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              const Text(
-                                'Listed price',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _ProductInfoChip(
-                            icon: Icons.restaurant_menu_rounded,
-                            label: categoryLabel?.isNotEmpty == true
-                                ? categoryLabel!
-                                : 'Menu item',
-                          ),
-                          _ProductInfoChip(
-                            icon: product.available
-                                ? Icons.check_circle_outline_rounded
-                                : Icons.remove_circle_outline_rounded,
-                            label: product.available
-                                ? 'Available'
-                                : 'Unavailable',
-                            color: product.available
-                                ? AppColors.success
-                                : AppColors.danger,
-                          ),
-                          if (product.rating != null)
-                            _ProductInfoChip(
-                              icon: Icons.star_rounded,
-                              label: product.reviewCount == null
-                                  ? product.rating!.toStringAsFixed(1)
-                                  : '${product.rating!.toStringAsFixed(1)} (${product.reviewCount})',
-                              color: AppColors.warning,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 16),
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(22),
                           border: Border.all(color: AppColors.border),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x080F0B09),
+                              blurRadius: 16,
+                              offset: Offset(0, 6),
+                            ),
+                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    product.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 23,
+                                      height: 1.12,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -.4,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '₱${product.price.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        color: AppColors.brandOrange,
+                                        fontSize: 21,
+                                        height: 1.1,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    const Text(
+                                      'Base price',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 7,
+                              runSpacing: 7,
+                              children: [
+                                _ProductInfoChip(
+                                  icon: Icons.restaurant_menu_rounded,
+                                  label: categoryLabel?.isNotEmpty == true
+                                      ? categoryLabel!
+                                      : 'Menu item',
+                                ),
+                                _ProductInfoChip(
+                                  icon: product.available
+                                      ? Icons.check_circle_outline_rounded
+                                      : Icons.remove_circle_outline_rounded,
+                                  label: product.available
+                                      ? 'Available'
+                                      : 'Unavailable',
+                                  color: product.available
+                                      ? AppColors.success
+                                      : AppColors.danger,
+                                ),
+                                if (product.rating != null)
+                                  _ProductInfoChip(
+                                    icon: Icons.star_rounded,
+                                    label: product.reviewCount == null
+                                        ? product.rating!.toStringAsFixed(1)
+                                        : '${product.rating!.toStringAsFixed(1)} (${product.reviewCount})',
+                                    color: AppColors.warning,
+                                  ),
+                              ],
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 13),
+                              child: Divider(height: 1),
+                            ),
                             const Text(
                               'About this item',
                               style: TextStyle(
@@ -307,87 +388,101 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         ),
                       ),
                       if (isBurgerProduct) ...[
-                        const SizedBox(height: 18),
-                        const _FieldHeading(
-                          title: 'Burger size',
-                          trailing: 'Select one',
-                        ),
-                        const SizedBox(height: 9),
-                        Row(
-                          children: [
-                            _SizeOption(
-                              label: 'Regular',
-                              detail: '1/4 lb',
-                              icon: Icons.lunch_dining_rounded,
-                              selected: _size == 'Regular',
-                              onTap: () => setState(() => _size = 'Regular'),
-                            ),
-                            const SizedBox(width: 8),
-                            _SizeOption(
-                              label: 'Large',
-                              detail: '+ ₱80',
-                              icon: Icons.lunch_dining_rounded,
-                              selected: _size == 'Large',
-                              onTap: () => setState(() => _size = 'Large'),
-                            ),
-                            const SizedBox(width: 8),
-                            _SizeOption(
-                              label: 'Double',
-                              detail: '+ ₱120',
-                              icon: Icons.fastfood_rounded,
-                              selected: _size == 'Double',
-                              onTap: () => setState(() => _size = 'Double'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        const _FieldHeading(
-                          title: 'Extra toppings',
-                          trailing: 'Optional',
-                        ),
-                        const SizedBox(height: 6),
-                        _ExtraOption(
-                          label: 'Extra cheese',
-                          detail: '+ ₱25',
-                          selected: _extras.contains('Extra cheese'),
-                          onChanged: (value) => setState(
-                            () => value
-                                ? _extras.add('Extra cheese')
-                                : _extras.remove('Extra cheese'),
-                          ),
-                        ),
-                        _ExtraOption(
-                          label: 'Crispy bacon',
-                          detail: '+ ₱45',
-                          selected: _extras.contains('Crispy bacon'),
-                          onChanged: (value) => setState(
-                            () => value
-                                ? _extras.add('Crispy bacon')
-                                : _extras.remove('Crispy bacon'),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceMuted,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Row(
+                        const SizedBox(height: 14),
+                        _ProductOptionsPanel(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.info_outline_rounded,
-                                color: AppColors.brandOrange,
-                                size: 17,
+                              const _FieldHeading(
+                                title: 'Burger size',
+                                trailing: 'Select one',
                               ),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Selected size and toppings are saved with your order. Final prices are checked at checkout.',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: AppColors.textSecondary,
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  _SizeOption(
+                                    label: 'Regular',
+                                    detail: '1/4 lb',
+                                    icon: Icons.lunch_dining_rounded,
+                                    selected: _size == 'Regular',
+                                    onTap: () =>
+                                        setState(() => _size = 'Regular'),
                                   ),
+                                  const SizedBox(width: 8),
+                                  _SizeOption(
+                                    label: 'Large',
+                                    detail: '+ ₱80',
+                                    icon: Icons.lunch_dining_rounded,
+                                    selected: _size == 'Large',
+                                    onTap: () =>
+                                        setState(() => _size = 'Large'),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _SizeOption(
+                                    label: 'Double',
+                                    detail: '+ ₱120',
+                                    icon: Icons.fastfood_rounded,
+                                    selected: _size == 'Double',
+                                    onTap: () =>
+                                        setState(() => _size = 'Double'),
+                                  ),
+                                ],
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 14),
+                                child: Divider(height: 1),
+                              ),
+                              const _FieldHeading(
+                                title: 'Extra toppings',
+                                trailing: 'Optional',
+                              ),
+                              const SizedBox(height: 9),
+                              _ExtraOption(
+                                label: 'Extra cheese',
+                                detail: '+ ₱25',
+                                selected: _extras.contains('Extra cheese'),
+                                onChanged: (value) => setState(
+                                  () => value
+                                      ? _extras.add('Extra cheese')
+                                      : _extras.remove('Extra cheese'),
+                                ),
+                              ),
+                              _ExtraOption(
+                                label: 'Crispy bacon',
+                                detail: '+ ₱45',
+                                selected: _extras.contains('Crispy bacon'),
+                                onChanged: (value) => setState(
+                                  () => value
+                                      ? _extras.add('Crispy bacon')
+                                      : _extras.remove('Crispy bacon'),
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Container(
+                                padding: const EdgeInsets.all(11),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceMuted,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      color: AppColors.brandOrange,
+                                      size: 17,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Your selected size and toppings are saved with the order. Final prices are checked at checkout.',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: AppColors.textSecondary,
+                                          height: 1.35,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -395,101 +490,164 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         ),
                       ],
                       if (isFriesProduct) ...[
-                        const SizedBox(height: 18),
-                        const _FieldHeading(
-                          title: 'Fries size',
-                          trailing: 'Select one',
-                        ),
-                        const SizedBox(height: 9),
-                        Row(
-                          children: [
-                            _SizeOption(
-                              label: 'Small',
-                              detail: '₱${product.price.toStringAsFixed(0)}',
-                              icon: Icons.fastfood_rounded,
-                              selected: _size == 'Small',
-                              onTap: () => setState(() => _size = 'Small'),
-                            ),
-                            const SizedBox(width: 8),
-                            _SizeOption(
-                              label: 'Medium',
-                              detail: '₱${product.price.toStringAsFixed(0)}',
-                              icon: Icons.fastfood_rounded,
-                              selected: _size == 'Medium',
-                              onTap: () => setState(() => _size = 'Medium'),
-                            ),
-                            const SizedBox(width: 8),
-                            _SizeOption(
-                              label: 'Large',
-                              detail: '₱${product.price.toStringAsFixed(0)}',
-                              icon: Icons.fastfood_rounded,
-                              selected: _size == 'Large',
-                              onTap: () => setState(() => _size = 'Large'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 7),
-                        Text(
-                          'All sizes are currently ₱${product.price.toStringAsFixed(0)}.',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 10,
+                        const SizedBox(height: 14),
+                        _ProductOptionsPanel(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const _FieldHeading(
+                                title: 'Fries size',
+                                trailing: 'Select one',
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  for (var index = 0; index < 3; index++) ...[
+                                    if (index > 0) const SizedBox(width: 8),
+                                    _SizeOption(
+                                      label: const [
+                                        'Small',
+                                        'Medium',
+                                        'Large',
+                                      ][index],
+                                      detail:
+                                          '₱${product.price.toStringAsFixed(0)}',
+                                      icon: Icons.fastfood_rounded,
+                                      selected:
+                                          _size ==
+                                          const [
+                                            'Small',
+                                            'Medium',
+                                            'Large',
+                                          ][index],
+                                      onTap: () => setState(
+                                        () => _size = const [
+                                          'Small',
+                                          'Medium',
+                                          'Large',
+                                        ][index],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'All sizes currently use this product’s listed price.',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 10,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                       if (isDrinkProduct) ...[
-                        const SizedBox(height: 18),
-                        const _FieldHeading(
-                          title: 'Drink brand',
-                          trailing: 'Choose one',
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: _drinkBrands
-                              .map(
-                                (brand) => _BrandOption(
-                                  brand: brand,
-                                  selected: _drinkBrand == brand,
-                                  onTap: () =>
-                                      setState(() => _drinkBrand = brand),
+                        const SizedBox(height: 14),
+                        _ProductOptionsPanel(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const _FieldHeading(
+                                title: 'Drink brand',
+                                trailing: 'Choose one',
+                              ),
+                              const SizedBox(height: 9),
+                              Wrap(
+                                spacing: 7,
+                                runSpacing: 7,
+                                children: _drinkBrands
+                                    .map(
+                                      (brand) => _BrandOption(
+                                        brand: brand,
+                                        selected: _drinkBrand == brand,
+                                        onTap: () =>
+                                            setState(() => _drinkBrand = brand),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 14),
+                                child: Divider(height: 1),
+                              ),
+                              _FieldHeading(
+                                title: 'Drink size',
+                                trailing:
+                                    '₱${product.price.toStringAsFixed(0)} listed price',
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  for (
+                                    var index = 0;
+                                    index < _drinkSizes.length;
+                                    index++
+                                  ) ...[
+                                    if (index > 0) const SizedBox(width: 8),
+                                    _SizeOption(
+                                      label: _drinkSizes[index],
+                                      detail:
+                                          '₱${product.price.toStringAsFixed(0)}',
+                                      icon: Icons.local_cafe_rounded,
+                                      selected: _size == _drinkSizes[index],
+                                      onTap: () => setState(
+                                        () => _size = _drinkSizes[index],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'All drink sizes currently use this product’s listed price.',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 10,
+                                  height: 1.35,
                                 ),
-                              )
-                              .toList(),
-                        ),
-                        const SizedBox(height: 16),
-                        _FieldHeading(
-                          title: 'Drink size',
-                          trailing:
-                              '₱${product.price.toStringAsFixed(0)} listed price',
-                        ),
-                        const SizedBox(height: 9),
-                        Row(
-                          children: [
-                            for (
-                              var index = 0;
-                              index < _drinkSizes.length;
-                              index++
-                            ) ...[
-                              if (index > 0) const SizedBox(width: 8),
-                              _SizeOption(
-                                label: _drinkSizes[index],
-                                detail: '₱${product.price.toStringAsFixed(0)}',
-                                icon: Icons.local_cafe_rounded,
-                                selected: _size == _drinkSizes[index],
-                                onTap: () =>
-                                    setState(() => _size = _drinkSizes[index]),
                               ),
                             ],
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 7),
-                        Text(
-                          'All drink sizes are currently ₱${product.price.toStringAsFixed(0)}.',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 10,
+                      ],
+                      if (!isBurgerProduct &&
+                          !isFriesProduct &&
+                          !isDrinkProduct) ...[
+                        const SizedBox(height: 14),
+                        _ProductOptionsPanel(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const _FieldHeading(
+                                title: 'Ready to order',
+                                trailing: 'Sold as listed',
+                              ),
+                              const SizedBox(height: 10),
+                              const Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.shopping_bag_outlined,
+                                    color: AppColors.brandOrange,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 9),
+                                  Expanded(
+                                    child: Text(
+                                      'Choose a quantity below to update your order total, then add this item to your cart.',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 12,
+                                        height: 1.45,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -583,7 +741,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                           final toppings = _extras.toList()
                                             ..sort();
                                           final displayName = isDrinkProduct
-                                              ? '$_drinkBrand ${_size == 'Regular' ? '' : '$_size '}${product.name}'
+                                              ? _drinkDisplayName(product)
                                               : '${(isBurgerProduct && _size != 'Regular') || isFriesProduct ? '$_size ' : ''}${product.name}${toppings.isEmpty ? '' : ' + ${toppings.join(', ')}'}';
                                           cart.addItem(
                                             product,
@@ -627,10 +785,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                         size: 18,
                                       ),
                                       const SizedBox(width: 8),
-                                      const Expanded(
+                                      Expanded(
                                         child: Text(
-                                          'Add to cart',
-                                          style: TextStyle(
+                                          product.available
+                                              ? 'Add to cart'
+                                              : 'Unavailable',
+                                          style: const TextStyle(
                                             fontWeight: FontWeight.w900,
                                           ),
                                         ),
@@ -711,6 +871,30 @@ class _HeroPill extends StatelessWidget {
         ),
       ],
     ),
+  );
+}
+
+class _ProductOptionsPanel extends StatelessWidget {
+  const _ProductOptionsPanel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: AppColors.border),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x060F0B09),
+          blurRadius: 14,
+          offset: Offset(0, 5),
+        ),
+      ],
+    ),
+    child: child,
   );
 }
 
@@ -807,61 +991,73 @@ class _SizeOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: AnimatedPressScale(
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
-            decoration: BoxDecoration(
-              color: selected ? AppColors.surfaceMuted : AppColors.surface,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: selected ? AppColors.brandOrange : AppColors.border,
-                width: selected ? 1.5 : 1.0,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: '$label, $detail',
+        child: AnimatedPressScale(
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              constraints: const BoxConstraints(minHeight: 84),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+              decoration: BoxDecoration(
+                color: selected ? AppColors.surfaceMuted : AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: selected ? AppColors.brandOrange : AppColors.border,
+                  width: selected ? 1.6 : 1,
+                ),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.brandOrange.withValues(alpha: .1),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : const [],
               ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: AppColors.brandOrange.withValues(alpha: .12),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : const [],
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  icon,
-                  color: selected
-                      ? AppColors.brandOrange
-                      : AppColors.textSecondary,
-                  size: 24,
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  detail,
-                  style: TextStyle(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
                     color: selected
-                        ? AppColors.brandOrangeDark
+                        ? AppColors.brandOrange
                         : AppColors.textSecondary,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                    fontSize: 10,
+                    size: 22,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 5),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    detail,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: selected
+                          ? AppColors.brandOrangeDark
+                          : AppColors.textSecondary,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -882,43 +1078,48 @@ class _BrandOption extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => AnimatedPressScale(
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.surfaceMuted : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? AppColors.brandOrange : AppColors.border,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (selected) ...[
-              const Icon(
-                Icons.check_rounded,
-                size: 15,
-                color: AppColors.brandOrange,
-              ),
-              const SizedBox(width: 5),
-            ],
-            Text(
-              brand,
-              style: TextStyle(
-                color: selected
-                    ? AppColors.brandOrangeDark
-                    : AppColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-              ),
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    selected: selected,
+    label: brand,
+    child: AnimatedPressScale(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.surfaceMuted : AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? AppColors.brandOrange : AppColors.border,
+              width: selected ? 1.5 : 1,
             ),
-          ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (selected) ...[
+                const Icon(
+                  Icons.check_rounded,
+                  size: 15,
+                  color: AppColors.brandOrange,
+                ),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                brand,
+                style: TextStyle(
+                  color: selected
+                      ? AppColors.brandOrangeDark
+                      : AppColors.textPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     ),
