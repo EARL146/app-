@@ -368,26 +368,28 @@ class _MenuOfferState extends State<_MenuOffer> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final imageWidth = (constraints.maxWidth * .36)
-            .clamp(104.0, 165.0)
+        final heroHeight = (constraints.maxWidth * .52)
+            .clamp(190.0, 270.0)
             .toDouble();
-        final textWidth = (constraints.maxWidth - imageWidth - 30)
-            .clamp(145.0, 250.0)
+        final textWidth = (constraints.maxWidth - 38)
+            .clamp(170.0, 330.0)
             .toDouble();
         return Container(
-          height: 126,
+          height: heroHeight,
           decoration: BoxDecoration(
-            color: const Color(0xFF2D1D16),
             borderRadius: BorderRadius.circular(19),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.textPrimary.withValues(alpha: .12),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: imageWidth,
+              Positioned.fill(
                 child: GestureDetector(
                   onHorizontalDragEnd: (details) {
                     final velocity = details.primaryVelocity ?? 0;
@@ -435,36 +437,49 @@ class _MenuOfferState extends State<_MenuOffer> {
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
+                        begin: Alignment.bottomLeft,
+                        end: Alignment.topRight,
                         colors: [
-                          const Color(0xFF2D1D16),
-                          const Color(0xFF2D1D16).withValues(alpha: .92),
-                          const Color(0xFF2D1D16).withValues(alpha: .04),
+                          const Color(0xD916100D),
+                          const Color(0x6616100D),
+                          const Color(0x0016100D),
                         ],
-                        stops: const [0, .56, 1],
+                        stops: const [0, .46, 1],
                       ),
                     ),
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(15, 13, 15, 12),
-                child: SizedBox(
-                  width: textWidth,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              Positioned.fill(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 17, 44, 27),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      width: textWidth,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                       const BrandGradientBadge(
                         label: 'BURGERBITES MENU',
                         icon: Icons.restaurant_rounded,
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 12),
                       const Text(
                         'Delicious food,\ndelivered fast',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          height: 1.06,
+                          height: 1.08,
+                          shadows: [
+                            Shadow(
+                              color: Color(0x99000000),
+                              blurRadius: 12,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -472,37 +487,61 @@ class _MenuOfferState extends State<_MenuOffer> {
                         'Burgers, fries & drinks',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Colors.white70, fontSize: 9),
-                      ),
-                      const SizedBox(height: 7),
-                      InkWell(
-                        onTap: widget.onTap,
-                        child: const Row(
-                          children: [
-                            Text(
-                              'Browse menu',
-                              style: TextStyle(
-                                color: AppColors.brandOrange,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 10,
-                              ),
-                            ),
-                            SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_rounded,
-                              color: AppColors.brandOrange,
-                              size: 13,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          shadows: [
+                            Shadow(
+                              color: Color(0x99000000),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                      const SizedBox(height: 9),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: widget.onTap,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: .96),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Browse menu',
+                                style: TextStyle(
+                                  color: AppColors.brandOrange,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              SizedBox(width: 5),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                color: AppColors.brandOrange,
+                                size: 14,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
               Positioned(
-                right: 9,
-                bottom: 7,
+                right: 10,
+                bottom: 9,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: List.generate(_images.length, (index) {
@@ -525,9 +564,9 @@ class _MenuOfferState extends State<_MenuOffer> {
                               width: selected ? 9 : 6,
                               height: 6,
                               decoration: BoxDecoration(
-                                color: selected
-                                    ? AppColors.brandOrange
-                                    : Colors.white.withValues(alpha: .8),
+                        color: Colors.white.withValues(
+                          alpha: selected ? 1 : .62,
+                        ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),

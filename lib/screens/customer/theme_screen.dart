@@ -419,41 +419,46 @@ class _PaletteTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       border: Border.all(color: selected ? palette.primary : AppColors.border),
     ),
-    child: ListTile(
-      dense: true,
-      onTap: onTap,
-      leading: Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [palette.primary, palette.secondary],
-          ),
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: selected
-            ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-            : null,
-      ),
-      title: Text(
-        palette.name,
-        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
-      ),
-      subtitle: Text(
-        palette.description,
-        style: const TextStyle(fontSize: 8, color: AppColors.textSecondary),
-      ),
-      trailing: selected
-          ? Icon(
-              Icons.radio_button_checked_rounded,
-              color: palette.primary,
-              size: 18,
-            )
-          : const Icon(
-              Icons.radio_button_off_rounded,
-              color: AppColors.border,
-              size: 18,
+    child: Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        dense: true,
+        onTap: onTap,
+        leading: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [palette.primary, palette.secondary],
             ),
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: selected
+              ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+              : null,
+        ),
+        title: Text(
+          palette.name,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
+        ),
+        subtitle: Text(
+          palette.description,
+          style: const TextStyle(fontSize: 8, color: AppColors.textSecondary),
+        ),
+        trailing: selected
+            ? Icon(
+                Icons.radio_button_checked_rounded,
+                color: palette.primary,
+                size: 18,
+              )
+            : const Icon(
+                Icons.radio_button_off_rounded,
+                color: AppColors.border,
+                size: 18,
+              ),
+      ),
     ),
   );
 }
