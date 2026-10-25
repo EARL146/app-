@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../constants/drink_options.dart';
+import '../../constants/fries_options.dart';
+import '../../l10n/app_translations.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
@@ -27,7 +30,11 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
-    final filteredProducts = _selectedCategory == 'All'
+    final filteredProducts = _selectedCategory == 'Discount Sale'
+        ? catalog.products
+              .where((product) => product.discountPercent > 0)
+              .toList()
+        : _selectedCategory == 'All'
         ? catalog.products
         : catalog.products
               .where((product) => product.category == _selectedCategory)
@@ -46,9 +53,9 @@ class _MenuScreenState extends State<MenuScreen> {
                       padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
                       child: Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Menu',
+                              'Menu'.tr,
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
@@ -56,13 +63,15 @@ class _MenuScreenState extends State<MenuScreen> {
                             ),
                           ),
                           IconButton(
-                            tooltip: 'Search',
+                            tooltip: 'Order updates'.tr,
+                            visualDensity: VisualDensity.compact,
                             onPressed: () =>
-                                Navigator.of(context).pushNamed('/search'),
-                            icon: const Icon(Icons.search_rounded),
+                                Navigator.of(context)
+                                    .pushNamed('/order-history'),
+                            icon: const Icon(Icons.notifications_none_rounded),
                           ),
                           IconButton(
-                            tooltip: 'Cart',
+                            tooltip: 'Cart'.tr,
                             onPressed: () =>
                                 Navigator.of(context).pushNamed('/cart'),
                             icon: Consumer<CartProvider>(
@@ -104,7 +113,7 @@ class _MenuScreenState extends State<MenuScreen> {
                                 ),
                               ],
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
                                 Icon(
                                   Icons.search_rounded,
@@ -114,7 +123,7 @@ class _MenuScreenState extends State<MenuScreen> {
                                 SizedBox(width: 9),
                                 Expanded(
                                   child: Text(
-                                    'Search burgers, crispy fries, drinks',
+                                    'Search burgers, crispy fries, drinks'.tr,
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 12,
@@ -150,7 +159,7 @@ class _MenuScreenState extends State<MenuScreen> {
                           final selected = category == _selectedCategory;
                           return AnimatedPressScale(
                             child: ChoiceChip(
-                              label: Text(category),
+                              label: Text(category.tr),
                               selected: selected,
                               onSelected: (_) =>
                                   setState(() => _selectedCategory = category),
@@ -184,9 +193,9 @@ class _MenuScreenState extends State<MenuScreen> {
                       padding: const EdgeInsets.fromLTRB(18, 4, 18, 8),
                       child: Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Popular picks',
+                              'Popular picks'.tr,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
@@ -194,8 +203,8 @@ class _MenuScreenState extends State<MenuScreen> {
                             ),
                           ),
                           Text(
-                            '${filteredProducts.length} items',
-                            style: const TextStyle(
+                            '${filteredProducts.length} ${'items'.tr}',
+                            style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 11,
                             ),
@@ -216,10 +225,11 @@ class _MenuScreenState extends State<MenuScreen> {
                               Text(
                                 catalog.errorMessage ??
                                     (catalog.isLoading
-                                        ? 'Loading menu…'
-                                        : 'No products are available in this category yet.'),
+                                        ? 'Loading menu…'.tr
+                                        : 'No products are available in this category yet.'
+                                              .tr),
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: AppColors.textSecondary,
                                 ),
                               ),
@@ -228,7 +238,7 @@ class _MenuScreenState extends State<MenuScreen> {
                                   onPressed: () =>
                                       catalog.loadProducts(force: true),
                                   icon: const Icon(Icons.refresh_rounded),
-                                  label: const Text('Try again'),
+                                  label: Text('Try again'.tr),
                                 ),
                             ],
                           ),
@@ -283,14 +293,14 @@ class _MenuScreenState extends State<MenuScreen> {
                               const Icon(Icons.shopping_bag_outlined, size: 18),
                               const SizedBox(width: 8),
                               AnimatedValueText(
-                                '${cart.items.fold<int>(0, (sum, item) => sum + item.quantity)} items',
+                                '${cart.items.fold<int>(0, (sum, item) => sum + item.quantity)} ${'items'.tr}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
                               const Spacer(),
                               AnimatedValueText(
-                                'View cart · ₱${cart.total.toStringAsFixed(0)}',
+                                '${'View cart'.tr} · ₱${cart.total.toStringAsFixed(0)}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -461,78 +471,78 @@ class _MenuOfferState extends State<_MenuOffer> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                      const BrandGradientBadge(
-                        label: 'BURGERBITES MENU',
-                        icon: Icons.restaurant_rounded,
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Delicious food,\ndelivered fast',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          height: 1.08,
-                          shadows: [
-                            Shadow(
-                              color: Color(0x99000000),
-                              blurRadius: 12,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Burgers, fries & drinks',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          shadows: [
-                            Shadow(
-                              color: Color(0x99000000),
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 9),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: widget.onTap,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 7,
+                          BrandGradientBadge(
+                            label: 'BURGERBITES MENU'.tr,
+                            icon: Icons.restaurant_rounded,
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: .96),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Browse menu',
-                                style: TextStyle(
-                                  color: AppColors.brandOrange,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 11,
+                          const SizedBox(height: 12),
+                          Text(
+                            'Delicious food,\ndelivered fast'.tr,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              height: 1.08,
+                              shadows: [
+                                Shadow(
+                                  color: Color(0x99000000),
+                                  blurRadius: 12,
+                                  offset: Offset(0, 3),
                                 ),
-                              ),
-                              SizedBox(width: 5),
-                              Icon(
-                                Icons.arrow_forward_rounded,
-                                color: AppColors.brandOrange,
-                                size: 14,
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Burgers, fries & drinks'.tr,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              shadows: [
+                                Shadow(
+                                  color: Color(0x99000000),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: widget.onTap,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: .96),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Browse menu'.tr,
+                                    style: TextStyle(
+                                      color: AppColors.brandOrange,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                  SizedBox(width: 5),
+                                  Icon(
+                                    Icons.arrow_forward_rounded,
+                                    color: AppColors.brandOrange,
+                                    size: 14,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -540,16 +550,19 @@ class _MenuOfferState extends State<_MenuOffer> {
                 ),
               ),
               Positioned(
-                right: 10,
+                left: 0,
+                right: 0,
                 bottom: 9,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(_images.length, (index) {
                     final selected = index == _activeImage;
                     return Semantics(
                       button: true,
                       selected: selected,
-                      label: 'Show ${_labels[index]} menu image',
+                      label:
+                          '${'Show'.tr} ${_labels[index].tr} ${'menu image'.tr}',
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 2),
                         child: InkWell(
@@ -564,9 +577,9 @@ class _MenuOfferState extends State<_MenuOffer> {
                               width: selected ? 9 : 6,
                               height: 6,
                               decoration: BoxDecoration(
-                        color: Colors.white.withValues(
-                          alpha: selected ? 1 : .62,
-                        ),
+                                color: Colors.white.withValues(
+                                  alpha: selected ? 1 : .62,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
@@ -592,6 +605,25 @@ class MenuProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDrink = product.category?.trim().toLowerCase() == 'drinks';
+    final isFries = FriesOptions.isFries(product.category, product.name);
+    final drinkBrand = DrinkOptions.brandForProductName(product.name);
+    final displayName = isDrink ? drinkBrand : product.name;
+    final quickAddName = isFries ? 'Small ${product.name}' : displayName;
+    final displayDescription = isDrink
+        ? 'Choose your favorite cold drink.'
+        : product.description;
+    final displayPrice = isDrink
+        ? DrinkOptions.priceForSize('Regular')
+        : isFries
+        ? FriesOptions.priceForSize('Small')
+        : product.price;
+    final discountedDisplayPrice = product.applyDiscount(
+      displayPrice,
+      size: isFries ? 'Small' : 'Regular',
+      drinkBrand: isDrink ? drinkBrand : null,
+    );
+
     return AnimatedPressScale(
       child: InkWell(
         onTap: () =>
@@ -689,10 +721,26 @@ class MenuProductCard extends StatelessWidget {
                               return;
                             }
                             if (!context.mounted) return;
-                            cart.addItem(product);
+                            cart.addItem(
+                              product,
+                              unitPrice: isDrink || isFries
+                                  ? displayPrice
+                                  : null,
+                              displayName: isDrink || isFries
+                                  ? quickAddName
+                                  : null,
+                              customizations: isDrink
+                                  ? {
+                                      'size': 'Regular',
+                                      'drink_brand': drinkBrand,
+                                    }
+                                  : isFries
+                                  ? {'size': 'Small'}
+                                  : const {},
+                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('${product.name} added to cart'),
+                                content: Text('$quickAddName added to cart'),
                                 behavior: SnackBarBehavior.floating,
                                 duration: const Duration(seconds: 1),
                               ),
@@ -711,7 +759,7 @@ class MenuProductCard extends StatelessWidget {
               ),
               const SizedBox(height: 7),
               Text(
-                product.name,
+                displayName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -721,10 +769,10 @@ class MenuProductCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                product.description,
+                displayDescription,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 9,
                   height: 1.25,
@@ -735,15 +783,17 @@ class MenuProductCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      '₱${product.price.toStringAsFixed(0)}',
-                      style: const TextStyle(
+                      isFries
+                          ? 'From ₱${discountedDisplayPrice.toStringAsFixed(0)}'
+                          : '₱${discountedDisplayPrice.toStringAsFixed(0)}',
+                      style: TextStyle(
                         color: AppColors.brandOrange,
                         fontWeight: FontWeight.w900,
                         fontSize: 13,
                       ),
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Customizable',
                     style: TextStyle(
                       color: AppColors.textSecondary,

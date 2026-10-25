@@ -28,13 +28,13 @@ class AdminRouteGate extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.admin_panel_settings_outlined,
                         size: 52,
                         color: AppColors.brandOrange,
                       ),
                       const SizedBox(height: 14),
-                      const Text(
+                      Text(
                         'Administrator sign-in required',
                         textAlign: TextAlign.center,
                         style: TextStyle(
@@ -44,7 +44,7 @@ class AdminRouteGate extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Sign in with an administrator account issued by the BurgerBites server.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: AppColors.textSecondary),

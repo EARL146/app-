@@ -9,14 +9,14 @@ class FoodImage extends StatelessWidget {
     this.category,
     this.fit = BoxFit.cover,
     this.borderRadius = 16,
-    this.backgroundColor = AppColors.surfaceMuted,
+    this.backgroundColor,
   });
 
   final String? imageUrl;
   final String? category;
   final BoxFit fit;
   final double borderRadius;
-  final Color backgroundColor;
+  final Color? backgroundColor;
 
   static String assetFor(String? imageUrl, String? category) {
     if (imageUrl != null && imageUrl.startsWith('assets/products/')) {
@@ -49,7 +49,7 @@ class FoodImage extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         errorBuilder: (context, error, stackTrace) => Container(
-          color: backgroundColor,
+          color: backgroundColor ?? AppColors.surfaceMuted,
           alignment: Alignment.center,
           child: Icon(
             _categoryIcon(category),

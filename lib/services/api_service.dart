@@ -251,14 +251,6 @@ class ApiService {
       }
     }
 
-    if (response.statusCode == 401) {
-      return ApiResponse<T>(
-        success: false,
-        error: 'Email or password is incorrect, or your session has expired.',
-        statusCode: response.statusCode,
-      );
-    }
-
     final responseMap = responseData is Map<String, dynamic>
         ? responseData
         : const <String, dynamic>{};
@@ -267,6 +259,8 @@ class ApiService {
       success: false,
       error: errorMessage is String && errorMessage.isNotEmpty
           ? errorMessage
+          : response.statusCode == 401
+          ? 'Your session has expired. Sign in again.'
           : 'BurgerBites could not complete the request. Try again.',
       statusCode: response.statusCode,
     );
@@ -277,5 +271,5 @@ class ApiService {
     error: 'The BurgerBites API is not configured. Set BURGER_BITES_API_BASE_URL and restart the app.',
   );
 
-  Future<void> logout() => _storageService.clearAll();
+  Future<void> logout() => _storageService.clearAuthentication();
 }

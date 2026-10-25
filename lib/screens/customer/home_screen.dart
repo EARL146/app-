@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../l10n/app_translations.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
-import '../../providers/customer_orders_provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/animated_brand_button.dart';
 import '../../widgets/brand_logo.dart';
@@ -19,9 +19,16 @@ import 'order_history_screen.dart';
 import 'profile_screen.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
-  const CustomerHomeScreen({super.key, this.openMenuInitially = false});
+  const CustomerHomeScreen({
+    super.key,
+    this.openMenuInitially = false,
+    this.initialMenuCategory = 'All',
+    this.initialTabIndex,
+  });
 
   final bool openMenuInitially;
+  final String initialMenuCategory;
+  final int? initialTabIndex;
 
   @override
   State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
@@ -33,14 +40,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.openMenuInitially ? 1 : 0;
+    _selectedIndex =
+        widget.initialTabIndex ?? (widget.openMenuInitially ? 1 : 0);
   }
 
-  final List<Widget> _screens = const [
-    _HomeTab(),
-    MenuScreenButton(),
-    _OrdersTab(),
-    ProfileScreenButton(),
+  List<Widget> get _screens => [
+    const _HomeTab(),
+    MenuScreenButton(initialCategory: widget.initialMenuCategory),
+    const _OrdersTab(),
+    const ProfileScreenButton(),
   ];
 
   @override
@@ -53,7 +61,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
-          border: const Border(top: BorderSide(color: AppColors.border)),
+          border: Border(top: BorderSide(color: AppColors.border)),
           boxShadow: [
             BoxShadow(
               color: AppColors.textPrimary.withValues(alpha: 0.06),
@@ -67,22 +75,22 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           elevation: 0,
           backgroundColor: Colors.transparent,
           onTap: (index) => setState(() => _selectedIndex = index),
-          items: const [
+          items: [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
-              label: 'Home',
+              label: 'Home'.tr,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.restaurant_menu_rounded),
-              label: 'Menu',
+              label: 'Menu'.tr,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.receipt_long_rounded),
-              label: 'Orders',
+              label: 'Orders'.tr,
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_rounded),
-              label: 'Profile',
+              label: 'Profile'.tr,
             ),
           ],
         ),
@@ -142,7 +150,7 @@ Future<void> _showHomeNavigationMenu(BuildContext context) async {
                       children: [
                         const BrandLogo(width: 58, height: 58),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
@@ -157,7 +165,7 @@ Future<void> _showHomeNavigationMenu(BuildContext context) async {
                               ),
                               SizedBox(height: 3),
                               Text(
-                                'Explore your app',
+                                'Explore your app'.tr,
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 12,
@@ -167,7 +175,7 @@ Future<void> _showHomeNavigationMenu(BuildContext context) async {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Close menu',
+                          tooltip: 'Close menu'.tr,
                           onPressed: () => Navigator.of(dialogContext).pop(),
                           icon: const Icon(Icons.close_rounded),
                           color: AppColors.textSecondary,
@@ -175,7 +183,7 @@ Future<void> _showHomeNavigationMenu(BuildContext context) async {
                       ],
                     ),
                   ),
-                  const Divider(height: 1, color: AppColors.border),
+                  Divider(height: 1, color: AppColors.border),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(14, 18, 14, 16),
@@ -221,7 +229,7 @@ Future<void> _showHomeNavigationMenu(BuildContext context) async {
                       color: AppColors.surfaceMuted,
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(
                           Icons.favorite_rounded,
@@ -231,7 +239,7 @@ Future<void> _showHomeNavigationMenu(BuildContext context) async {
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'Fresh bites, happy moments',
+                            'Fresh bites, happy moments'.tr,
                             style: TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 12,
@@ -309,7 +317,7 @@ class _HomeNavigationMenuButton extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  label,
+                  label.tr,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -344,8 +352,8 @@ class _HomeNavigationSectionLabel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
       child: Text(
-        label,
-        style: const TextStyle(
+        label.tr,
+        style: TextStyle(
           color: AppColors.textSecondary,
           fontSize: 10,
           fontWeight: FontWeight.w800,
@@ -371,8 +379,9 @@ class _HomeTab extends StatelessWidget {
             .toSet()
             .toList()
           ..sort();
-    final orderProvider = context.watch<CustomerOrdersProvider>();
-    final recentOrders = orderProvider.orders.take(2).toList();
+    if (products.any((product) => product.discountPercent > 0)) {
+      categories.insert(0, 'Discount Sale');
+    }
     final auth = context.watch<AuthService>();
     final deliveryAddress = auth.currentUserAddress?.trim().isNotEmpty == true
         ? auth.currentUserAddress!
@@ -409,7 +418,7 @@ class _HomeTab extends StatelessWidget {
                           ],
                         ),
                         child: IconButton(
-                          tooltip: 'Open menu',
+                          tooltip: 'Open menu'.tr,
                           onPressed: () => _showHomeNavigationMenu(context),
                           icon: const Icon(Icons.menu_rounded, size: 22),
                         ),
@@ -455,7 +464,7 @@ class _HomeTab extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Order updates',
+                        tooltip: 'Order updates'.tr,
                         visualDensity: VisualDensity.compact,
                         onPressed: () =>
                             Navigator.of(context).pushNamed('/order-history'),
@@ -496,7 +505,7 @@ class _HomeTab extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
                                 Icon(
                                   Icons.search_rounded,
@@ -506,7 +515,8 @@ class _HomeTab extends StatelessWidget {
                                 SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Search juicy burgers, crispy fries, drinks...',
+                                    'Search juicy burgers, crispy fries, drinks...'
+                                        .tr,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -571,14 +581,14 @@ class _HomeTab extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_on_rounded,
                           color: AppColors.brandOrange,
                           size: 16,
                         ),
                         const SizedBox(width: 5),
-                        const Text(
-                          'DELIVER TO:',
+                        Text(
+                          'DELIVER TO:'.tr,
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 9,
@@ -602,7 +612,7 @@ class _HomeTab extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                           onTap: () =>
                               Navigator.of(context).pushNamed('/profile'),
-                          child: const Padding(
+                          child: Padding(
                             padding: EdgeInsets.symmetric(
                               horizontal: 6,
                               vertical: 2,
@@ -611,7 +621,7 @@ class _HomeTab extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  'Change',
+                                  'Change'.tr,
                                   style: TextStyle(
                                     color: AppColors.brandOrange,
                                     fontWeight: FontWeight.w800,
@@ -660,7 +670,7 @@ class _HomeTab extends StatelessWidget {
                   if (categories.isEmpty)
                     Text(
                       catalog.isLoading ? 'Loading menu categories…' : 'Menu categories will appear when products are available.',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 11,
                       ),
@@ -707,7 +717,7 @@ class _HomeTab extends StatelessWidget {
                         children: [
                           Text(
                             catalog.errorMessage ?? 'Our menu is being updated. Please check again soon.',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 11,
                             ),
@@ -739,23 +749,7 @@ class _HomeTab extends StatelessWidget {
                   const _DifferenceAndCustomersSection(),
                   const SizedBox(height: 20),
 
-                  // 9. "Your recent orders" (Polished card, preserves widget test contract)
-                  _SectionHeading(
-                    title: 'Your recent orders',
-                    action: auth.isAuthenticated ? 'Order history' : 'Sign in',
-                    onTap: () => Navigator.of(context).pushNamed(
-                      auth.isAuthenticated ? '/order-history' : '/sign-in',
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _RecentOrdersSection(
-                    auth: auth,
-                    orderProvider: orderProvider,
-                    recentOrders: recentOrders,
-                  ),
-                  const SizedBox(height: 22),
-
-                  // 10. "Find Us — Location: Compostela Davao de oro PH" with Draggable Map (Image 6)
+                  // Find Us — Location: Compostela Davao de oro PH
                   const _FindUsDraggableMapSection(),
                   const SizedBox(height: 20),
 
@@ -961,16 +955,17 @@ class _HeroOfferWithTickerState extends State<_HeroOfferWithTicker> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (!accessibleText && !compactLayout) ...[
-                              const BrandGradientBadge(
-                                label: 'BURGERBITES MENU',
+                              BrandGradientBadge(
+                                label: 'BURGERBITES MENU'.tr,
                                 icon: Icons.local_fire_department_rounded,
                               ),
                               const SizedBox(height: 6),
                             ],
                             Text(
                               accessibleText
-                                  ? 'Delicious Food, Delivered fast'
-                                  : 'Delicious Food,\nDelivered fast',
+                                  ? 'Delicious food,\ndelivered fast'.tr
+                                        .replaceAll('\n', ' ')
+                                  : 'Delicious food,\ndelivered fast'.tr,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -991,8 +986,9 @@ class _HeroOfferWithTickerState extends State<_HeroOfferWithTicker> {
                             ),
                             if (!accessibleText && !compactLayout) ...[
                               const SizedBox(height: 4),
-                              const Text(
-                                'Freshly grilled burgers, crispy golden fries & ice-cold drinks.',
+                              Text(
+                                'Freshly grilled burgers, crispy golden fries & ice-cold drinks.'
+                                    .tr,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -1020,8 +1016,8 @@ class _HeroOfferWithTickerState extends State<_HeroOfferWithTicker> {
                                       borderRadius: BorderRadius.circular(30),
                                     ),
                                   ),
-                                  child: const Text(
-                                    'Order now',
+                                  child: Text(
+                                    'Order now'.tr,
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w900,
@@ -1336,7 +1332,7 @@ class _StorefrontAndGrillCollage extends StatelessWidget {
           fit: BoxFit.contain,
           alignment: Alignment.center,
           semanticLabel: 'BurgerBites storefront with oven, flame grill, and burger photos',
-          errorBuilder: (context, error, stackTrace) => const Center(
+          errorBuilder: (context, error, stackTrace) => Center(
             child: Icon(Icons.storefront_rounded, color: AppColors.brandOrange),
           ),
         ),
@@ -1718,7 +1714,7 @@ class _ShowcaseColumnCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: SizedBox(
-        height: 220,
+        height: 230,
         width: double.infinity,
         child: Container(
           padding: const EdgeInsets.all(10),
@@ -1757,7 +1753,7 @@ class _ShowcaseColumnCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  data.title,
+                  data.title.tr,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -1778,14 +1774,14 @@ class _ShowcaseColumnCard extends StatelessWidget {
                         width: 4.5,
                         height: 4.5,
                         margin: const EdgeInsets.only(top: 4, right: 5),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.brandOrange,
                           shape: BoxShape.circle,
                         ),
                       ),
                       Expanded(
                         child: Text(
-                          item,
+                          item.tr,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1802,7 +1798,7 @@ class _ShowcaseColumnCard extends StatelessWidget {
               const Spacer(),
               Text(
                 data.subtitle ?? '${data.items.length} options',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 8,
                   fontWeight: FontWeight.w700,
@@ -1892,7 +1888,7 @@ class _DifferenceAndCustomersSection extends StatelessWidget {
               color: const Color(0xFF0F2942),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text.rich(
+            child: Text.rich(
               TextSpan(
                 children: [
                   TextSpan(
@@ -2124,7 +2120,7 @@ class _DiffFeatureTile extends StatelessWidget {
         Container(
           width: 28,
           height: 28,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: AppColors.primaryButtonGradient,
             shape: BoxShape.circle,
           ),
@@ -2153,7 +2149,7 @@ class _DiffFeatureTile extends StatelessWidget {
           item.desc,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 8.5,
             height: 1.25,
@@ -2165,203 +2161,6 @@ class _DiffFeatureTile extends StatelessWidget {
   }
 }
 
-/// Recent Orders Card (Upgraded from Image 2 while preserving all widget test assertions).
-class _RecentOrdersSection extends StatelessWidget {
-  const _RecentOrdersSection({
-    required this.auth,
-    required this.orderProvider,
-    required this.recentOrders,
-  });
-
-  final AuthService auth;
-  final CustomerOrdersProvider orderProvider;
-  final List<dynamic> recentOrders;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!auth.isAuthenticated) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: AppColors.warmSurfaceGradient,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceMuted,
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: const Icon(
-                Icons.receipt_long_rounded,
-                color: AppColors.brandOrange,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: Text(
-                'Sign in to view your order history.',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (!orderProvider.hasLoaded) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
-
-    if (orderProvider.errorMessage != null && recentOrders.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                orderProvider.errorMessage!,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-            TextButton.icon(
-              onPressed: orderProvider.isLoading
-                  ? null
-                  : () => orderProvider.loadOrders(force: true),
-              icon: const Icon(Icons.refresh_rounded, size: 15),
-              label: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (recentOrders.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: const Text(
-          'No orders yet. Browse the menu to get started.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        if (orderProvider.errorMessage != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Could not refresh. Showing saved orders.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: orderProvider.isLoading
-                      ? null
-                      : () => orderProvider.loadOrders(force: true),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ...recentOrders.map(
-          (order) => Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(13),
-            decoration: BoxDecoration(
-              gradient: AppColors.warmSurfaceGradient,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceMuted,
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: const Icon(
-                    Icons.receipt_long_rounded,
-                    color: AppColors.brandOrange,
-                  ),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        order.id,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${order.items.length} item${order.items.length == 1 ? '' : 's'} · ${order.status.displayName}',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  '₱${order.total.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.brandOrange,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// "Find Us — Location: Compostela Davao de oro PH" with Interactive Draggable Map & Kiosk Photo (Image 6).
 class _FindUsDraggableMapSection extends StatefulWidget {
   const _FindUsDraggableMapSection();
 
@@ -2404,7 +2203,7 @@ class _FindUsDraggableMapSectionState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           'Find Us',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -3141,7 +2940,7 @@ class _SectionHeading extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            title,
+            title.tr,
             style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
           ),
         ),
@@ -3152,7 +2951,7 @@ class _SectionHeading extends StatelessWidget {
             visualDensity: VisualDensity.compact,
           ),
           child: Text(
-            action,
+            action.tr,
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11),
           ),
         ),
@@ -3202,8 +3001,8 @@ class _CategoryBubble extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                label,
-                style: const TextStyle(
+                label.tr,
+                style: TextStyle(
                   fontSize: 9,
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w800,
@@ -3312,8 +3111,8 @@ class _ProductCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      '₱${product.price.toStringAsFixed(0)}',
-                      style: const TextStyle(
+                      '₱${product.applyDiscount(product.price).toStringAsFixed(0)}',
+                      style: TextStyle(
                         color: AppColors.brandOrange,
                         fontWeight: FontWeight.w900,
                         fontSize: 14,
@@ -3381,10 +3180,13 @@ class _CartButton extends StatelessWidget {
 }
 
 class MenuScreenButton extends StatelessWidget {
-  const MenuScreenButton({super.key});
+  const MenuScreenButton({super.key, this.initialCategory = 'All'});
+
+  final String initialCategory;
 
   @override
-  Widget build(BuildContext context) => const MenuScreen();
+  Widget build(BuildContext context) =>
+      MenuScreen(initialCategory: initialCategory);
 }
 
 class _OrdersTab extends StatelessWidget {

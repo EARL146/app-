@@ -51,16 +51,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const Center(
                       child: Column(
                         children: [
-                          BrandLogo(
-                            width: 120,
-                            height: 120,
-                            animate: true,
-                          ),
+                          BrandLogo(width: 120, height: 120, animate: true),
                         ],
                       ),
                     ),
                     const SizedBox(height: 26),
-                    const Text(
+                    Text(
                       'Create an account',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -71,7 +67,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Enter your details below to sign up for the app',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -83,7 +79,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 26),
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Full name',
                         filled: true,
                         fillColor: Colors.white,
@@ -114,7 +110,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Email address',
                         filled: true,
                         fillColor: Colors.white,
@@ -167,11 +163,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         border: const OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
-                        enabledBorder: const OutlineInputBorder(
+                        enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: AppColors.border),
                           borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
-                        focusedBorder: const OutlineInputBorder(
+                        focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(
                             color: AppColors.brandOrange,
                             width: 1.6,
@@ -242,7 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       alignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        const Text(
+                        Text(
                           'Already have an account?',
                           style: TextStyle(
                             fontSize: 13,
@@ -252,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         AnimatedPressScale(
                           child: TextButton(
                             onPressed: _openSignIn,
-                            child: const Text(
+                            child: Text(
                               'Sign in',
                               style: TextStyle(
                                 color: AppColors.brandOrange,

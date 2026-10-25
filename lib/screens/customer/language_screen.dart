@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../services/api_service.dart';
+import '../../l10n/app_translations.dart';
+import '../../providers/app_preferences_provider.dart';
 
 class LanguageScreen extends StatefulWidget {
   const LanguageScreen({super.key});
@@ -12,66 +14,23 @@ class LanguageScreen extends StatefulWidget {
 
 class _LanguageScreenState extends State<LanguageScreen> {
   final _searchController = TextEditingController();
-  String _selected = 'Bisaya (Cebuano)';
   bool _isSaving = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadLanguage();
-  }
-
-  Future<void> _loadLanguage() async {
-    final response = await ApiService().get<Map<String, dynamic>>(
-      '/me/preferences',
-      fromJson: (json) => json is Map<String, dynamic>
-          ? json
-          : throw const FormatException('Invalid preferences response.'),
-    );
-    if (!mounted || !response.success) return;
-    final preference = response.data?['preferences'];
-    if (preference is! Map<String, dynamic>) return;
-    const names = {
-      'ceb': 'Bisaya (Cebuano)',
-      'en': 'English (US / PH)',
-      'fil': 'Tagalog (Filipino)',
-      'ilo': 'Ilonggo (Hiligaynon)',
-      'war': 'Waray-Waray',
-      'es': 'Español',
-      'ja': '日本語 (Japanese)',
-      'ko': '한국어 (Korean)',
-    };
-    final name = names[preference['language']];
-    if (name != null) setState(() => _selected = name);
-  }
-
   Future<void> _saveLanguage() async {
-    const codes = {
-      'Bisaya (Cebuano)': 'ceb',
-      'English (US / PH)': 'en',
-      'Tagalog (Filipino)': 'fil',
-      'Ilonggo (Hiligaynon)': 'ilo',
-      'Waray-Waray': 'war',
-      'Español': 'es',
-      '日本語 (Japanese)': 'ja',
-      '한국어 (Korean)': 'ko',
-    };
     setState(() => _isSaving = true);
-    final response = await ApiService().put<Map<String, dynamic>>(
-      '/me/preferences',
-      body: {'language': codes[_selected] ?? 'en'},
-      fromJson: (json) => json is Map<String, dynamic>
-          ? json
-          : throw const FormatException('Invalid preferences response.'),
-    );
+    final preferences = context.read<AppPreferencesProvider>();
+    final saved = await preferences.saveLanguage();
     if (!mounted) return;
     setState(() => _isSaving = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          response.success
-              ? 'Language preference saved. App-wide translations are not yet available.'
-              : response.error ?? 'Unable to save language preference.',
+          saved
+              ? preferences.canSyncToAccount
+                    ? 'Language saved to your account.'.tr
+                    : 'Language applied and saved on this device.'.tr
+              : preferences.errorMessage ??
+                    'Unable to save language preference.'.tr,
         ),
       ),
     );
@@ -102,6 +61,16 @@ class _LanguageScreenState extends State<LanguageScreen> {
     _Language('日本語 (Japanese)', 'Japanese language support', 'JP', false),
     _Language('한국어 (Korean)', 'Korean language support', 'KR', false),
   ];
+  static const _languageCodes = {
+    'Bisaya (Cebuano)': 'ceb',
+    'English (US / PH)': 'en',
+    'Tagalog (Filipino)': 'fil',
+    'Ilonggo (Hiligaynon)': 'ilo',
+    'Waray-Waray': 'war',
+    'Español': 'es',
+    '日本語 (Japanese)': 'ja',
+    '한국어 (Korean)': 'ko',
+  };
 
   @override
   void dispose() {
@@ -111,6 +80,13 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final preferences = context.watch<AppPreferencesProvider>();
+    final selectedLanguage = _languageCodes.entries
+        .firstWhere(
+          (entry) => entry.value == preferences.languageCode,
+          orElse: () => const MapEntry('English (US / PH)', 'en'),
+        )
+        .key;
     final query = _searchController.text.trim().toLowerCase();
     final languages = _languages
         .where(
@@ -121,7 +97,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
         .toList();
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(title: const Text('Change language')),
+      appBar: AppBar(title: Text('Change language'.tr)),
       body: Column(
         children: [
           Expanded(
@@ -137,8 +113,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     color: AppColors.surfaceMuted,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'APP PREFERENCES',
+                  child: Text(
+                    'APP PREFERENCES'.tr,
                     style: TextStyle(
                       color: AppColors.brandOrange,
                       fontSize: 8,
@@ -148,13 +124,14 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   ),
                 ),
                 const SizedBox(height: 13),
-                const Text(
-                  'Change language',
+                Text(
+                  'Change language'.tr,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 5),
-                const Text(
-                  'Choose the language you prefer. Your selection will be saved on this device.',
+                Text(
+                  'Choose the language you prefer. Your selection will be saved on this device.'
+                      .tr,
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 10,
@@ -165,17 +142,17 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 TextField(
                   controller: _searchController,
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     prefixIcon: Icon(Icons.search_rounded),
-                    hintText: 'Search languages…',
+                    hintText: 'Search languages…'.tr,
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Row(
+                Row(
                   children: [
                     Expanded(
                       child: Text(
-                        'Regional & official',
+                        'Regional & official'.tr,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w900,
@@ -183,7 +160,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                       ),
                     ),
                     Text(
-                      'PH FIRST · FOOD READY',
+                      'PH FIRST · FOOD READY'.tr,
                       style: TextStyle(
                         color: AppColors.brandOrange,
                         fontSize: 8,
@@ -198,16 +175,18 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     .map(
                       (item) => _LanguageTile(
                         item: item,
-                        selected: _selected == item.name,
-                        onTap: () => setState(() => _selected = item.name),
+                        selected: selectedLanguage == item.name,
+                        onTap: () => preferences.setLanguageCode(
+                          _languageCodes[item.name] ?? 'en',
+                        ),
                       ),
                     ),
                 const SizedBox(height: 12),
-                const Row(
+                Row(
                   children: [
                     Expanded(
                       child: Text(
-                        'Other languages',
+                        'Other languages'.tr,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w900,
@@ -215,7 +194,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                       ),
                     ),
                     Text(
-                      'GLOBAL VISITORS',
+                      'GLOBAL VISITORS'.tr,
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 8,
@@ -230,16 +209,18 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     .map(
                       (item) => _LanguageTile(
                         item: item,
-                        selected: _selected == item.name,
-                        onTap: () => setState(() => _selected = item.name),
+                        selected: selectedLanguage == item.name,
+                        onTap: () => preferences.setLanguageCode(
+                          _languageCodes[item.name] ?? 'en',
+                        ),
                       ),
                     ),
                 if (languages.isEmpty)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.all(24),
                     child: Center(
                       child: Text(
-                        'No languages found.',
+                        'No languages found.'.tr,
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 11,
@@ -257,7 +238,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.visibility_outlined,
                         color: AppColors.brandOrange,
                         size: 17,
@@ -267,8 +248,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'LANGUAGE PREFERENCE',
+                            Text(
+                              'LANGUAGE PREFERENCE'.tr,
                               style: TextStyle(
                                 color: AppColors.brandOrange,
                                 fontSize: 8,
@@ -277,15 +258,15 @@ class _LanguageScreenState extends State<LanguageScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _selected,
+                              selectedLanguage,
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
-                              'This preference is saved to your account. Most app screens remain in English.',
+                            Text(
+                              'Your app language has been updated.'.tr,
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 9,
@@ -313,18 +294,15 @@ class _LanguageScreenState extends State<LanguageScreen> {
                       onPressed: _isSaving ? null : _saveLanguage,
                       icon: const Icon(Icons.save_outlined, size: 17),
                       label: Text(
-                        _isSaving
-                            ? 'Saving…'
-                            : 'Save ${_selected.split(' ').first}',
+                        _isSaving ? 'Saving…'.tr : 'Save language'.tr,
                       ),
                     ),
                   ),
                   const SizedBox(height: 6),
                   TextButton(
-                    onPressed: () =>
-                        setState(() => _selected = 'Bisaya (Cebuano)'),
-                    child: const Text(
-                      'Reset to Bisaya (Cebuano)',
+                    onPressed: () => preferences.setLanguageCode('ceb'),
+                    child: Text(
+                      'Reset to Bisaya (Cebuano)'.tr,
                       style: TextStyle(
                         fontSize: 10,
                         color: AppColors.textSecondary,
@@ -360,46 +338,49 @@ class _LanguageTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 7),
-    decoration: BoxDecoration(
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 7),
+    child: Material(
       color: AppColors.surface,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(
-        color: selected ? AppColors.brandOrange : AppColors.border,
-      ),
-    ),
-    child: ListTile(
-      dense: true,
-      onTap: onTap,
-      leading: Container(
-        width: 33,
-        height: 33,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceMuted,
-          borderRadius: BorderRadius.circular(10),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: selected ? AppColors.brandOrange : AppColors.border,
         ),
-        child: Text(
-          item.mark,
-          style: TextStyle(
-            fontSize: item.mark.length > 2 ? 13 : 15,
-            fontWeight: FontWeight.w800,
+      ),
+      child: ListTile(
+        dense: true,
+        onTap: onTap,
+        leading: Container(
+          width: 33,
+          height: 33,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceMuted,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            item.mark,
+            style: TextStyle(
+              fontSize: item.mark.length > 2 ? 13 : 15,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
-      ),
-      title: Text(
-        item.name,
-        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
-      ),
-      subtitle: Text(
-        item.description,
-        style: const TextStyle(fontSize: 8, color: AppColors.textSecondary),
-      ),
-      trailing: Icon(
-        selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-        color: selected ? AppColors.brandOrange : AppColors.border,
-        size: 17,
+        title: Text(
+          item.name,
+          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
+        ),
+        subtitle: Text(
+          item.description,
+          style: TextStyle(fontSize: 8, color: AppColors.textSecondary),
+        ),
+        trailing: Icon(
+          selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+          color: selected ? AppColors.brandOrange : AppColors.border,
+          size: 17,
+        ),
       ),
     ),
   );

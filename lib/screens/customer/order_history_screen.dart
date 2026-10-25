@@ -117,13 +117,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.delivery_dining_rounded,
                     color: AppColors.brandOrange,
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -250,7 +250,7 @@ class _OrderAccessPrompt extends StatelessWidget {
                 Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 19,
                     fontWeight: FontWeight.w900,
                     color: AppColors.textPrimary,
@@ -260,7 +260,7 @@ class _OrderAccessPrompt extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 13,
                     height: 1.45,
@@ -351,7 +351,7 @@ class _OrderHistoryStateCard extends StatelessWidget {
         Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 10,
             height: 1.4,
@@ -450,154 +450,176 @@ class _OrderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  order.id,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-              Text(
-                _dateLabel(order.createdAt),
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 9,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: .1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  order.status.displayName,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ...order.items.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 7),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 37,
-                    height: 37,
-                    child: FoodImage(
-                      imageUrl: item.productImage,
-                      borderRadius: 11,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${item.productName}  ×${item.quantity}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '₱${item.subtotal.toStringAsFixed(0)}',
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    order.id,
                     style: const TextStyle(
-                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                Text(
+                  _dateLabel(order.createdAt),
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: .1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    order.status.displayName,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 8,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-          const Divider(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${order.items.length} item${order.items.length == 1 ? '' : 's'} · Total',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 9,
-                  ),
+            const SizedBox(height: 10),
+            ...order.items.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 7),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 37,
+                      height: 37,
+                      child: FoodImage(
+                        imageUrl: item.productImage,
+                        borderRadius: 11,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${item.productName}  ×${item.quantity}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '₱${item.subtotal.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                '₱${order.total.toStringAsFixed(0)}',
-                style: const TextStyle(
-                  color: AppColors.brandOrange,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
+            ),
+            if (order.notes?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 2),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Text(
+                  'Order note: ${order.notes!.trim()}',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 9,
+                    height: 1.35,
+                  ),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: order.status == OrderStatus.pending
-                      ? () async {
-                          final history = context
-                              .read<CustomerOrdersProvider>();
-                          final success = await history.cancelOrder(order.id);
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                success
-                                    ? 'Order cancelled.'
-                                    : history.errorMessage ??
-                                          'Unable to cancel order.',
-                              ),
-                            ),
-                          );
-                        }
-                      : null,
-                  icon: const Icon(Icons.cancel_outlined, size: 14),
-                  label: const Text(
-                    'Cancel order',
-                    style: TextStyle(fontSize: 9),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: AnimatedPressScale(
-                  borderRadius: BorderRadius.circular(12),
-                  child: ElevatedButton.icon(
-                    onPressed: () => _reorder(context),
-                    icon: const Icon(Icons.replay_rounded, size: 14),
-                    label: const Text('Reorder', style: TextStyle(fontSize: 9)),
-                    style: ElevatedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+            const Divider(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${order.items.length} item${order.items.length == 1 ? '' : 's'} · Total',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 9,
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Text(
+                  '₱${order.total.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    color: AppColors.brandOrange,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: order.status == OrderStatus.pending
+                        ? () async {
+                            final history = context
+                                .read<CustomerOrdersProvider>();
+                            final success = await history.cancelOrder(order.id);
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  success
+                                      ? 'Order cancelled.'
+                                      : history.errorMessage ??
+                                            'Unable to cancel order.',
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.cancel_outlined, size: 14),
+                    label: const Text(
+                      'Cancel order',
+                      style: TextStyle(fontSize: 9),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: AnimatedPressScale(
+                    borderRadius: BorderRadius.circular(12),
+                    child: ElevatedButton.icon(
+                      onPressed: () => _reorder(context),
+                      icon: const Icon(Icons.replay_rounded, size: 14),
+                      label: const Text(
+                        'Reorder',
+                        style: TextStyle(fontSize: 9),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -616,8 +638,7 @@ class _OrderCard extends StatelessWidget {
         cart.addItem(
           matches.first,
           quantity: item.quantity,
-          unitPrice: item.price,
-          displayName: item.productName,
+          displayName: item.productName.replaceAll(' · 80% reward', ''),
           customizations: item.customizations,
         );
       }

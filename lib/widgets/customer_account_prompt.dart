@@ -90,7 +90,7 @@ Future<bool> requireCustomerAccount(
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.lock_person_rounded,
                           color: AppColors.brandOrange,
                           size: 30,
@@ -103,7 +103,7 @@ Future<bool> requireCustomerAccount(
                         tooltip: 'Close',
                         visualDensity: VisualDensity.compact,
                         onPressed: () => Navigator.of(dialogContext).pop(),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.close_rounded,
                           size: 20,
                           color: AppColors.textSecondary,
@@ -118,7 +118,7 @@ Future<bool> requireCustomerAccount(
                   icon: Icons.lunch_dining_rounded,
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Sign in to continue',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -132,7 +132,7 @@ Future<bool> requireCustomerAccount(
                 Text(
                   'Sign in or create a customer account to $action. You can keep browsing the menu without an account.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 13,
                     height: 1.45,
@@ -156,9 +156,9 @@ Future<bool> requireCustomerAccount(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton.icon(
-                        onPressed: () => Navigator.of(
-                          dialogContext,
-                        ).pop(_AccountPromptChoice.register),
+                        onPressed: () =>
+                            Navigator.of(dialogContext)
+                                .pop(_AccountPromptChoice.register),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
@@ -188,21 +188,18 @@ Future<bool> requireCustomerAccount(
                     width: double.infinity,
                     height: 46,
                     child: OutlinedButton.icon(
-                      onPressed: () => Navigator.of(
-                        dialogContext,
-                      ).pop(_AccountPromptChoice.signIn),
+                      onPressed: () =>
+                          Navigator.of(dialogContext)
+                              .pop(_AccountPromptChoice.signIn),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.textPrimary,
                         backgroundColor: AppColors.surface,
-                        side: const BorderSide(
-                          color: AppColors.border,
-                          width: 1.3,
-                        ),
+                        side: BorderSide(color: AppColors.border, width: 1.3),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.login_rounded,
                         size: 18,
                         color: AppColors.brandOrange,
@@ -226,10 +223,7 @@ Future<bool> requireCustomerAccount(
                   ),
                   child: const Text(
                     'Not now',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                   ),
                 ),
               ],

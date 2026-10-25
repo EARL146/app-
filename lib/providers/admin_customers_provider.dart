@@ -9,6 +9,7 @@ class Customer {
   final String phone;
   final int orderCount;
   final double totalSpent;
+  final double rewardPoints;
   final String address;
   final DateTime joinedDate;
   final bool isActive;
@@ -20,6 +21,7 @@ class Customer {
     required this.phone,
     required this.orderCount,
     required this.totalSpent,
+    this.rewardPoints = 0,
     required this.address,
     required this.joinedDate,
     this.isActive = true,
@@ -32,6 +34,7 @@ class Customer {
     phone: json['phone'] as String? ?? '',
     orderCount: (json['order_count'] as num?)?.toInt() ?? 0,
     totalSpent: (json['total_spent'] as num?)?.toDouble() ?? 0,
+    rewardPoints: (json['reward_points'] as num?)?.toDouble() ?? 0,
     address: json['address'] as String? ?? '',
     joinedDate:
         DateTime.tryParse(json['joined_at'] as String? ?? '') ?? DateTime.now(),
@@ -169,6 +172,7 @@ class AdminCustomersProvider extends ChangeNotifier {
       phone: customer.phone,
       orderCount: customer.orderCount,
       totalSpent: customer.totalSpent,
+      rewardPoints: customer.rewardPoints,
       address: customer.address,
       joinedDate: customer.joinedDate,
       isActive: !customer.isActive,

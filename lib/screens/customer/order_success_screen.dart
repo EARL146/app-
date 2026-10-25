@@ -31,7 +31,7 @@ class OrderSuccessScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Order request received',
                 style: TextStyle(
                   fontSize: 28,
@@ -42,13 +42,10 @@ class OrderSuccessScreen extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 'Reference: $orderId',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 18),
-              const Text(
+              Text(
                 'Your order is awaiting restaurant confirmation. Cash on delivery was selected; no online payment was collected.',
                 textAlign: TextAlign.center,
                 style: TextStyle(height: 1.5, color: AppColors.textSecondary),

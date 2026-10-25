@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../l10n/app_translations.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/animated_brand_button.dart';
@@ -15,13 +16,11 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(title: const Text('Your cart')),
+      appBar: AppBar(title: Text('Your cart'.tr)),
       body: Consumer<CartProvider>(
         builder: (context, cart, _) {
-          final savedAddress = context
-              .watch<AuthService>()
-              .currentUserAddress
-              ?.trim();
+          final auth = context.watch<AuthService>();
+          final savedAddress = auth.currentUserAddress?.trim();
           if (cart.isEmpty) {
             return Center(
               child: Padding(
@@ -40,7 +39,7 @@ class CartScreen extends StatelessWidget {
                         child: Text(
                           'Unable to load the cart linked to this account yet. ${cart.syncErrorMessage}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 10,
                           ),
@@ -49,11 +48,11 @@ class CartScreen extends StatelessWidget {
                     Container(
                       width: 86,
                       height: 86,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppColors.surfaceMuted,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.shopping_bag_outlined,
                         size: 38,
                         color: AppColors.brandOrange,
@@ -62,8 +61,8 @@ class CartScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       cart.isLoadingRemoteCart
-                          ? 'Loading saved cart…'
-                          : 'Your cart is empty',
+                          ? 'Loading saved cart…'.tr
+                          : 'Your cart is empty'.tr,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
@@ -71,8 +70,8 @@ class CartScreen extends StatelessWidget {
                     ),
                     if (!cart.isLoadingRemoteCart) ...[
                       const SizedBox(height: 6),
-                      const Text(
-                        'Add some burger favorites to get started.',
+                      Text(
+                        'Add some burger favorites to get started.'.tr,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: AppColors.textSecondary,
@@ -90,7 +89,7 @@ class CartScreen extends StatelessWidget {
                           Icons.restaurant_menu_rounded,
                           size: 17,
                         ),
-                        label: const Text('Explore the menu'),
+                        label: Text('Explore the menu'.tr),
                       ),
                     ],
                   ],
@@ -117,7 +116,7 @@ class CartScreen extends StatelessWidget {
                         ),
                         child: Text(
                           'Cart account sync is unavailable. Your current items remain in this session until the connection is restored.',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 10,
                           ),
@@ -125,7 +124,7 @@ class CartScreen extends StatelessWidget {
                       ),
                     ],
                     if (cart.isSyncing)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(bottom: 8),
                         child: Text(
                           'Saving cart to your account…',
@@ -136,53 +135,93 @@ class CartScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                    Container(
-                      padding: const EdgeInsets.all(13),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(15),
+                      child: InkWell(
                         borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_rounded,
-                            color: AppColors.brandOrange,
-                            size: 19,
+                        onTap: () =>
+                            Navigator.of(context).pushNamed('/settings'),
+                        child: Container(
+                          padding: const EdgeInsets.all(13),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(color: AppColors.border),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'DELIVERY ADDRESS',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.brandOrange,
-                                  ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_rounded,
+                                color: AppColors.brandOrange,
+                                size: 19,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'DELIVERY DETAILS · EDIT'.tr,
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppColors.brandOrange,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      savedAddress == null ||
+                                              savedAddress.isEmpty
+                                          ? 'Add your address at checkout'.tr
+                                          : savedAddress,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    if (auth.currentUserPhone
+                                                ?.trim()
+                                                .isNotEmpty ==
+                                            true ||
+                                        auth.currentUserEmail
+                                                ?.trim()
+                                                .isNotEmpty ==
+                                            true) ...[
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        [
+                                          if (auth.currentUserPhone
+                                                  ?.trim()
+                                                  .isNotEmpty ==
+                                              true)
+                                            auth.currentUserPhone!.trim(),
+                                          if (auth.currentUserEmail
+                                                  ?.trim()
+                                                  .isNotEmpty ==
+                                              true)
+                                            auth.currentUserEmail!.trim(),
+                                        ].join(' · '),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  savedAddress == null || savedAddress.isEmpty
-                                      ? 'Add your address at checkout'
-                                      : savedAddress,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: AppColors.textSecondary,
+                              ),
+                            ],
                           ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: AppColors.textSecondary,
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -203,7 +242,7 @@ class CartScreen extends StatelessWidget {
                                 '/customer-home',
                                 (route) => false,
                               ),
-                          child: const Text('Add more'),
+                          child: Text('Add more'.tr),
                         ),
                       ],
                     ),
@@ -218,7 +257,9 @@ class CartScreen extends StatelessWidget {
                           border: Border.all(color: AppColors.border),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.textPrimary.withValues(alpha: 0.03),
+                              color: AppColors.textPrimary.withValues(
+                                alpha: 0.03,
+                              ),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -251,7 +292,7 @@ class CartScreen extends StatelessWidget {
                                   const SizedBox(height: 4),
                                   Text(
                                     '₱${item.price.toStringAsFixed(0)} each',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 10,
                                     ),
@@ -259,7 +300,7 @@ class CartScreen extends StatelessWidget {
                                   const SizedBox(height: 6),
                                   AnimatedValueText(
                                     '₱${item.subtotal.toStringAsFixed(0)}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.brandOrange,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 12,
@@ -308,7 +349,7 @@ class CartScreen extends StatelessWidget {
                                             item,
                                             item.quantity + 1,
                                           ),
-                                      icon: const Icon(
+                                      icon: Icon(
                                         Icons.add_rounded,
                                         color: AppColors.brandOrange,
                                         size: 16,
@@ -330,7 +371,7 @@ class CartScreen extends StatelessWidget {
                       total: cart.total,
                     ),
                     const SizedBox(height: 10),
-                    const Center(
+                    Center(
                       child: Text(
                         'The server confirms tax, delivery, and the final total at checkout.',
                         style: TextStyle(
@@ -346,7 +387,7 @@ class CartScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(18, 11, 18, 10),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  border: const Border(top: BorderSide(color: AppColors.border)),
+                  border: Border(top: BorderSide(color: AppColors.border)),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.textPrimary.withValues(alpha: 0.05),
@@ -384,7 +425,9 @@ class CartScreen extends StatelessWidget {
                             ),
                             AnimatedValueText(
                               '₱${cart.total.toStringAsFixed(0)}',
-                              style: const TextStyle(fontWeight: FontWeight.w900),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ],
                         ),

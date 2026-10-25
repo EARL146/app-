@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'constants/app_theme.dart';
@@ -12,8 +13,12 @@ import 'providers/catalog_provider.dart';
 import 'providers/customer_orders_provider.dart';
 import 'providers/admin_dashboard_provider.dart';
 import 'providers/admin_system_status_provider.dart';
+import 'providers/app_preferences_provider.dart';
+import 'providers/calendar_reminders_provider.dart';
 import 'services/auth_service.dart';
 import 'services/api_service.dart';
+import 'services/storage_service.dart';
+import 'widgets/app_scaffold_messenger.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key});
@@ -23,6 +28,20 @@ class AppShell extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthService>(create: (_) => AuthService()),
+        ChangeNotifierProvider<CalendarRemindersProvider>(
+          lazy: false,
+          create: (context) => CalendarRemindersProvider(
+            context.read<AuthService>(),
+            ApiService(),
+          ),
+        ),
+        ChangeNotifierProvider<AppPreferencesProvider>(
+          create: (context) => AppPreferencesProvider(
+            authService: context.read<AuthService>(),
+            apiService: ApiService(),
+            storageService: StorageService(),
+          ),
+        ),
         ChangeNotifierProvider<FavoritesProvider>(
           create: (context) =>
               FavoritesProvider(context.read<AuthService>(), ApiService()),
@@ -64,10 +83,27 @@ class _AppShellContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final preferences = context.watch<AppPreferencesProvider>();
     return MaterialApp(
+      scaffoldMessengerKey: appScaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       title: 'BurgerBites',
       theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
+      themeMode: preferences.materialThemeMode,
+      locale: preferences.locale,
+      supportedLocales: const [
+        Locale('en'),
+        Locale('fil'),
+        Locale('es'),
+        Locale('ja'),
+        Locale('ko'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       onGenerateRoute: AppRouter.generateRoute,
       initialRoute: '/',
     );

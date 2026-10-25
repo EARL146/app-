@@ -75,7 +75,7 @@ class WelcomeScreen extends StatelessWidget {
                               28,
                             ),
                           ),
-                          const Text(
+                          Text(
                             'Your Cravings,\nOur Burgers',
                             textAlign: TextAlign.center,
                             style: TextStyle(
@@ -87,7 +87,7 @@ class WelcomeScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'Freshly made favorites, ready when you are.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
@@ -153,7 +153,7 @@ class WelcomeScreen extends StatelessWidget {
                             alignment: WrapAlignment.center,
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              const Text(
+                              Text(
                                 'Already have an account?',
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
@@ -162,8 +162,9 @@ class WelcomeScreen extends StatelessWidget {
                               ),
                               AnimatedPressScale(
                                 child: TextButton(
-                                  onPressed: () => Navigator.of(context)
-                                      .pushNamed('/sign-in'),
+                                  onPressed: () =>
+                                      Navigator.of(context)
+                                          .pushNamed('/sign-in'),
                                   style: TextButton.styleFrom(
                                     foregroundColor: AppColors.brandOrangeDark,
                                     textStyle: const TextStyle(

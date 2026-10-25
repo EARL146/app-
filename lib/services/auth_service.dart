@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import 'api_service.dart';
@@ -23,6 +25,9 @@ class AuthService extends ChangeNotifier {
   String? _currentUserPhone;
   String? _currentUserBranch;
   String? _currentUserAddress;
+  DateTime? _currentUserCreatedAt;
+  double _currentUserRewardPoints = 0;
+  Uint8List? _currentUserProfileImage;
   String? _errorMessage;
 
   factory AuthService() => _instance;
@@ -47,6 +52,9 @@ class AuthService extends ChangeNotifier {
   String? get currentUserPhone => _currentUserPhone;
   String? get currentUserBranch => _currentUserBranch;
   String? get currentUserAddress => _currentUserAddress;
+  DateTime? get currentUserCreatedAt => _currentUserCreatedAt;
+  double get currentUserRewardPoints => _currentUserRewardPoints;
+  Uint8List? get currentUserProfileImage => _currentUserProfileImage;
   String? get errorMessage => _errorMessage;
 
   Future<void> _initializeAuth() async {
@@ -67,7 +75,7 @@ class AuthService extends ChangeNotifier {
           userId != null &&
           {'customer', 'admin'}.contains(_currentUserRole);
       if (!hasCompleteLocalSession) {
-        await _storageService.clearAll();
+        await _storageService.clearAuthentication();
         _clearIdentity();
         return;
       }
@@ -116,6 +124,11 @@ class AuthService extends ChangeNotifier {
       _currentUserPhone = user['phone']?.toString();
       _currentUserBranch = user['branch_name']?.toString();
       _currentUserAddress = user['default_address']?.toString();
+      _currentUserCreatedAt = _parseDate(user['created_at']);
+      _currentUserRewardPoints = _parsePoints(user['reward_points']);
+      _currentUserProfileImage = _decodeProfileImage(
+        user['profile_image_base64'],
+      );
       await _storageService.saveUserRole(serverRole!);
       if (_currentUserName != null) {
         await _storageService.saveUserName(_currentUserName!);
@@ -153,6 +166,9 @@ class AuthService extends ChangeNotifier {
     _currentUserPhone = null;
     _currentUserBranch = null;
     _currentUserAddress = null;
+    _currentUserCreatedAt = null;
+    _currentUserRewardPoints = 0;
+    _currentUserProfileImage = null;
   }
 
   Future<void> _clearSavedSession() async {
@@ -231,9 +247,12 @@ class AuthService extends ChangeNotifier {
     final phone = user['phone']?.toString();
     final branch = user['branch_name']?.toString();
     final address = user['default_address']?.toString();
+    final createdAt = _parseDate(user['created_at']);
+    final rewardPoints = _parsePoints(user['reward_points']);
+    final profileImage = _decodeProfileImage(user['profile_image_base64']);
 
     try {
-      await _storageService.clearAll();
+      await _storageService.clearAuthentication();
       await _storageService.saveToken(token);
       await _storageService.saveUserId(userId.toString());
       await _storageService.saveUserEmail(email);
@@ -248,7 +267,7 @@ class AuthService extends ChangeNotifier {
       }
     } catch (_) {
       try {
-        await _storageService.clearAll();
+        await _storageService.clearAuthentication();
       } catch (_) {}
       _errorMessage = 'Unable to securely save your session on this device.';
       notifyListeners();
@@ -262,6 +281,9 @@ class AuthService extends ChangeNotifier {
     _currentUserPhone = phone;
     _currentUserBranch = branch;
     _currentUserAddress = address;
+    _currentUserCreatedAt = createdAt;
+    _currentUserRewardPoints = rewardPoints;
+    _currentUserProfileImage = profileImage;
     _isAuthenticated = true;
     _errorMessage = null;
     notifyListeners();
@@ -281,6 +303,7 @@ class AuthService extends ChangeNotifier {
 
   Future<bool> updateProfile({
     required String name,
+    String? email,
     String? phone,
     String? branch,
     String? address,
@@ -293,6 +316,7 @@ class AuthService extends ChangeNotifier {
           : throw const FormatException('Invalid profile response.'),
       body: {
         'full_name': name.trim(),
+        if (email != null) 'email': email.trim().toLowerCase(),
         if (phone != null) 'phone': phone.trim(),
         if (branch != null) 'branch_name': branch.trim(),
         if (address != null) 'default_address': address.trim(),
@@ -337,8 +361,96 @@ class AuthService extends ChangeNotifier {
     _currentUserPhone = savedPhone;
     _currentUserBranch = savedBranch;
     _currentUserAddress = savedAddress;
+    _currentUserCreatedAt =
+        _parseDate(user['created_at']) ?? _currentUserCreatedAt;
+    _currentUserRewardPoints = _parsePoints(user['reward_points']);
     notifyListeners();
     return true;
+  }
+
+  Future<void> refreshProfile() async {
+    if (!_isAuthenticated || !_apiService.isConfigured) return;
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/me',
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid profile response.'),
+    );
+    if (!response.success || response.data == null) return;
+    final data = response.data!;
+    final user = data['user'] is Map<String, dynamic>
+        ? data['user'] as Map<String, dynamic>
+        : data;
+    _currentUserName = _userName(user);
+    _currentUserEmail = user['email']?.toString() ?? _currentUserEmail;
+    _currentUserPhone = user['phone']?.toString() ?? _currentUserPhone;
+    _currentUserBranch = user['branch_name']?.toString() ?? _currentUserBranch;
+    _currentUserAddress =
+        user['default_address']?.toString() ?? _currentUserAddress;
+    _currentUserCreatedAt =
+        _parseDate(user['created_at']) ?? _currentUserCreatedAt;
+    _currentUserRewardPoints = _parsePoints(user['reward_points']);
+    _currentUserProfileImage = _decodeProfileImage(
+      user['profile_image_base64'],
+    );
+    notifyListeners();
+  }
+
+  Future<bool> updateProfileImage(Uint8List bytes) async {
+    if (bytes.isEmpty || bytes.length > 512 * 1024) {
+      _errorMessage = 'Choose an image no larger than 512 KB.';
+      notifyListeners();
+      return false;
+    }
+    final response = await _apiService.put<Map<String, dynamic>>(
+      '/me/profile-image',
+      body: {'image_base64': base64Encode(bytes)},
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid profile image response.'),
+    );
+    if (!response.success) {
+      _errorMessage = response.error ?? 'Unable to save your profile photo.';
+      notifyListeners();
+      return false;
+    }
+    _currentUserProfileImage = bytes;
+    _errorMessage = null;
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> removeProfileImage() async {
+    final response = await _apiService.delete<Map<String, dynamic>>(
+      '/me/profile-image',
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException('Invalid profile image response.'),
+    );
+    if (!response.success) {
+      _errorMessage = response.error ?? 'Unable to remove your profile photo.';
+      notifyListeners();
+      return false;
+    }
+    _currentUserProfileImage = null;
+    notifyListeners();
+    return true;
+  }
+
+  DateTime? _parseDate(dynamic value) =>
+      value is String ? DateTime.tryParse(value) : null;
+
+  double _parsePoints(dynamic value) => value is num
+      ? value.toDouble()
+      : double.tryParse(value?.toString() ?? '') ?? 0;
+
+  Uint8List? _decodeProfileImage(dynamic value) {
+    if (value is! String || value.isEmpty) return null;
+    try {
+      return Uint8List.fromList(base64Decode(value));
+    } on FormatException {
+      return null;
+    }
   }
 
   Future<void> logout() async {
@@ -362,6 +474,9 @@ class AuthService extends ChangeNotifier {
       _currentUserPhone = null;
       _currentUserBranch = null;
       _currentUserAddress = null;
+      _currentUserCreatedAt = null;
+      _currentUserRewardPoints = 0;
+      _currentUserProfileImage = null;
       notifyListeners();
     }
   }

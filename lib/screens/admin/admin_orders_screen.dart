@@ -513,7 +513,7 @@ class _OrderCard extends StatelessWidget {
                     if (order.items.length > 1)
                       Text(
                         '+${order.items.length - 1} more',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 9,
                           color: AppColors.textSecondary,
                         ),

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../models/calendar_reminder.dart';
+import '../../providers/calendar_reminders_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/reminder_notification_service.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -13,7 +19,7 @@ class CalendarScreen extends StatefulWidget {
 class _CalendarScreenState extends State<CalendarScreen> {
   final ApiService _api = ApiService();
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
-  List<_CalendarReminder> _reminders = const [];
+  List<CalendarReminder> _reminders = const [];
   bool _isLoading = true;
   bool _isSaving = false;
   String? _errorMessage;
@@ -48,14 +54,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final reminders =
           rawReminders
               .whereType<Map<String, dynamic>>()
-              .map(_CalendarReminder.fromJson)
+              .map(CalendarReminder.fromJson)
               .toList(growable: false)
-            ..sort((a, b) => a.date.compareTo(b.date));
+            ..sort((a, b) => a.dueAt.compareTo(b.dueAt));
       setState(() {
         _reminders = reminders;
         _isLoading = false;
         _errorMessage = null;
       });
+      context.read<CalendarRemindersProvider>().setReminders(reminders);
     } on FormatException {
       setState(() {
         _isLoading = false;
@@ -64,11 +71,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  Future<void> _showReminderEditor([_CalendarReminder? reminder]) async {
+  Future<void> _showReminderEditor([CalendarReminder? reminder]) async {
     final draft = await showDialog<_ReminderDraft>(
       context: context,
       builder: (context) => _ReminderEditorDialog(
         initialDate: reminder?.date ?? _selectedDate,
+        initialTime: reminder?.time ?? const TimeOfDay(hour: 9, minute: 0),
         initialTitle: reminder?.title ?? '',
         initialNotes: reminder?.notes ?? '',
       ),
@@ -81,6 +89,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
     final body = {
       'reminder_date': _dateKey(draft.date),
+      'reminder_time': _timeKey(draft.time),
       'title': draft.title,
       'notes': draft.notes,
     };
@@ -112,7 +121,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  Future<void> _deleteReminder(_CalendarReminder reminder) async {
+  Future<void> _deleteReminder(CalendarReminder reminder) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -151,8 +160,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (response.success) await _loadReminders();
   }
 
+  Future<void> _enableBrowserNotifications() async {
+    final enabled = await ReminderNotificationService.requestPermission();
+    if (!mounted) return;
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          enabled ? 'Browser reminders are enabled.' : 'Notifications were not enabled. In-app reminders will still appear while BurgerBites is open.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final createdAt = context.watch<AuthService>().currentUserCreatedAt;
     final monthReminders = _reminders
         .where(
           (reminder) =>
@@ -173,7 +196,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
+            child: Text(
               'ACCOUNT · PERSONAL REMINDERS',
               style: TextStyle(
                 color: AppColors.brandOrange,
@@ -189,11 +212,55 @@ class _CalendarScreenState extends State<CalendarScreen> {
             style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Save important BurgerBites dates to your account.',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
           ),
           const SizedBox(height: 12),
+          if (createdAt != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.celebration_outlined,
+                    color: AppColors.brandOrange,
+                    size: 19,
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Account created',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          DateFormat('MMMM d, y · h:mm a')
+                              .format(createdAt.toLocal()),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           Container(
             padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
@@ -213,14 +280,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         color: AppColors.surfaceMuted,
                         borderRadius: BorderRadius.circular(11),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.event_available_rounded,
                         color: AppColors.brandOrange,
                         size: 18,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -243,7 +310,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     ),
                     Text(
                       _formatDate(_selectedDate),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w800,
                         color: AppColors.brandOrange,
@@ -260,7 +327,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   onDateChanged: (value) =>
                       setState(() => _selectedDate = DateUtils.dateOnly(value)),
                 ),
-                const Text(
+                Text(
                   'Today is highlighted; saved reminders appear below.',
                   style: TextStyle(fontSize: 8, color: AppColors.textSecondary),
                 ),
@@ -278,10 +345,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
               Text(
                 _formatMonth(_selectedDate),
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 9,
-                ),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
               ),
             ],
           ),
@@ -312,7 +376,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(
                   Icons.info_outline_rounded,
@@ -322,7 +386,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 SizedBox(width: 7),
                 Expanded(
                   child: Text(
-                    'Reminders are saved to your account. Phone, email, and push alerts are not sent.',
+                    'Reminders save to your account. At the saved time, BurgerBites alerts you while the app is open.',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 9,
@@ -333,6 +397,35 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ],
             ),
           ),
+          if (ReminderNotificationService.isSupported) ...[
+            const SizedBox(height: 5),
+            if (ReminderNotificationService.permission == 'granted')
+              const Align(
+                alignment: Alignment.centerRight,
+                child: Chip(
+                  avatar: Icon(Icons.notifications_active_rounded, size: 14),
+                  label: Text('Browser notifications enabled'),
+                  visualDensity: VisualDensity.compact,
+                ),
+              )
+            else if (ReminderNotificationService.permission == 'denied')
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'Browser notifications are blocked in site settings.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
+                ),
+              )
+            else
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _enableBrowserNotifications,
+                  icon: const Icon(Icons.notifications_active_outlined),
+                  label: const Text('Enable browser notifications'),
+                ),
+              ),
+          ],
           const SizedBox(height: 12),
           SizedBox(
             height: 44,
@@ -373,6 +466,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       '${_monthName(date.month)} ${date.year}';
   String _dateKey(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  String _timeKey(TimeOfDay time) =>
+      '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
   String _monthName(int month) => const [
     'January',
@@ -390,39 +485,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
   ][month - 1];
 }
 
-class _CalendarReminder {
-  const _CalendarReminder({
-    required this.id,
-    required this.date,
-    required this.title,
-    this.notes,
-  });
-
-  final String id;
-  final DateTime date;
-  final String title;
-  final String? notes;
-
-  factory _CalendarReminder.fromJson(Map<String, dynamic> json) {
-    final date = json['reminder_date'];
-    if (date is! String) throw const FormatException('Invalid reminder date.');
-    return _CalendarReminder(
-      id: json['id'].toString(),
-      date: DateTime.parse('${date}T00:00:00'),
-      title: json['title'] as String? ?? 'Reminder',
-      notes: json['notes'] as String?,
-    );
-  }
-}
-
 class _ReminderDraft {
   const _ReminderDraft({
     required this.date,
+    required this.time,
     required this.title,
     required this.notes,
   });
 
   final DateTime date;
+  final TimeOfDay time;
   final String title;
   final String notes;
 }
@@ -430,11 +502,13 @@ class _ReminderDraft {
 class _ReminderEditorDialog extends StatefulWidget {
   const _ReminderEditorDialog({
     required this.initialDate,
+    required this.initialTime,
     required this.initialTitle,
     required this.initialNotes,
   });
 
   final DateTime initialDate;
+  final TimeOfDay initialTime;
   final String initialTitle;
   final String initialNotes;
 
@@ -450,6 +524,7 @@ class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
     text: widget.initialNotes,
   );
   late DateTime _date = widget.initialDate;
+  late TimeOfDay _time = widget.initialTime;
   String? _validationMessage;
 
   @override
@@ -469,6 +544,11 @@ class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
     if (picked != null) setState(() => _date = DateUtils.dateOnly(picked));
   }
 
+  Future<void> _chooseTime() async {
+    final picked = await showTimePicker(context: context, initialTime: _time);
+    if (picked != null) setState(() => _time = picked);
+  }
+
   void _save() {
     final title = _titleController.text.trim();
     final notes = _notesController.text.trim();
@@ -484,8 +564,9 @@ class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
       );
       return;
     }
-    Navigator.of(context)
-        .pop(_ReminderDraft(date: _date, title: title, notes: notes));
+    Navigator.of(
+      context,
+    ).pop(_ReminderDraft(date: _date, time: _time, title: title, notes: notes));
   }
 
   @override
@@ -515,6 +596,11 @@ class _ReminderEditorDialogState extends State<_ReminderEditorDialog> {
             icon: const Icon(Icons.calendar_month_rounded),
             label: Text('Date: ${_date.month}/${_date.day}/${_date.year}'),
           ),
+          TextButton.icon(
+            onPressed: _chooseTime,
+            icon: const Icon(Icons.schedule_rounded),
+            label: Text('Time: ${_time.format(context)}'),
+          ),
           if (_validationMessage != null)
             Text(
               _validationMessage!,
@@ -540,7 +626,7 @@ class _ReminderTile extends StatelessWidget {
     required this.onDelete,
   });
 
-  final _CalendarReminder reminder;
+  final CalendarReminder reminder;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -558,11 +644,11 @@ class _ReminderTile extends StatelessWidget {
         Container(
           width: 32,
           height: 32,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.surfaceMuted,
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.event_note_rounded,
             color: AppColors.brandOrange,
             size: 16,
@@ -582,11 +668,8 @@ class _ReminderTile extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                '${reminder.date.month}/${reminder.date.day}/${reminder.date.year}${reminder.notes == null ? '' : ' · ${reminder.notes}'}',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 9,
-                ),
+                '${reminder.date.month}/${reminder.date.day}/${reminder.date.year} · ${reminder.time.format(context)}${reminder.notes == null ? '' : ' · ${reminder.notes}'}',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
               ),
             ],
           ),

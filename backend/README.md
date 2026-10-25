@@ -15,6 +15,8 @@ The migration history is:
 1. `backend/database/migrations/001_initial_schema.sql` creates the seven core tables. This was applied to the empty database during setup and must not be re-run on the current database.
 2. Optional local sample catalog only: `backend/database/migrations/002_development_catalog.sql`. It has not been imported; import it only if you want the sample burger menu.
 3. `backend/database/migrations/003_app_workflows.sql` adds order customizations/statuses, active-customer controls, preferences, support messages, user-scoped saved carts, customer-owned calendar reminders, and public store profile. Its complete readiness must be confirmed through Admin More → App Information before relying on those workflows. Its `ALTER TABLE` statements make repeated imports unsafe.
+4. `backend/database/migrations/004_rewards_sales_and_uploads.sql` adds reward balances and ledger entries, per-product/variant discount sale settings, profile photos, order redemption fields, and support-photo storage. Check Admin More → App Information first, confirm migration 003 is ready, back up the database, then apply migration 004 once. Do not re-import it after successful application.
+5. `backend/database/migrations/005_calendar_reminder_time.sql` adds the customer-selected time to saved calendar reminders. Existing reminders default to 9:00 AM. Back up the database and apply this migration once; Admin More → App Information now checks that the time column is ready.
 
 For production, use verified product names, prices, images, and stock rather than the sample rows.
 
@@ -86,6 +88,8 @@ The Android manifest permits cleartext HTTP only for debug builds. Release build
 - Public products now come from MySQL; customer history, order cancellation, preferences, and support messages use authenticated routes.
 - Calendar reminders are private SQL-backed account records with create, list, edit, and delete routes. They do not send push, SMS, or email alerts; migration 003 must be imported first.
 - Admin routes manage orders/status, inventory/products, customer accounts, dashboard totals, and customer support message status.
+- Customers earn 0.5 point per purchased item unit (so two units earn 1.0 point). At 2,500 points, checkout can redeem 80% off up to five item units; cancellation reverses the earned/redeemed points. Admin product forms can set 40% sale for an entire product, a size, or a drink brand.
+- Customers can save a profile photo and attach up to five images to a support request. Image files are validated and stored in MySQL; admin support can view message attachments.
 - COD is the only active payment method. GCash/Maya must remain unavailable until sandbox credentials and provider callback details are supplied and integrated.
 - Sample data migration 002 is optional. The latest local check returned six products from the database; their origin was not verified. The customer menu should show whatever active products the API returns.
 

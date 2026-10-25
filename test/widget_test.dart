@@ -9,6 +9,7 @@ import 'package:burger_bites/screens/customer/register_screen.dart';
 import 'package:burger_bites/screens/customer/search_screen.dart';
 import 'package:burger_bites/screens/customer/sign_in_screen.dart';
 import 'package:burger_bites/screens/customer/product_details_screen.dart';
+import 'package:burger_bites/screens/customer/theme_screen.dart';
 import 'package:burger_bites/navigation/app_router.dart';
 import 'package:burger_bites/providers/admin_dashboard_provider.dart';
 import 'package:burger_bites/providers/admin_orders_provider.dart';
@@ -131,8 +132,23 @@ void main() {
     }
 
     await tester.tap(find.byTooltip('Open menu'));
-    await tester.pumpAndSettle();
-    expect(find.text('Menu'), findsOneWidget);
+    // The menu carousel intentionally keeps auto-advancing in the app, so
+    // settle only the route transition instead of waiting for every ticker.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('Menu'), findsWidgets);
+  });
+
+  testWidgets('theme palette selection keeps ListTile ink visible', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: ThemeScreen()));
+    await tester.pump();
+
+    await tester.tap(find.text('Sizzling Crimson'));
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('guest menu scrolls in a short viewport without overflow', (
@@ -163,7 +179,7 @@ void main() {
     await tester.pumpWidget(_customerHomeHarness(AuthService()));
     await tester.pump();
     await tester.scrollUntilVisible(
-      find.text('Your recent orders'),
+      find.text('Sign in to view your order history.'),
       400,
       scrollable: find.byType(Scrollable).first,
     );

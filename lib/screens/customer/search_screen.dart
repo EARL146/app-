@@ -94,7 +94,7 @@ class _SearchScreenState extends State<SearchScreen> {
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'Search burgers, crispy fries, drinks',
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search_rounded,
                   color: AppColors.brandOrange,
                 ),
@@ -151,7 +151,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     if (query.isNotEmpty)
                       Text(
                         '${results.length} found',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 10,
                         ),
@@ -235,7 +235,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               setState(() {});
                             },
                             backgroundColor: AppColors.surface,
-                            side: const BorderSide(color: AppColors.border),
+                            side: BorderSide(color: AppColors.border),
                             visualDensity: VisualDensity.compact,
                           ),
                         )
@@ -308,7 +308,7 @@ class _SearchNotice extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w800,
               fontSize: 14,
@@ -318,7 +318,7 @@ class _SearchNotice extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 12,
               height: 1.4,
@@ -433,7 +433,7 @@ class _SearchResultTile extends StatelessWidget {
                     product.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 9,
                       height: 1.25,
@@ -460,7 +460,7 @@ class _SearchResultTile extends StatelessWidget {
                       ],
                       Text(
                         '₱${product.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
                           color: AppColors.brandOrange,
@@ -527,7 +527,7 @@ class _TrendingTile extends StatelessWidget {
         color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Icon(
+      child: Icon(
         Icons.local_fire_department_rounded,
         color: AppColors.brandOrange,
         size: 17,
@@ -539,7 +539,7 @@ class _TrendingTile extends StatelessWidget {
     ),
     subtitle: Text(
       '${product.reviewCount ?? 0} ordered recently',
-      style: const TextStyle(fontSize: 8, color: AppColors.textSecondary),
+      style: TextStyle(fontSize: 8, color: AppColors.textSecondary),
     ),
     trailing: Text(
       '₱${product.price.toStringAsFixed(0)}',

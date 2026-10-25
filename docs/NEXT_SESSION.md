@@ -132,7 +132,7 @@
 - Created a local development admin account using the supported Argon2id bootstrap path. Live HTTP checks passed admin login, `/me`, authorization for `/admin/system-status`, `/me/password` including a fresh sign-in with the changed password, and logout. A temporary customer registration/`/me`/logout check passed and the customer was denied the admin endpoint with HTTP 403; that user row was deleted. The readiness endpoint correctly reports migration 003 is missing. The current generated password was returned to the user in chat and is not stored in project files.
 - Optional seed migration 002 remains unapplied, so catalog screens will show their explicit empty-menu state until real products or the development catalog are inserted.
 - GCash/Maya remain disabled; the user selected these providers and will provide sandbox details. No online transaction is simulated. Do not request live production secrets in chat; configure sandbox-only credentials locally in ignored backend environment settings and verify the gateway's official callback/signature requirements before implementation.
-- Other unresolved integrations: courier GPS, outgoing SMS/email notifications, Google/Apple login, account recovery/email verification, app-wide localization/palette changes, real image upload, saved-address collection, and rewards/promotions.
+- Other unresolved integrations: courier GPS, outgoing SMS/email notifications, Google/Apple login, account recovery/email verification, real image upload, saved-address collection, and rewards/promotions. App-wide palette and core customer UI language preferences were implemented on 2026-10-24; translations should still be extended when new customer-facing copy is added.
 - Latest UI follow-up: About copy describes actual app actions; Contact hides unverified business details while retaining the SQL support form; Cart displays the saved profile address rather than a fixed city; the Admin dashboard bell opens SQL-backed pending orders and shows their count; Admin More's Language & Region opens the saved preference screen; Language/Theme previews no longer show invented menu prices; Google/Apple setup messages are explicit; SMS/email/promotion switches explain that they save preferences but do not deliver messages. `dart format` completed, `flutter analyze --no-pub` passed, all 9 Flutter tests passed including checks for the Settings explanations, and `git diff --check` passed. The previous Web build succeeded after the address UI change and was not rerun after this UI pass. Graphify reports 1,648 nodes / 2,628 edges / 110 communities; the existing Linux header parse warning remains.
 - Earlier API verification: PHP syntax checks passed for all 5 files under `backend/src`. The `http://localhost:5000` CORS preflight returned 204, catalog returned 200, and an unapproved origin returned 403. The admin profile widget test verifies account/password/logout controls and empty-current-password validation; valid password change and re-login passed separately over HTTP. A temporary customer saved/read/cleared the default address over HTTP and was removed. The calendar screen has no dedicated widget test. The dashboard query returned 7 date buckets. Admin login/session/password change and customer registration/role denial passed over local HTTP. Migration 003 remains unapplied, so cart/order/reminder/inventory/customer-management/support routes still need end-to-end checks.
 - Git worktree remains uncommitted. Existing local Obsidian state and intro/welcome changes are preserved; no commit or push was made.
@@ -195,3 +195,55 @@ Import migration 003 with the privileged phpMyAdmin account, confirm Admin More 
 - Never commit `.env`, database credentials, OAuth secrets, payment keys, tokens, personal customer data, or `.obsidian/workspace.json` changes.
 - Do not deploy publicly, stage local Obsidian/Graphify state or ignored secrets, or alter production data without explicit authorization.
 - Keep local preview data labeled until screens are connected to verified API responses.
+
+## Catalog/API and menu hero fix (2026-10-24)
+
+- `CatalogProvider` now keeps one failed automatic catalog request from repeating on every screen entry; the menu's existing “Try again” action performs a forced retry. Unexpected fetch failures clear the loading state and remain visible as a catalog error.
+- Fixed the theme palette `ListTile` ink assertion by placing the tile on its own clipped `Material` surface. Increased the home category showcase card height to prevent a 5 px phone-layout overflow.
+- The Menu hero now uses the full banner for its burger/drink/fries photo carousel, with readable overlay copy and manual indicators/swipes. The previous half-width image panel is removed.
+- Verification: `flutter analyze --no-pub` reported no issues; the catalog provider regression test passed; all 33 Flutter tests passed after updating a navigation test to wait for the route transition without waiting on the intentionally looping carousel.
+- Runtime was restored without resetting or importing database data: AMPPS MySQL is listening on port 3306 and the PHP API was started on `127.0.0.1:8081`. `GET /api/v1/products?limit=50&offset=0` returned HTTP 200 with 6 records, and CORS allowed both `http://localhost:5000` and `http://127.0.0.1:5000`. The MySQL listener reports `::`; AMPPS-wide binding configuration was left unchanged. Refresh the running Flutter web page to retry its catalog fetch. No sample products were substituted.
+
+## Drink brand and size pricing update (2026-10-24)
+
+- The Menu heading now has a horizontal three-dot overflow button with a working **Refresh menu** action.
+- Customer Menu cards show a selected drink brand instead of a generic stored drink name (for example, **Coca-Cola** instead of **Mocha Shake**); menu quick-add uses Coca-Cola/Regular by default and carries the selected brand/size into cart customizations.
+- Drink details show the selected brand name and switch to that brand's cup crop from `assets/products/hero_drinks_showcase.jpg`.
+- User-provided drink prices are shared by brand: Regular ₱150, Large ₱170, XL ₱180. The Flutter selector, displayed selected price, quick-add, cart display, and PHP API cart/order recalculation now use this same table. Server-side order naming omits the generic source product name.
+- Fries prices are shared by category: Small ₱170, Medium ₱180, Large ₱190. The customer size selector, Menu card “From” price and Small quick-add, cart display, and PHP API cart/order recalculation use this same table. Sides-category products named with “fries” use the fries rules too.
+- Verification: targeted `flutter analyze --no-pub` reported no issues; `php -l backend/src/ApiApplication.php` passed; `git diff --check` passed; `graphify update .` rebuilt the local graph. No Flutter tests or live browser/API order were run for the size-price follow-up.
+
+## Customer Calendar and Contact sign-in gate (2026-10-24)
+
+- Calendar/reminders, Contact support, and Account settings now require an authenticated customer account at the named-route boundary. This covers entry from the home menu, profile, About, and direct named-route navigation.
+- Guests see the existing sign-in/create-account prompt before a protected screen is built. Canceling leaves a sign-in-required screen with retry and back actions; these pages do not load personal reminders, profile/preferences, or support form until the customer session is active. Admin sessions are not treated as customer sessions.
+- Verification: targeted `flutter analyze --no-pub lib/navigation/app_router.dart lib/navigation/customer_route_gate.dart` reported no issues; `git diff --check` passed; `graphify update .` completed. Graphify reported its existing parser warning for `linux/runner/my_application.h`. No Flutter tests or live API/browser flow were run.
+
+## Calendar reminder time and due alerts (2026-10-25)
+
+- The Calendar already displays the account creation date from `users.created_at`, returned by the authenticated profile API.
+- Customer reminders now store a date and local time. Migration `005_calendar_reminder_time.sql` adds a `TIME` column; existing reminders default to 9:00 AM. Admin More → App Information checks for this column.
+- The app-wide reminder scheduler loads reminders for the signed-in customer and alerts at the due time. If browser notifications are permitted, it shows an Edge/Chrome notification; otherwise it shows an in-app alert while BurgerBites is open. The Calendar screen includes a user-clicked browser permission control and a time picker.
+- Browser notification delivery is foreground/page-based. A notification is not guaranteed after the browser or app is fully closed; that requires a registered push service/service worker, which is not configured.
+- Database follow-up: import `backend/database/migrations/005_calendar_reminder_time.sql` once in phpMyAdmin after backing up `Burger_Bites`; the app database user does not have `ALTER` permission. Then verify Admin More → App Information reports the new requirement ready.
+
+## Menu bottom navigation and carousel indicator fix (2026-10-24)
+
+- Direct `/menu` navigation now opens the normal customer app shell on the Menu tab, preserving the Home/Menu/Orders/Profile bottom navigation. Category arguments continue to select the requested menu category.
+- Removed the three-dot overflow button and the separate search shortcut beside the cart. Kept the search bar and its magnifying-glass icon. Centered the three white carousel indicators along the bottom of the hero image.
+- Verification: targeted `flutter analyze --no-pub lib/screens/customer/menu_screen.dart` reported no issues; `git diff --check` passed; Graphify was refreshed. No Flutter tests or device/browser visual review were run.
+
+## App-wide color themes and language preferences (2026-10-24)
+
+- Added a shared `AppPreferencesProvider` for local theme, display mode, and language state. Color palette and light/dark/system mode apply immediately through the shared `AppColors` tokens and `MaterialApp` themes. Theme choices are stored on the device and sync to `/me/preferences` when a configured signed-in account is available.
+- Language selection applies immediately to Flutter's locale plus the app's translated customer strings. Home navigation, menu, theme/language screens, profile, cart, and product details now react to a language change. Supported choices are English, Filipino, Cebuano, Ilonggo, Waray, Spanish, Japanese, and Korean. Regional languages use Filipino for Flutter's built-in material locale while app strings retain the selected regional translation.
+- Appearance and language preferences persist locally for guest users and are preserved when authentication state is cleared. Successful account sign-in can load that account's saved preferences. Updated `flutter_localizations` and `intl` to the SDK-compatible version.
+- Verification: `flutter pub get` succeeded; `flutter analyze --no-pub` reported no errors (three `prefer_initializing_formals` info notices remain in the dependency-injected provider constructor); `git diff --check` passed; `graphify update .` rebuilt the local graph to 2,376 nodes / 4,049 edges / 131 communities. Graphify still reports its existing parser warning for `linux/runner/my_application.h`. No tests or browser visual review were run.
+
+## Customer reward points and Flutter ink assertion (2026-10-25)
+
+- Reward earning is now 0.5 point per purchased item unit: one unit earns 0.5, two earn 1.0, and quantity across all configured products is counted. The exact award is stored on the order and in `reward_transactions`; canceling an order reverses that exact amount.
+- The customer Profile Burger Bites Rewards card now displays an animated progress bar from 0 to 2,500 points, current points, remaining points, and the 80%-off reward for up to five item units. The Profile summary says 0.5 point per item.
+- The reported ListTile ink assertion is addressed by placing colored/bordered ListTile and SwitchListTile surfaces on their own clipped `Material` widgets in the affected customer and admin screens.
+- Live read check: `GET /api/v1/products?limit=50&offset=0` returned HTTP 200 with six products, confirming the local API-to-database catalog read.
+- Verification: `flutter analyze --no-pub` reported no issues; `php -l backend/src/ApiApplication.php` and `git diff --check` passed; `graphify update .` rebuilt 2,424 nodes / 4,135 edges / 133 communities. Graphify reported its existing parser warning for `linux/runner/my_application.h`. No Flutter tests were run and no order was submitted during verification.

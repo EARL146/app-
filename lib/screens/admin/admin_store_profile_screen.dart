@@ -124,7 +124,7 @@ class _AdminStoreProfileScreenState extends State<AdminStoreProfileScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
                   children: [
-                    const Text(
+                    Text(
                       'Public business details',
                       style: TextStyle(
                         fontSize: 22,
@@ -133,7 +133,7 @@ class _AdminStoreProfileScreenState extends State<AdminStoreProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'These details are shown to customers. Enter only verified information.',
                       style: TextStyle(
                         color: AppColors.textSecondary,
@@ -247,7 +247,7 @@ class _AdminStoreProfileScreenState extends State<AdminStoreProfileScreen> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(13)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(13),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
       ),
     ),

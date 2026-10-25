@@ -60,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: const Icon(Icons.refresh_rounded),
               label: Text(_loadError!),
             ),
-          const Text(
+          Text(
             'Manage your account details, contact options and security preferences.',
             style: TextStyle(
               color: AppColors.textSecondary,
@@ -83,7 +83,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 8),
                 TextField(
                   controller: _emailController,
-                  readOnly: true,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email address',
@@ -139,7 +138,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Two-step verification',
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800),
                   ),
-                  subtitle: const Text(
+                  subtitle: Text(
                     'Two-step sign-in is not configured.',
                     style: TextStyle(
                       fontSize: 8,
@@ -200,7 +199,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(13),
             ),
-            child: const Row(
+            child: Row(
               children: [
                 Icon(
                   Icons.info_outline_rounded,
@@ -239,7 +238,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _digitalReceipt = true;
                 _promotions = false;
               }),
-              child: const Text(
+              child: Text(
                 'Reset preferences',
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
               ),
@@ -284,6 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final auth = context.read<AuthService>();
     final profileSaved = await auth.updateProfile(
       name: _nameController.text,
+      email: _emailController.text,
       phone: _phoneController.text,
       address: _addressController.text,
     );
@@ -403,7 +403,7 @@ class _SettingsSection extends StatelessWidget {
     color: AppColors.surface,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(15),
-      side: const BorderSide(color: AppColors.border),
+      side: BorderSide(color: AppColors.border),
     ),
     clipBehavior: Clip.antiAlias,
     child: Padding(
@@ -413,7 +413,7 @@ class _SettingsSection extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 8,
               fontWeight: FontWeight.w900,
@@ -461,7 +461,7 @@ class _SettingsAction extends StatelessWidget {
     ),
     subtitle: Text(
       subtitle,
-      style: const TextStyle(fontSize: 8, color: AppColors.textSecondary),
+      style: TextStyle(fontSize: 8, color: AppColors.textSecondary),
     ),
     trailing: TextButton(
       onPressed: onTap,
@@ -497,7 +497,7 @@ class _PreferenceSwitch extends StatelessWidget {
     ),
     subtitle: Text(
       subtitle,
-      style: const TextStyle(fontSize: 8, color: AppColors.textSecondary),
+      style: TextStyle(fontSize: 8, color: AppColors.textSecondary),
     ),
     onChanged: onChanged,
   );

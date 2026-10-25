@@ -453,7 +453,7 @@ class _ProductCard extends StatelessWidget {
                           const SizedBox(width: 3),
                           Text(
                             '${product.rating ?? 0} · ${product.reviewCount ?? 0} reviews',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 9,
                               color: AppColors.textSecondary,
                             ),
@@ -466,7 +466,7 @@ class _ProductCard extends StatelessWidget {
                 const SizedBox(width: 7),
                 Text(
                   '₱${product.price.toStringAsFixed(0)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.brandOrange,
                     fontWeight: FontWeight.w900,
                     fontSize: 14,
@@ -481,7 +481,7 @@ class _ProductCard extends StatelessWidget {
                 product.description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 9,
                   height: 1.3,

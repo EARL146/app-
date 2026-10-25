@@ -46,11 +46,12 @@ class FavoritesScreen extends StatelessWidget {
               separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final product = favorites.favorites[index];
-                return Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
+                return Material(
+                  color: AppColors.surface,
+                  clipBehavior: Clip.antiAlias,
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
+                    side: BorderSide(color: AppColors.border),
                   ),
                   child: ListTile(
                     leading: SizedBox(

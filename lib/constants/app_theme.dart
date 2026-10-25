@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  static ThemeData lightTheme() {
+  static ThemeData lightTheme() => _themeFor(Brightness.light);
+
+  static ThemeData darkTheme() => _themeFor(Brightness.dark);
+
+  static ThemeData _themeFor(Brightness brightness) {
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: AppColors.pageBackground,
@@ -11,7 +15,7 @@ class AppTheme {
       colorScheme:
           ColorScheme.fromSeed(
             seedColor: AppColors.brandOrange,
-            brightness: Brightness.light,
+            brightness: brightness,
           ).copyWith(
             primary: AppColors.brandOrange,
             onPrimary: Colors.white,
@@ -21,7 +25,7 @@ class AppTheme {
             outline: AppColors.border,
           ),
       fontFamily: 'Roboto',
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         displayLarge: TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.w900,
@@ -63,7 +67,7 @@ class AppTheme {
           color: AppColors.textPrimary,
         ),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.pageBackground,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -82,7 +86,7 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: AppColors.border),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -92,24 +96,18 @@ class AppTheme {
           horizontal: 15,
           vertical: 14,
         ),
-        hintStyle: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 13,
-        ),
+        hintStyle: TextStyle(color: AppColors.textSecondary, fontSize: 13),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: AppColors.brandOrange,
-            width: 1.7,
-          ),
+          borderSide: BorderSide(color: AppColors.brandOrange, width: 1.7),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -136,7 +134,7 @@ class AppTheme {
           ),
         ),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.surface,
         selectedItemColor: AppColors.brandOrange,
         unselectedItemColor: AppColors.textSecondary,
@@ -152,14 +150,14 @@ class AppTheme {
         backgroundColor: AppColors.surface,
         selectedColor: AppColors.surfaceMuted,
         disabledColor: AppColors.pageBackground,
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: AppColors.border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
-        labelStyle: const TextStyle(
+        labelStyle: TextStyle(
           color: AppColors.textPrimary,
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
-        secondaryLabelStyle: const TextStyle(
+        secondaryLabelStyle: TextStyle(
           color: AppColors.brandOrangeDark,
           fontSize: 12,
           fontWeight: FontWeight.w700,
@@ -169,14 +167,14 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.textPrimary,
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: AppColors.border),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
           textStyle: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
+      bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: AppColors.pageBackground,
         surfaceTintColor: Colors.transparent,
         showDragHandle: true,

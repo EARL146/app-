@@ -68,8 +68,8 @@ class DemoData {
     ),
     Product(
       id: 'mocha-shake',
-      name: 'Mocha Shake',
-      description: 'Creamy mocha shake with a hint of espresso and cocoa.',
+      name: 'Coca-Cola',
+      description: 'Choose your favorite refreshing drink and size.',
       price: 150,
       imageUrl: 'assets/products/cola.jpg',
       category: 'Drinks',

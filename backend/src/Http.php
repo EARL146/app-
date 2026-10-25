@@ -16,14 +16,14 @@ final class Http
     public static function body(): array
     {
         $length = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
-        if ($length > 65536) {
+        if ($length > 4 * 1024 * 1024) {
             throw new ApiException(413, 'The request is too large.');
         }
         $raw = file_get_contents('php://input');
         if ($raw === false || trim($raw) === '') {
             return [];
         }
-        if (strlen($raw) > 65536) {
+        if (strlen($raw) > 4 * 1024 * 1024) {
             throw new ApiException(413, 'The request is too large.');
         }
         try {

@@ -20,6 +20,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
 
   String _selectedCategory = 'Burgers';
   bool _isAvailable = true;
+  bool _saleEnabled = false;
+  String _saleScope = 'all';
 
   @override
   void initState() {
@@ -100,7 +102,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
+                  borderSide: BorderSide(
                     color: AppColors.brandOrange,
                     width: 1.5,
                   ),
@@ -174,6 +176,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                   ),
                   const SizedBox(height: 16),
                   _buildCategoryDropdown(),
+                  const SizedBox(height: 16),
+                  _buildSaleSettings(),
                   const SizedBox(height: 16),
                   _buildField(
                     label: 'Image Icon/ID',
@@ -294,7 +298,12 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                 .toList(),
             onChanged: (value) {
               if (value != null) {
-                setState(() => _selectedCategory = value);
+                setState(() {
+                  _selectedCategory = value;
+                  if (!_saleScopes.any((option) => option.$1 == _saleScope)) {
+                    _saleScope = 'all';
+                  }
+                });
               }
             },
           ),
@@ -302,6 +311,87 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       ],
     );
   }
+
+  List<(String, String)> get _saleScopes {
+    final options = <(String, String)>[('all', 'All sizes and brands')];
+    if (_selectedCategory == 'Drinks') {
+      options.addAll([
+        for (final brand in [
+          'Coca-Cola',
+          'Sprite',
+          'Pepsi',
+          'Royal',
+          'Mountain Dew',
+          '7Up',
+        ])
+          ('brand:$brand', 'Brand: $brand'),
+        for (final size in ['Regular', 'Large', 'XL'])
+          ('size:$size', 'Size: $size'),
+      ]);
+    } else if (_selectedCategory == 'Burgers') {
+      options.addAll([
+        for (final size in ['Regular', 'Large', 'Double'])
+          ('size:$size', 'Size: $size'),
+      ]);
+    } else if (_selectedCategory == 'Fries' || _selectedCategory == 'Sides') {
+      options.addAll([
+        for (final size in ['Small', 'Medium', 'Large'])
+          ('size:$size', 'Size: $size'),
+      ]);
+    }
+    return options;
+  }
+
+  Widget _buildSaleSettings() => Material(
+    color: AppColors.darkSurfaceAlt,
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: const BorderSide(color: Color(0xFF3B302B)),
+    ),
+    child: Column(
+      children: [
+        SwitchListTile.adaptive(
+          value: _saleEnabled,
+          activeThumbColor: AppColors.brandOrange,
+          title: const Text(
+            '40% Discount Sale',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
+          ),
+          subtitle: const Text(
+            'Show this product in Discount Sale',
+            style: TextStyle(color: Colors.white60, fontSize: 9),
+          ),
+          onChanged: (value) => setState(() => _saleEnabled = value),
+        ),
+        if (_saleEnabled)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+            child: DropdownButtonFormField<String>(
+              initialValue: _saleScope,
+              dropdownColor: AppColors.darkSurfaceAlt,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              decoration: const InputDecoration(labelText: 'Sale applies to'),
+              items: _saleScopes
+                  .map(
+                    (option) => DropdownMenuItem(
+                      value: option.$1,
+                      child: Text(option.$2),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _saleScope = value);
+              },
+            ),
+          ),
+      ],
+    ),
+  );
 
   Widget _buildAvailabilityToggle() {
     return Row(
@@ -333,6 +423,8 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       category: _selectedCategory,
       imageUrl: _imageController.text,
       available: _isAvailable,
+      discountPercent: _saleEnabled ? 40 : 0,
+      discountScope: _saleScope,
     );
 
     if (!context.mounted) return;

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../l10n/app_translations.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/customer_orders_provider.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/animated_brand_button.dart';
 import '../../widgets/food_image.dart';
@@ -23,6 +25,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _notesController = TextEditingController();
   String _paymentMethod = 'Cash on Delivery';
   bool _profilePrefilled = false;
+  bool _redeemRewards = false;
 
   @override
   void didChangeDependencies() {
@@ -48,9 +51,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(title: const Text('Cart & checkout')),
+      appBar: AppBar(title: Text('Cart & checkout'.tr)),
       body: Consumer<CartProvider>(
         builder: (context, cart, _) {
+          final rewardPoints = context
+              .watch<AuthService>()
+              .currentUserRewardPoints;
+          final rewardSavings = _redeemRewards && rewardPoints >= 2500
+              ? _estimatedRewardSavings(cart)
+              : 0.0;
+          final estimatedSubtotal = (cart.subtotal - rewardSavings)
+              .clamp(0, double.infinity)
+              .toDouble();
+          final estimatedTax = estimatedSubtotal * 0.12;
+          final estimatedTotal =
+              estimatedSubtotal + cart.deliveryFee + estimatedTax;
           if (cart.isEmpty) {
             return const Center(
               child: Text('Your cart is empty. Add items before checkout.'),
@@ -65,9 +80,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
                     children: [
                       _AddressCard(
-                        nameController: _nameController,
-                        addressController: _addressController,
-                        phoneController: _phoneController,
+                        name: _nameController.text,
+                        address: _addressController.text,
+                        phone: _phoneController.text,
+                        onEdit: () async {
+                          await Navigator.of(context).pushNamed('/settings');
+                          if (!context.mounted) return;
+                          final auth = context.read<AuthService>();
+                          setState(() {
+                            _nameController.text = auth.currentUserName ?? '';
+                            _addressController.text =
+                                auth.currentUserAddress ?? '';
+                            _phoneController.text = auth.currentUserPhone ?? '';
+                          });
+                        },
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -83,7 +109,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                           Text(
                             '${cart.items.length} items',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 10,
                             ),
@@ -130,7 +156,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     const SizedBox(height: 3),
                                     Text(
                                       '${item.quantity} × ₱${item.price.toStringAsFixed(0)}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         color: AppColors.textSecondary,
                                         fontSize: 9,
                                       ),
@@ -184,12 +210,44 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         selected: _paymentMethod == 'Credit / Debit',
                         onTap: _showOnlinePaymentUnavailable,
                       ),
+                      if (rewardPoints >= 2500) ...[
+                        const SizedBox(height: 8),
+                        Material(
+                          color: AppColors.surface,
+                          clipBehavior: Clip.antiAlias,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            side: BorderSide(color: AppColors.border),
+                          ),
+                          child: SwitchListTile.adaptive(
+                            value: _redeemRewards,
+                            activeThumbColor: AppColors.brandOrange,
+                            title: const Text(
+                              'Redeem 2,500 points',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '80% off up to 5 products · save about ₱${_estimatedRewardSavings(cart).toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            onChanged: (value) =>
+                                setState(() => _redeemRewards = value),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       const _SectionTitle(title: 'Order notes'),
                       const SizedBox(height: 7),
                       TextFormField(
                         controller: _notesController,
                         maxLines: 2,
+                        maxLength: 500,
                         decoration: const InputDecoration(
                           hintText: 'Add delivery instructions (optional)',
                           prefixIcon: Icon(Icons.note_alt_outlined),
@@ -197,10 +255,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                       const SizedBox(height: 14),
                       _TotalsCard(
-                        subtotal: cart.subtotal,
+                        subtotal: estimatedSubtotal,
                         delivery: cart.deliveryFee,
-                        tax: cart.tax,
-                        total: cart.total,
+                        tax: estimatedTax,
+                        total: estimatedTotal,
                       ),
                       const SizedBox(height: 10),
                       Container(
@@ -209,7 +267,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           color: AppColors.surfaceMuted,
                           borderRadius: BorderRadius.circular(13),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(
                               Icons.info_outline_rounded,
@@ -237,7 +295,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    border: const Border(top: BorderSide(color: AppColors.border)),
+                    border: Border(top: BorderSide(color: AppColors.border)),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.textPrimary.withValues(alpha: 0.05),
@@ -282,7 +340,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                       ),
                                     ),
                                     AnimatedValueText(
-                                      '₱${cart.total.toStringAsFixed(0)}',
+                                      '₱${estimatedTotal.toStringAsFixed(0)}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w900,
                                       ),
@@ -317,6 +375,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ? 'cod'
           : 'unavailable',
       notes: _notesController.text,
+      redeemRewards: _redeemRewards,
     );
     if (!context.mounted) return;
     if (orderId == null) {
@@ -328,8 +387,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
       return;
     }
+    await context.read<AuthService>().refreshProfile();
+    if (!context.mounted) return;
+    await context.read<CustomerOrdersProvider>().loadOrders(force: true);
+    if (!context.mounted) return;
     Navigator.of(context)
         .pushReplacementNamed('/order-success', arguments: orderId);
+  }
+
+  double _estimatedRewardSavings(CartProvider cart) {
+    var remaining = 5;
+    var savings = 0.0;
+    for (final item in cart.items) {
+      if (remaining <= 0) break;
+      final discountedUnits = item.quantity < remaining
+          ? item.quantity
+          : remaining;
+      savings += item.price * 0.8 * discountedUnits;
+      remaining -= discountedUnits;
+    }
+    return savings;
   }
 
   void _showOnlinePaymentUnavailable() {
@@ -346,14 +423,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
 class _AddressCard extends StatelessWidget {
   const _AddressCard({
-    required this.nameController,
-    required this.addressController,
-    required this.phoneController,
+    required this.name,
+    required this.address,
+    required this.phone,
+    required this.onEdit,
   });
 
-  final TextEditingController nameController;
-  final TextEditingController addressController;
-  final TextEditingController phoneController;
+  final String name;
+  final String address;
+  final String phone;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -369,15 +448,15 @@ class _AddressCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.location_on_rounded,
                 color: AppColors.brandOrange,
                 size: 18,
               ),
               const SizedBox(width: 6),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'DELIVERY TO HOME',
+                  'DELIVERY DETAILS',
                   style: TextStyle(
                     color: AppColors.brandOrange,
                     fontSize: 9,
@@ -386,45 +465,27 @@ class _AddressCard extends StatelessWidget {
                   ),
                 ),
               ),
+              TextButton(onPressed: onEdit, child: const Text('Edit')),
             ],
           ),
-          TextFormField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: 'Full name',
-              prefixIcon: Icon(Icons.person_outline_rounded),
-            ),
-            validator: (value) => value == null || value.trim().length < 2
-                ? 'Enter your name.'
-                : null,
+          _DeliveryDetail(
+            icon: Icons.person_outline_rounded,
+            value: name.isEmpty ? 'Add your name in account settings' : name,
           ),
-          const SizedBox(height: 9),
-          TextFormField(
-            controller: addressController,
-            maxLines: 2,
-            decoration: const InputDecoration(
-              labelText: 'Delivery address',
-              prefixIcon: Icon(Icons.home_outlined),
-            ),
-            validator: (value) => value == null || value.trim().length < 8
-                ? 'Enter a complete delivery address.'
-                : null,
+          _DeliveryDetail(
+            icon: Icons.home_outlined,
+            value: address.isEmpty
+                ? 'Add a delivery address in account settings'
+                : address,
           ),
-          const SizedBox(height: 9),
-          TextFormField(
-            controller: phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Mobile number',
-              prefixIcon: Icon(Icons.phone_outlined),
-            ),
-            validator: (value) =>
-                value == null || value.replaceAll(RegExp(r'\D'), '').length < 10
-                ? 'Enter a valid mobile number.'
-                : null,
+          _DeliveryDetail(
+            icon: Icons.phone_outlined,
+            value: phone.isEmpty
+                ? 'Add a phone number in account settings'
+                : phone,
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Delivery estimate is confirmed by the restaurant after order review.',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
           ),
@@ -432,6 +493,25 @@ class _AddressCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DeliveryDetail extends StatelessWidget {
+  const _DeliveryDetail({required this.icon, required this.value});
+  final IconData icon;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 9),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 15, color: AppColors.textSecondary),
+        const SizedBox(width: 8),
+        Expanded(child: Text(value, style: const TextStyle(fontSize: 11))),
+      ],
+    ),
+  );
 }
 
 class _SectionTitle extends StatelessWidget {
@@ -514,7 +594,7 @@ class _PaymentOption extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 8,
                         color: AppColors.textSecondary,
                       ),
@@ -527,7 +607,9 @@ class _PaymentOption extends StatelessWidget {
                     ? Icons.radio_button_checked_rounded
                     : Icons.radio_button_off_rounded,
                 size: 18,
-                color: selected ? AppColors.brandOrange : AppColors.textSecondary,
+                color: selected
+                    ? AppColors.brandOrange
+                    : AppColors.textSecondary,
               ),
             ],
           ),

@@ -12,6 +12,9 @@ class StorageService {
   static const String _userPhoneKey = 'user_phone';
   static const String _userBranchKey = 'user_branch';
   static const String _userAddressKey = 'user_default_address';
+  static const String _themePaletteKey = 'app_theme_palette';
+  static const String _themeModeKey = 'app_theme_mode';
+  static const String _languageKey = 'app_language';
 
   late FlutterSecureStorage _storage;
 
@@ -94,6 +97,39 @@ class StorageService {
       _storage.write(key: _userAddressKey, value: address);
 
   Future<String?> getUserAddress() async => _storage.read(key: _userAddressKey);
+
+  Future<void> saveThemePalette(String palette) async =>
+      _storage.write(key: _themePaletteKey, value: palette);
+
+  Future<String?> getThemePalette() async =>
+      _storage.read(key: _themePaletteKey);
+
+  Future<void> saveThemeMode(String mode) async =>
+      _storage.write(key: _themeModeKey, value: mode);
+
+  Future<String?> getThemeMode() async => _storage.read(key: _themeModeKey);
+
+  Future<void> saveLanguage(String language) async =>
+      _storage.write(key: _languageKey, value: language);
+
+  Future<String?> getLanguage() async => _storage.read(key: _languageKey);
+
+  /// Clears account identity while retaining local appearance preferences.
+  Future<void> clearAuthentication() async {
+    for (final key in [
+      _tokenKey,
+      _refreshTokenKey,
+      _userIdKey,
+      _userEmailKey,
+      _userNameKey,
+      _userRoleKey,
+      _userPhoneKey,
+      _userBranchKey,
+      _userAddressKey,
+    ]) {
+      await _storage.delete(key: key);
+    }
+  }
 
   /// Clear all stored data
   Future<void> clearAll() async {

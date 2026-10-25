@@ -24,6 +24,8 @@ class CatalogProvider extends ChangeNotifier {
         .toSet()
         .toList()
       ..sort()),
+    if (_products.any((product) => product.discountPercent > 0))
+      'Discount Sale',
   ];
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -46,15 +48,22 @@ class CatalogProvider extends ChangeNotifier {
       if (!response.success || response.data == null) {
         _errorMessage = response.error ?? 'Unable to load the menu.';
       } else {
-        final raw = response.data!['products'];
-        if (raw is! List) throw const FormatException('Invalid products list.');
-        _products = raw
-            .whereType<Map<String, dynamic>>()
-            .map(Product.fromJson)
-            .toList(growable: false);
+        try {
+          final raw = response.data!['products'];
+          if (raw is! List) {
+            throw const FormatException('Invalid products list.');
+          }
+          _products = raw
+              .whereType<Map<String, dynamic>>()
+              .map(Product.fromJson)
+              .toList(growable: false);
+        } catch (_) {
+          _errorMessage = 'The server returned an invalid menu.';
+        }
       }
     } catch (_) {
-      _errorMessage = 'Unable to load the menu. Check the API connection and try again.';
+      _errorMessage =
+          'Unable to load the menu. Check the API connection and try again.';
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -49,16 +49,12 @@ class _SignInScreenState extends State<SignInScreen> {
                     const Center(
                       child: Column(
                         children: [
-                          BrandLogo(
-                            width: 142,
-                            height: 142,
-                            animate: true,
-                          ),
+                          BrandLogo(width: 142, height: 142, animate: true),
                         ],
                       ),
                     ),
                     const SizedBox(height: 26),
-                    const Text(
+                    Text(
                       'Welcome back',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -69,7 +65,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Sign in to continue ordering your favorite burgers',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -83,7 +79,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Email address',
                         filled: true,
                         fillColor: Colors.white,
@@ -136,11 +132,11 @@ class _SignInScreenState extends State<SignInScreen> {
                         border: const OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
-                        enabledBorder: const OutlineInputBorder(
+                        enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: AppColors.border),
                           borderRadius: BorderRadius.all(Radius.circular(14)),
                         ),
-                        focusedBorder: const OutlineInputBorder(
+                        focusedBorder: OutlineInputBorder(
                           borderSide: BorderSide(
                             color: AppColors.brandOrange,
                             width: 1.6,
@@ -166,8 +162,9 @@ class _SignInScreenState extends State<SignInScreen> {
                             backgroundColor: AppColors.darkSurface,
                             foregroundColor: Colors.white,
                             elevation: 3,
-                            shadowColor:
-                                AppColors.darkSurface.withValues(alpha: 0.25),
+                            shadowColor: AppColors.darkSurface.withValues(
+                              alpha: 0.25,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -193,7 +190,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                     ),
                     const SizedBox(height: 15),
-                    const Row(
+                    Row(
                       children: [
                         Expanded(child: Divider()),
                         Padding(
@@ -233,7 +230,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       label: 'Continue with Apple',
                     ),
                     const SizedBox(height: 13),
-                    const Text(
+                    Text(
                       'By continuing, you agree to our Terms of Service and Privacy Policy.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -247,7 +244,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       alignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        const Text(
+                        Text(
                           'Don’t have an account?',
                           style: TextStyle(
                             fontSize: 13,
@@ -257,7 +254,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         AnimatedPressScale(
                           child: TextButton(
                             onPressed: _openRegistration,
-                            child: const Text(
+                            child: Text(
                               'Create one',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
@@ -352,7 +349,7 @@ class _SignInScreenState extends State<SignInScreen> {
           style: OutlinedButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
-            side: const BorderSide(color: AppColors.border),
+            side: BorderSide(color: AppColors.border),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(11),
             ),

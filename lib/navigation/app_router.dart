@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../models/product_model.dart';
+import '../providers/app_preferences_provider.dart';
 import 'admin_route_gate.dart';
+import 'customer_route_gate.dart';
 import '../screens/customer/about_screen.dart';
 import '../screens/customer/cart_screen.dart';
 import '../screens/customer/calendar_screen.dart';
@@ -10,11 +13,9 @@ import '../screens/customer/contact_screen.dart';
 import '../screens/customer/favorites_screen.dart';
 import '../screens/customer/home_screen.dart';
 import '../screens/customer/language_screen.dart';
-import '../screens/customer/menu_screen.dart';
 import '../screens/customer/order_history_screen.dart';
 import '../screens/customer/order_success_screen.dart';
 import '../screens/customer/product_details_screen.dart';
-import '../screens/customer/profile_screen.dart';
 import '../screens/customer/register_screen.dart';
 import '../screens/customer/search_screen.dart';
 import '../screens/customer/settings_screen.dart';
@@ -34,38 +35,48 @@ import '../screens/admin/admin_support_screen.dart';
 import '../screens/admin/admin_store_profile_screen.dart';
 
 class AppRouter {
+  static MaterialPageRoute<T> _pageRoute<T>({required WidgetBuilder builder}) =>
+      MaterialPageRoute<T>(
+        builder: (context) => Consumer<AppPreferencesProvider>(
+          builder: (context, _, _) => builder(context),
+        ),
+      );
+
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/':
       case '/splash':
-        return MaterialPageRoute(builder: (_) => const SplashScreen());
+        return _pageRoute(builder: (_) => const SplashScreen());
       case '/welcome':
-        return MaterialPageRoute(builder: (_) => const WelcomeScreen());
+        return _pageRoute(builder: (_) => const WelcomeScreen());
       case '/sign-in':
-        return MaterialPageRoute<bool>(
+        return _pageRoute<bool>(
           builder: (_) =>
               SignInScreen(returnToCaller: settings.arguments == true),
         );
       case '/register':
-        return MaterialPageRoute<bool>(
+        return _pageRoute<bool>(
           builder: (_) =>
               RegisterScreen(returnToCaller: settings.arguments == true),
         );
       case '/customer-home':
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) =>
               CustomerHomeScreen(openMenuInitially: settings.arguments == true),
         );
       case '/search':
-        return MaterialPageRoute(builder: (_) => const SearchScreen());
+        return _pageRoute(builder: (_) => const SearchScreen());
       case '/favorites':
-        return MaterialPageRoute(builder: (_) => const FavoritesScreen());
+        return _pageRoute(builder: (_) => const FavoritesScreen());
       case '/menu':
         final category = settings.arguments is String
             ? settings.arguments as String
             : 'All';
-        return MaterialPageRoute(
-          builder: (_) => MenuScreen(initialCategory: category),
+        return _pageRoute(
+          builder: (_) => CustomerHomeScreen(
+            openMenuInitially: true,
+            initialMenuCategory: category,
+          ),
         );
       case '/product-details':
         final argument = settings.arguments;
@@ -76,55 +87,72 @@ class AppRouter {
                 : 'Product information is invalid.',
           );
         }
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) => ProductDetailsScreen(product: argument),
         );
       case '/cart':
-        return MaterialPageRoute(builder: (_) => const CartScreen());
+        return _pageRoute(builder: (_) => const CartScreen());
       case '/checkout':
-        return MaterialPageRoute(builder: (_) => const CheckoutScreen());
+        return _pageRoute(builder: (_) => const CheckoutScreen());
       case '/order-success':
         final argument = settings.arguments;
         if (argument is! String || argument.trim().isEmpty) {
           return _missingRecordRoute('Order confirmation is unavailable.');
         }
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) => OrderSuccessScreen(orderId: argument),
         );
       case '/order-history':
-        return MaterialPageRoute(builder: (_) => const OrderHistoryScreen());
+        return _pageRoute(builder: (_) => const OrderHistoryScreen());
       case '/profile':
-        return MaterialPageRoute(builder: (_) => const ProfileScreen());
+        return _pageRoute(
+          builder: (_) => const CustomerHomeScreen(initialTabIndex: 3),
+        );
       case '/settings':
-        return MaterialPageRoute(builder: (_) => const SettingsScreen());
+        return _pageRoute(
+          builder: (_) => const CustomerRouteGate(
+            action: 'manage your account settings',
+            child: SettingsScreen(),
+          ),
+        );
       case '/themes':
-        return MaterialPageRoute(builder: (_) => const ThemeScreen());
+        return _pageRoute(builder: (_) => const ThemeScreen());
       case '/language':
-        return MaterialPageRoute(builder: (_) => const LanguageScreen());
+        return _pageRoute(builder: (_) => const LanguageScreen());
       case '/calendar':
-        return MaterialPageRoute(builder: (_) => const CalendarScreen());
+        return _pageRoute(
+          builder: (_) => const CustomerRouteGate(
+            action: 'view your calendar and reminders',
+            child: CalendarScreen(),
+          ),
+        );
       case '/contact':
-        return MaterialPageRoute(builder: (_) => const ContactScreen());
+        return _pageRoute(
+          builder: (_) => const CustomerRouteGate(
+            action: 'contact BurgerBites support',
+            child: ContactScreen(),
+          ),
+        );
       case '/about':
-        return MaterialPageRoute(builder: (_) => const AboutScreen());
+        return _pageRoute(builder: (_) => const AboutScreen());
       case '/admin-home':
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) => const AdminRouteGate(child: AdminHomeScreen()),
         );
       case '/admin-profile':
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) => const AdminRouteGate(child: AdminProfileScreen()),
         );
       case '/admin-orders':
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) => const AdminRouteGate(child: AdminOrdersScreen()),
         );
       case '/admin-products':
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) => const AdminRouteGate(child: AdminProductsScreen()),
         );
       case '/admin-add-product':
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) => const AdminRouteGate(child: AdminAddProductScreen()),
         );
       case '/admin-edit-product':
@@ -136,37 +164,36 @@ class AppRouter {
                 : 'Product information is invalid.',
           );
         }
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) =>
               AdminRouteGate(child: AdminEditProductScreen(product: argument)),
         );
       case '/admin-customers':
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) => const AdminRouteGate(child: AdminCustomersScreen()),
         );
       case '/admin-more':
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) => const AdminRouteGate(child: AdminMoreScreen()),
         );
       case '/admin-support':
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) => const AdminRouteGate(child: AdminSupportScreen()),
         );
       case '/admin-store-profile':
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) =>
               const AdminRouteGate(child: AdminStoreProfileScreen()),
         );
       default:
-        return MaterialPageRoute(
+        return _pageRoute(
           builder: (_) =>
               const Scaffold(body: Center(child: Text('Screen not found'))),
         );
     }
   }
 
-  static Route<dynamic> _missingRecordRoute(String message) =>
-      MaterialPageRoute(
-        builder: (_) => Scaffold(body: Center(child: Text(message))),
-      );
+  static Route<dynamic> _missingRecordRoute(String message) => _pageRoute(
+    builder: (_) => Scaffold(body: Center(child: Text(message))),
+  );
 }

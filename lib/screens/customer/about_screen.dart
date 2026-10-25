@@ -20,7 +20,7 @@ class AboutScreen extends StatelessWidget {
               color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
+            child: Text(
               'ABOUT BURGERBITES',
               style: TextStyle(
                 color: AppColors.brandOrange,
@@ -40,7 +40,7 @@ class AboutScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Browse the menu, customize available options, and follow your orders from your account.',
             style: TextStyle(
               color: AppColors.textSecondary,
@@ -71,7 +71,7 @@ class AboutScreen extends StatelessWidget {
                       color: Colors.white.withValues(alpha: .95),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(
                           Icons.favorite_rounded,
@@ -113,7 +113,7 @@ class AboutScreen extends StatelessWidget {
                         color: AppColors.surfaceMuted,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.storefront_rounded,
                         color: AppColors.brandOrange,
                         size: 16,
@@ -132,7 +132,7 @@ class AboutScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'BurgerBites brings the menu, order options, and order history together in one place.',
                   style: TextStyle(
                     color: AppColors.textSecondary,
@@ -226,7 +226,7 @@ class _MiniFact extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.brandOrange,
             fontWeight: FontWeight.w900,
             fontSize: 11,
@@ -236,7 +236,7 @@ class _MiniFact extends StatelessWidget {
         Text(
           label,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 7),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 7),
         ),
       ],
     ),
@@ -289,7 +289,7 @@ class _ValueCard extends StatelessWidget {
               const SizedBox(height: 3),
               Text(
                 description,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 8,
                   height: 1.4,

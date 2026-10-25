@@ -384,6 +384,14 @@ class _CustomerCard extends StatelessWidget {
                         '${customer.orderCount} orders',
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${customer.rewardPoints.toStringAsFixed(customer.rewardPoints % 1 == 0 ? 0 : 1)} reward points',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: AppColors.brandOrange,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -456,6 +464,12 @@ class _CustomerDetailsBottomSheet extends StatelessWidget {
               _DetailRow('Joined', _formatDate(customer.joinedDate)),
               const Divider(height: 16),
               _DetailRow('Total Orders', customer.orderCount.toString()),
+              _DetailRow(
+                'Reward Points',
+                customer.rewardPoints.toStringAsFixed(
+                  customer.rewardPoints % 1 == 0 ? 0 : 1,
+                ),
+              ),
               _DetailRow(
                 'Total Spent',
                 '₱${customer.totalSpent.toStringAsFixed(2)}',

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
-import '../../services/api_service.dart';
+import '../../l10n/app_translations.dart';
+import '../../providers/app_preferences_provider.dart';
 
 class ThemeScreen extends StatefulWidget {
   const ThemeScreen({super.key});
@@ -11,60 +13,23 @@ class ThemeScreen extends StatefulWidget {
 }
 
 class _ThemeScreenState extends State<ThemeScreen> {
-  String _selected = 'Burger Bites';
-  String _displayMode = 'Light';
   bool _isSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadAppearance();
-  }
-
-  Future<void> _loadAppearance() async {
-    final response = await ApiService().get<Map<String, dynamic>>(
-      '/me/preferences',
-      fromJson: (json) => json is Map<String, dynamic>
-          ? json
-          : throw const FormatException('Invalid preferences response.'),
-    );
-    if (!mounted || !response.success) return;
-    final preferences = response.data?['preferences'];
-    if (preferences is! Map<String, dynamic>) return;
-    final palette = preferences['theme_palette'];
-    final mode = preferences['theme_mode'] as String?;
-    setState(() {
-      if (_palettes.any((item) => item.name == palette)) {
-        _selected = palette as String;
-      }
-      _displayMode = switch (mode) {
-        'dark' => 'Dark',
-        'system' => 'System',
-        _ => 'Light',
-      };
-    });
-  }
 
   Future<void> _saveAppearance() async {
     setState(() => _isSaving = true);
-    final response = await ApiService().put<Map<String, dynamic>>(
-      '/me/preferences',
-      body: {
-        'theme_palette': _selected,
-        'theme_mode': _displayMode.toLowerCase(),
-      },
-      fromJson: (json) => json is Map<String, dynamic>
-          ? json
-          : throw const FormatException('Invalid preferences response.'),
-    );
+    final preferences = context.read<AppPreferencesProvider>();
+    final saved = await preferences.saveAppearance();
     if (!mounted) return;
     setState(() => _isSaving = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          response.success
-              ? 'Appearance preference saved. The palette preview does not yet change every app screen.'
-              : response.error ?? 'Unable to save appearance preference.',
+          saved
+              ? preferences.canSyncToAccount
+                    ? 'Appearance saved to your account.'.tr
+                    : 'Appearance applied and saved on this device.'.tr
+              : preferences.errorMessage ??
+                    'Unable to save appearance preference.'.tr,
         ),
       ),
     );
@@ -74,8 +39,8 @@ class _ThemeScreenState extends State<ThemeScreen> {
     _Palette(
       'Burger Bites',
       'Fresh orange and warm cream',
-      AppColors.brandOrange,
-      AppColors.brandRed,
+      Color(0xFFFF4F24),
+      Color(0xFFE84018),
     ),
     _Palette(
       'Sizzling Crimson',
@@ -111,12 +76,14 @@ class _ThemeScreenState extends State<ThemeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final preferences = context.watch<AppPreferencesProvider>();
+    final selectedName = preferences.themePalette;
     final selected = _palettes.firstWhere(
-      (palette) => palette.name == _selected,
+      (palette) => palette.name == selectedName,
     );
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(title: const Text('Color themes')),
+      appBar: AppBar(title: Text('Color themes'.tr)),
       body: Column(
         children: [
           Expanded(
@@ -132,8 +99,8 @@ class _ThemeScreenState extends State<ThemeScreen> {
                     color: AppColors.surfaceMuted,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'APP PREFERENCES · CUSTOMER VIEW',
+                  child: Text(
+                    'APP PREFERENCES · CUSTOMER VIEW'.tr,
                     style: TextStyle(
                       color: AppColors.brandOrange,
                       fontSize: 8,
@@ -143,13 +110,13 @@ class _ThemeScreenState extends State<ThemeScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Color themes & appearance',
+                Text(
+                  'Color themes & appearance'.tr,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 5),
-                const Text(
-                  'Preview a color palette for your BurgerBites app.',
+                Text(
+                  'Preview a color palette for your BurgerBites app.'.tr,
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 10,
@@ -168,9 +135,9 @@ class _ThemeScreenState extends State<ThemeScreen> {
                     children: [
                       Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'LIVE PREVIEW',
+                              'LIVE PREVIEW'.tr,
                               style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 8,
@@ -223,7 +190,7 @@ class _ThemeScreenState extends State<ThemeScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            const Expanded(
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -253,8 +220,8 @@ class _ThemeScreenState extends State<ThemeScreen> {
                                 color: selected.primary,
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: const Text(
-                                'Preview',
+                              child: Text(
+                                'Preview'.tr,
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 8,
@@ -269,8 +236,8 @@ class _ThemeScreenState extends State<ThemeScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text(
-                  'DISPLAY MODE',
+                Text(
+                  'DISPLAY MODE'.tr,
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 8,
@@ -280,26 +247,32 @@ class _ThemeScreenState extends State<ThemeScreen> {
                 ),
                 const SizedBox(height: 7),
                 Row(
-                  children: ['Light', 'Dark', 'System']
+                  children: ['light', 'dark', 'system']
                       .map(
-                        (mode) => Expanded(
+                        (modeCode) => Expanded(
                           child: Padding(
                             padding: const EdgeInsets.only(right: 6),
                             child: ChoiceChip(
-                              label: Center(child: Text(mode)),
-                              selected: _displayMode == mode,
+                              label: Center(
+                                child: Text(
+                                  (modeCode[0].toUpperCase() +
+                                          modeCode.substring(1))
+                                      .tr,
+                                ),
+                              ),
+                              selected: preferences.themeMode == modeCode,
                               onSelected: (_) =>
-                                  setState(() => _displayMode = mode),
+                                  preferences.setThemeMode(modeCode),
                               selectedColor: AppColors.surface,
                               backgroundColor: AppColors.surfaceMuted,
                               side: BorderSide(
-                                color: _displayMode == mode
+                                color: preferences.themeMode == modeCode
                                     ? AppColors.brandOrange
                                     : AppColors.border,
                               ),
                               showCheckmark: false,
                               labelStyle: TextStyle(
-                                color: _displayMode == mode
+                                color: preferences.themeMode == modeCode
                                     ? AppColors.brandOrange
                                     : AppColors.textSecondary,
                                 fontSize: 9,
@@ -314,17 +287,17 @@ class _ThemeScreenState extends State<ThemeScreen> {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Primary brand palettes',
+                        'Primary brand palettes'.tr,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                     ),
-                    const Text(
-                      '6 palettes',
+                    Text(
+                      '6 palettes'.tr,
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 8,
@@ -336,8 +309,8 @@ class _ThemeScreenState extends State<ThemeScreen> {
                 ..._palettes.map(
                   (palette) => _PaletteTile(
                     palette: palette,
-                    selected: palette.name == _selected,
-                    onTap: () => setState(() => _selected = palette.name),
+                    selected: palette.name == selectedName,
+                    onTap: () => preferences.setThemePalette(palette.name),
                   ),
                 ),
                 const SizedBox(height: 9),
@@ -348,7 +321,7 @@ class _ThemeScreenState extends State<ThemeScreen> {
                     borderRadius: BorderRadius.circular(13),
                     border: Border.all(color: AppColors.border),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(
                         Icons.info_outline_rounded,
@@ -358,7 +331,8 @@ class _ThemeScreenState extends State<ThemeScreen> {
                       SizedBox(width: 7),
                       Expanded(
                         child: Text(
-                          'Palette and display mode save to your account; the palette preview does not yet apply across every screen.',
+                          'The selected palette and display mode apply across the app.'
+                              .tr,
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 9,
@@ -382,7 +356,7 @@ class _ThemeScreenState extends State<ThemeScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _isSaving ? null : _saveAppearance,
                   icon: const Icon(Icons.check_rounded, size: 17),
-                  label: Text(_isSaving ? 'Saving…' : 'Save appearance'),
+                  label: Text(_isSaving ? 'Saving…'.tr : 'Save appearance'.tr),
                 ),
               ),
             ),
@@ -412,17 +386,15 @@ class _PaletteTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 7),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: selected ? palette.primary : AppColors.border),
-    ),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 7),
     child: Material(
       color: AppColors.surface,
-      borderRadius: BorderRadius.circular(14),
       clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: selected ? palette.primary : AppColors.border),
+      ),
       child: ListTile(
         dense: true,
         onTap: onTap,
@@ -444,8 +416,8 @@ class _PaletteTile extends StatelessWidget {
           style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
         ),
         subtitle: Text(
-          palette.description,
-          style: const TextStyle(fontSize: 8, color: AppColors.textSecondary),
+          palette.description.tr,
+          style: TextStyle(fontSize: 8, color: AppColors.textSecondary),
         ),
         trailing: selected
             ? Icon(
@@ -453,7 +425,7 @@ class _PaletteTile extends StatelessWidget {
                 color: palette.primary,
                 size: 18,
               )
-            : const Icon(
+            : Icon(
                 Icons.radio_button_off_rounded,
                 color: AppColors.border,
                 size: 18,

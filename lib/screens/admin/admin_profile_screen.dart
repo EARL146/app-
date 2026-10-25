@@ -106,7 +106,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Administrator identity and profile changes are supplied by the authenticated BurgerBites server account.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -152,7 +152,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
             backgroundColor: Colors.white,
             child: Text(
               _initials(name),
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.brandOrangeDark,
                 fontWeight: FontWeight.w900,
                 fontSize: 20,
@@ -536,7 +536,7 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     title,
-    style: const TextStyle(
+    style: TextStyle(
       color: AppColors.textPrimary,
       fontSize: 16,
       fontWeight: FontWeight.w900,
@@ -589,7 +589,7 @@ class _DetailRow extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 10,
                     ),
@@ -597,7 +597,7 @@ class _DetailRow extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     value,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -610,12 +610,7 @@ class _DetailRow extends StatelessWidget {
         ),
       ),
       if (showDivider)
-        const Divider(
-          height: 1,
-          indent: 44,
-          endIndent: 14,
-          color: AppColors.border,
-        ),
+        Divider(height: 1, indent: 44, endIndent: 14, color: AppColors.border),
     ],
   );
 }

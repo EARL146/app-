@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 
 import '../models/order_model.dart';
 import '../models/product_model.dart';
+import '../constants/drink_options.dart';
+import '../constants/fries_options.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
@@ -74,6 +76,15 @@ class CartProvider extends ChangeNotifier {
     }
 
     final customizationKey = _customizationsKey(customizations);
+    final size = customizations['size'] as String? ?? 'Regular';
+    final drinkBrand = customizations['drink_brand'] as String?;
+    final baseUnitPrice =
+        unitPrice ?? _customizedBasePrice(product, customizations, size);
+    final effectiveUnitPrice = product.applyDiscount(
+      baseUnitPrice,
+      size: size,
+      drinkBrand: drinkBrand,
+    );
     final index = _items.indexWhere(
       (item) =>
           item.productId == product.id &&
@@ -94,7 +105,7 @@ class CartProvider extends ChangeNotifier {
         OrderItem(
           productId: product.id,
           productName: displayName ?? product.name,
-          price: unitPrice ?? product.price,
+          price: effectiveUnitPrice,
           quantity: quantity,
           productImage: product.imageUrl,
           customizations: customizations,
@@ -105,6 +116,36 @@ class CartProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     _scheduleRemoteSave();
+  }
+
+  double _customizedBasePrice(
+    Product product,
+    Map<String, dynamic> customizations,
+    String size,
+  ) {
+    final category = product.category?.trim().toLowerCase();
+    if (category == 'drinks') return DrinkOptions.priceForSize(size);
+    if (FriesOptions.isFries(category, product.name)) {
+      return FriesOptions.priceForSize(size);
+    }
+    if (category == 'burgers') {
+      var price =
+          product.price +
+          switch (size) {
+            'Large' => 80.0,
+            'Double' => 120.0,
+            _ => 0.0,
+          };
+      final toppings = customizations['toppings'];
+      if (toppings is List) {
+        for (final topping in toppings) {
+          if (topping == 'Extra cheese') price += 25;
+          if (topping == 'Crispy bacon') price += 45;
+        }
+      }
+      return price;
+    }
+    return product.price;
   }
 
   void updateQuantity(String productId, int quantity) {
@@ -324,6 +365,7 @@ class CartProvider extends ChangeNotifier {
     required String phone,
     required String paymentMethod,
     String? notes,
+    bool redeemRewards = false,
   }) async {
     if (_items.isEmpty) {
       _errorMessage = 'Your cart is empty.';
@@ -369,6 +411,7 @@ class CartProvider extends ChangeNotifier {
         'delivery_address': deliveryAddress.trim(),
         'phone': phone.trim(),
         'payment_method': paymentMethod,
+        'redeem_rewards': redeemRewards,
         if (notes?.trim().isNotEmpty == true) 'notes': notes!.trim(),
         'items': _items
             .map(

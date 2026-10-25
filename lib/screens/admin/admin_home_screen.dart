@@ -91,7 +91,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 9),
-                            const Expanded(
+                            Expanded(
                               child: Text.rich(
                                 TextSpan(
                                   children: [
@@ -142,7 +142,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 context,
                                 AppRoutes.adminProfile,
                               ),
-                              icon: const CircleAvatar(
+                              icon: CircleAvatar(
                                 radius: 16,
                                 backgroundColor: AppColors.surfaceMuted,
                                 child: Icon(
@@ -197,7 +197,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    const Text(
+                                    Text(
                                       'Here’s your restaurant overview for today.',
                                       style: TextStyle(
                                         color: AppColors.textSecondary,
@@ -227,7 +227,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                   ],
                                 ),
                               ),
-                              const Icon(
+                              Icon(
                                 Icons.fastfood_rounded,
                                 color: AppColors.brandOrange,
                                 size: 39,
@@ -311,7 +311,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                   ),
                                   const SizedBox(width: 7),
                                   const Spacer(),
-                                  const Text(
+                                  Text(
                                     'Order value',
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
@@ -339,7 +339,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                                     null
                                               ? 'Waiting for sales data…'
                                               : 'Sales data unavailable',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             color: AppColors.textSecondary,
                                             fontSize: 10,
                                           ),
@@ -353,7 +353,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                     .map(
                                       (label) => Text(
                                         label,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: AppColors.textSecondary,
                                           fontSize: 8,
                                         ),
@@ -443,7 +443,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 Expanded(
                                   child: Text(
                                     orderProvider.errorMessage!,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 11,
                                     ),
@@ -472,7 +472,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: AppColors.border),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Text(
                                 'No orders yet',
                                 style: TextStyle(
@@ -509,7 +509,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.info_outline_rounded,
                                 color: AppColors.brandOrange,
                                 size: 15,
@@ -521,7 +521,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                       (dashboardProvider.hasData
                                           ? 'Order, product, and customer totals loaded from the admin dashboard endpoint.'
                                           : dashboardStatus),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 9,
                                     height: 1.3,
@@ -636,7 +636,7 @@ class _MetricCard extends StatelessWidget {
         const Spacer(),
         Text(
           label,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 9),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
         ),
         const SizedBox(height: 4),
         Text(
@@ -761,7 +761,7 @@ class _LatestOrderRow extends StatelessWidget {
               color: AppColors.surfaceMuted,
               borderRadius: BorderRadius.circular(11),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.lunch_dining_rounded,
               color: AppColors.brandOrange,
               size: 17,
@@ -784,10 +784,7 @@ class _LatestOrderRow extends StatelessWidget {
                   order.items.isEmpty ? 'Order' : order.items.first.productName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 9,
-                  ),
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
                 ),
               ],
             ),

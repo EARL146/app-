@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../constants/app_colors.dart';
@@ -20,6 +24,7 @@ class _ContactScreenState extends State<ContactScreen> {
   bool _isSending = false;
   bool _storeLoading = true;
   Map<String, dynamic>? _storeProfile;
+  final List<_ContactPhoto> _photos = [];
 
   @override
   void dispose() {
@@ -69,7 +74,7 @@ class _ContactScreenState extends State<ContactScreen> {
                 color: AppColors.surfaceMuted,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
+              child: Text(
                 'BURGERBITES SUPPORT',
                 style: TextStyle(
                   color: AppColors.brandOrange,
@@ -85,7 +90,7 @@ class _ContactScreenState extends State<ContactScreen> {
               style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 5),
-            const Text(
+            Text(
               'Send a support request about an order, your account, or BurgerBites.',
               style: TextStyle(
                 color: AppColors.textSecondary,
@@ -111,7 +116,7 @@ class _ContactScreenState extends State<ContactScreen> {
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 5),
-                  const Text(
+                  Text(
                     'Your message is saved to the BurgerBites support inbox for follow-up.',
                     style: TextStyle(
                       color: AppColors.textSecondary,
@@ -173,6 +178,63 @@ class _ContactScreenState extends State<ContactScreen> {
                         : null,
                   ),
                   const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: _isSending || _photos.length >= 5
+                          ? null
+                          : _pickPhotos,
+                      icon: const Icon(
+                        Icons.add_photo_alternate_outlined,
+                        size: 17,
+                      ),
+                      label: Text('Add photos (${_photos.length}/5)'),
+                    ),
+                  ),
+                  if (_photos.isNotEmpty) ...[
+                    const SizedBox(height: 7),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final photo in _photos)
+                          Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(11),
+                                child: Image.memory(
+                                  photo.bytes,
+                                  width: 72,
+                                  height: 72,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Positioned(
+                                right: 2,
+                                top: 2,
+                                child: InkWell(
+                                  onTap: _isSending
+                                      ? null
+                                      : () => setState(
+                                          () => _photos.remove(photo),
+                                        ),
+                                  child: const CircleAvatar(
+                                    radius: 11,
+                                    backgroundColor: Colors.black87,
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 13,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     height: 44,
@@ -247,7 +309,7 @@ class _ContactScreenState extends State<ContactScreen> {
               ],
             )
           : visibleDetails.isEmpty
-          ? const Row(
+          ? Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
@@ -289,7 +351,7 @@ class _ContactScreenState extends State<ContactScreen> {
                       Expanded(
                         child: SelectableText(
                           (profile![key] as String).trim(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 10,
                             height: 1.35,
@@ -315,6 +377,14 @@ class _ContactScreenState extends State<ContactScreen> {
         'email_or_phone': _emailController.text.trim(),
         'topic': _topic,
         'message': _messageController.text.trim(),
+        'attachments': _photos
+            .map(
+              (photo) => {
+                'name': photo.name,
+                'image_base64': base64Encode(photo.bytes),
+              },
+            )
+            .toList(growable: false),
       },
       fromJson: (json) => json is Map<String, dynamic>
           ? json
@@ -331,6 +401,7 @@ class _ContactScreenState extends State<ContactScreen> {
     _nameController.clear();
     _emailController.clear();
     _messageController.clear();
+    setState(() => _photos.clear());
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Your support request was saved.'),
@@ -338,6 +409,46 @@ class _ContactScreenState extends State<ContactScreen> {
       ),
     );
   }
+
+  Future<void> _pickPhotos() async {
+    final remaining = 5 - _photos.length;
+    if (remaining <= 0) return;
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+      allowMultiple: true,
+      withData: true,
+    );
+    if (result == null || !mounted) return;
+    var skippedLarge = false;
+    final accepted = <_ContactPhoto>[];
+    for (final file in result.files.take(remaining)) {
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) continue;
+      if (bytes.length > 512 * 1024) {
+        skippedLarge = true;
+        continue;
+      }
+      accepted.add(_ContactPhoto(name: file.name, bytes: bytes));
+    }
+    setState(() => _photos.addAll(accepted));
+    if (skippedLarge) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Each photo must be 512 KB or smaller.')),
+      );
+    }
+    if (result.files.length > remaining) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can attach up to five photos.')),
+      );
+    }
+  }
+}
+
+class _ContactPhoto {
+  const _ContactPhoto({required this.name, required this.bytes});
+  final String name;
+  final Uint8List bytes;
 }
 
 class _FaqTile extends StatelessWidget {
@@ -352,7 +463,7 @@ class _FaqTile extends StatelessWidget {
       color: AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(13),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
@@ -366,7 +477,7 @@ class _FaqTile extends StatelessWidget {
         children: [
           Text(
             answer,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textSecondary,
               fontSize: 9,
               height: 1.4,

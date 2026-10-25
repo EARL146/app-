@@ -48,7 +48,7 @@ class _AdminMoreScreenState extends State<AdminMoreScreen> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: ListTile(
-                    leading: const CircleAvatar(
+                    leading: CircleAvatar(
                       backgroundColor: AppColors.surfaceMuted,
                       child: Icon(
                         Icons.admin_panel_settings_rounded,

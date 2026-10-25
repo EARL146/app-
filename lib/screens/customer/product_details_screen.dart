@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../constants/app_colors.dart';
+import '../../constants/drink_options.dart';
+import '../../constants/fries_options.dart';
+import '../../l10n/app_translations.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/animated_brand_button.dart';
@@ -19,19 +22,9 @@ class ProductDetailsScreen extends StatefulWidget {
 }
 
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
-  static const _drinkBrands = [
-    'Coca-Cola',
-    'Sprite',
-    'Pepsi',
-    'Royal',
-    'Mountain Dew',
-    '7Up',
-  ];
-  static const _drinkSizes = ['Regular', 'Large', 'XL'];
-
   int _quantity = 1;
   String _size = 'Regular';
-  String _drinkBrand = _drinkBrands.first;
+  String _drinkBrand = DrinkOptions.brands.first;
   final Set<String> _extras = {};
 
   @override
@@ -51,60 +44,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     _extras.clear();
   }
 
-  String _brandForProduct(Product product) {
-    final normalizedName = product.name.toLowerCase().replaceAll(
-      RegExp(r'[^a-z0-9]'),
-      '',
-    );
-    return _drinkBrands.firstWhere(
-      (brand) => normalizedName.contains(
-        brand.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), ''),
-      ),
-      orElse: () => _drinkBrands.first,
-    );
-  }
+  String _brandForProduct(Product product) =>
+      DrinkOptions.brandForProductName(product.name);
 
-  String _drinkDisplayName(Product product) {
-    final originalBrand = _brandForProduct(product);
-    final normalizedBrand = originalBrand.toLowerCase().replaceAll(
-      RegExp(r'[^a-z0-9]'),
-      '',
-    );
-    var remainder = product.name.trim();
-    final normalizedName = remainder.toLowerCase().replaceAll(
-      RegExp(r'[^a-z0-9]'),
-      '',
-    );
-    if (normalizedName.startsWith(normalizedBrand)) {
-      var matchedCharacters = 0;
-      var endIndex = 0;
-      for (
-        var index = 0;
-        index < remainder.length && matchedCharacters < normalizedBrand.length;
-        index++
-      ) {
-        if (RegExp(
-          r'[a-z0-9]',
-          caseSensitive: false,
-        ).hasMatch(remainder[index])) {
-          matchedCharacters++;
-        }
-        endIndex = index + 1;
-      }
-      remainder = remainder
-          .substring(endIndex)
-          .trim()
-          .replaceFirst(RegExp(r'^[\W_]+'), '')
-          .trim();
-    }
-    return [
-      _drinkBrand,
-      if (_size != 'Regular') _size,
-      if (remainder.isNotEmpty) remainder,
-    ].join(' ');
-  }
+  String get _drinkDisplayName =>
+      [_drinkBrand, if (_size != 'Regular') _size].join(' ');
 
-  double get _unitPrice {
+  double get _baseUnitPrice {
+    if (_isDrink(widget.product)) return DrinkOptions.priceForSize(_size);
+    if (_isFries(widget.product)) return FriesOptions.priceForSize(_size);
     final isBurger = _isBurger(widget.product);
     final sizePrice = isBurger
         ? switch (_size) {
@@ -119,6 +67,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
     return widget.product.price + sizePrice + extrasPrice;
   }
+
+  double get _unitPrice => widget.product.applyDiscount(
+    _baseUnitPrice,
+    size: _size,
+    drinkBrand: _isDrink(widget.product) ? _drinkBrand : null,
+  );
 
   bool _isBurger(Product product) =>
       product.category?.trim().toLowerCase() == 'burgers';
@@ -145,7 +99,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     return Scaffold(
       backgroundColor: AppColors.pageBackground,
       appBar: AppBar(
-        title: const Text('Product details'),
+        title: Text('Product details'.tr),
         backgroundColor: AppColors.pageBackground,
         surfaceTintColor: Colors.transparent,
         actions: [
@@ -158,7 +112,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   (count, item) => count + item.quantity,
                 );
                 return IconButton(
-                  tooltip: 'Cart${itemCount == 0 ? '' : ', $itemCount items'}',
+                  tooltip:
+                      '${'Cart'.tr}${itemCount == 0 ? '' : ', $itemCount ${'items'.tr}'}',
                   onPressed: () => Navigator.of(context).pushNamed('/cart'),
                   icon: Badge(
                     isLabelVisible: itemCount > 0,
@@ -201,11 +156,20 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                FoodImage(
-                                  imageUrl: product.imageUrl,
-                                  category: product.category,
-                                  borderRadius: 25,
-                                ),
+                                if (isDrinkProduct)
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 320),
+                                    child: _DrinkBrandHeroImage(
+                                      key: ValueKey(_drinkBrand),
+                                      brand: _drinkBrand,
+                                    ),
+                                  )
+                                else
+                                  FoodImage(
+                                    imageUrl: product.imageUrl,
+                                    category: product.category,
+                                    borderRadius: 25,
+                                  ),
                                 const DecoratedBox(
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
@@ -228,8 +192,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                         ? Icons.check_circle_rounded
                                         : Icons.remove_circle_rounded,
                                     label: product.available
-                                        ? 'AVAILABLE NOW'
-                                        : 'CURRENTLY UNAVAILABLE',
+                                        ? 'Available'.tr
+                                        : 'Unavailable'.tr,
                                     color: product.available
                                         ? AppColors.success
                                         : AppColors.danger,
@@ -292,10 +256,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    product.name,
+                                    isDrinkProduct
+                                        ? _drinkDisplayName
+                                        : product.name,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       color: AppColors.textPrimary,
                                       fontSize: 23,
                                       height: 1.12,
@@ -309,8 +275,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      '₱${product.price.toStringAsFixed(0)}',
-                                      style: const TextStyle(
+                                      '₱${_unitPrice.toStringAsFixed(0)}',
+                                      style: TextStyle(
                                         color: AppColors.brandOrange,
                                         fontSize: 21,
                                         height: 1.1,
@@ -318,8 +284,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 3),
-                                    const Text(
-                                      'Base price',
+                                    Text(
+                                      'Selected price',
                                       style: TextStyle(
                                         color: AppColors.textSecondary,
                                         fontSize: 10,
@@ -359,14 +325,27 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                         : '${product.rating!.toStringAsFixed(1)} (${product.reviewCount})',
                                     color: AppColors.warning,
                                   ),
+                                if (product.discountPercent > 0 &&
+                                    product.discountApplies(
+                                      size: _size,
+                                      drinkBrand: isDrinkProduct
+                                          ? _drinkBrand
+                                          : null,
+                                    ))
+                                  _ProductInfoChip(
+                                    icon: Icons.local_offer_rounded,
+                                    label:
+                                        '${product.discountPercent.toStringAsFixed(0)}% off',
+                                    color: AppColors.success,
+                                  ),
                               ],
                             ),
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 13),
                               child: Divider(height: 1),
                             ),
-                            const Text(
-                              'About this item',
+                            Text(
+                              'About this item'.tr,
                               style: TextStyle(
                                 color: AppColors.textPrimary,
                                 fontSize: 14,
@@ -375,10 +354,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             ),
                             const SizedBox(height: 5),
                             Text(
-                              product.description.trim().isEmpty
+                              isDrinkProduct
+                                  ? 'Choose your favorite refreshing drink and size.'
+                                  : product.description.trim().isEmpty
                                   ? 'A description for this item has not been added yet.'
                                   : product.description.trim(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 12,
                                 height: 1.55,
@@ -464,7 +445,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                   color: AppColors.surfaceMuted,
                                   borderRadius: BorderRadius.circular(14),
                                 ),
-                                child: const Row(
+                                child: Row(
                                   children: [
                                     Icon(
                                       Icons.info_outline_rounded,
@@ -502,30 +483,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               const SizedBox(height: 10),
                               Row(
                                 children: [
-                                  for (var index = 0; index < 3; index++) ...[
+                                  for (
+                                    var index = 0;
+                                    index < FriesOptions.sizes.length;
+                                    index++
+                                  ) ...[
                                     if (index > 0) const SizedBox(width: 8),
                                     _SizeOption(
-                                      label: const [
-                                        'Small',
-                                        'Medium',
-                                        'Large',
-                                      ][index],
+                                      label: FriesOptions.sizes[index],
                                       detail:
-                                          '₱${product.price.toStringAsFixed(0)}',
+                                          '₱${FriesOptions.priceForSize(FriesOptions.sizes[index]).toStringAsFixed(0)}',
                                       icon: Icons.fastfood_rounded,
                                       selected:
-                                          _size ==
-                                          const [
-                                            'Small',
-                                            'Medium',
-                                            'Large',
-                                          ][index],
+                                          _size == FriesOptions.sizes[index],
                                       onTap: () => setState(
-                                        () => _size = const [
-                                          'Small',
-                                          'Medium',
-                                          'Large',
-                                        ][index],
+                                        () => _size = FriesOptions.sizes[index],
                                       ),
                                     ),
                                   ],
@@ -533,7 +505,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'All sizes currently use this product’s listed price.',
+                                'Price updates when you choose a different fries size.',
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 10,
@@ -558,7 +530,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               Wrap(
                                 spacing: 7,
                                 runSpacing: 7,
-                                children: _drinkBrands
+                                children: DrinkOptions.brands
                                     .map(
                                       (brand) => _BrandOption(
                                         brand: brand,
@@ -575,26 +547,26 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               ),
                               _FieldHeading(
                                 title: 'Drink size',
-                                trailing:
-                                    '₱${product.price.toStringAsFixed(0)} listed price',
+                                trailing: 'Price by size',
                               ),
                               const SizedBox(height: 10),
                               Row(
                                 children: [
                                   for (
                                     var index = 0;
-                                    index < _drinkSizes.length;
+                                    index < DrinkOptions.sizes.length;
                                     index++
                                   ) ...[
                                     if (index > 0) const SizedBox(width: 8),
                                     _SizeOption(
-                                      label: _drinkSizes[index],
+                                      label: DrinkOptions.sizes[index],
                                       detail:
-                                          '₱${product.price.toStringAsFixed(0)}',
+                                          '₱${DrinkOptions.priceForSize(DrinkOptions.sizes[index]).toStringAsFixed(0)}',
                                       icon: Icons.local_cafe_rounded,
-                                      selected: _size == _drinkSizes[index],
+                                      selected:
+                                          _size == DrinkOptions.sizes[index],
                                       onTap: () => setState(
-                                        () => _size = _drinkSizes[index],
+                                        () => _size = DrinkOptions.sizes[index],
                                       ),
                                     ),
                                   ],
@@ -602,7 +574,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'All drink sizes currently use this product’s listed price.',
+                                'The price updates when you choose a different size.',
                                 style: TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 10,
@@ -626,7 +598,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                 trailing: 'Sold as listed',
                               ),
                               const SizedBox(height: 10),
-                              const Row(
+                              Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Icon(
@@ -660,7 +632,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                border: const Border(top: BorderSide(color: AppColors.border)),
+                border: Border(top: BorderSide(color: AppColors.border)),
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.textPrimary.withValues(alpha: 0.05),
@@ -741,12 +713,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                           final toppings = _extras.toList()
                                             ..sort();
                                           final displayName = isDrinkProduct
-                                              ? _drinkDisplayName(product)
+                                              ? _drinkDisplayName
                                               : '${(isBurgerProduct && _size != 'Regular') || isFriesProduct ? '$_size ' : ''}${product.name}${toppings.isEmpty ? '' : ' + ${toppings.join(', ')}'}';
                                           cart.addItem(
                                             product,
                                             quantity: _quantity,
-                                            unitPrice: _unitPrice,
+                                            unitPrice: _baseUnitPrice,
                                             displayName: displayName,
                                             customizations: isBurgerProduct
                                                 ? {
@@ -788,8 +760,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                       Expanded(
                                         child: Text(
                                           product.available
-                                              ? 'Add to cart'
-                                              : 'Unavailable',
+                                              ? 'Add to cart'.tr
+                                              : 'Unavailable'.tr,
                                           style: const TextStyle(
                                             fontWeight: FontWeight.w900,
                                           ),
@@ -830,6 +802,111 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 }
 
+class _DrinkBrandHeroImage extends StatelessWidget {
+  const _DrinkBrandHeroImage({required this.brand, super.key});
+
+  static const _sourceWidth = 1673.0;
+  static const _sourceHeight = 940.0;
+  static const _cropWidth = 285.0;
+  static const _cropHeight = 425.0;
+  static const _brandCropLeft = <String, double>{
+    'Coca-Cola': 275,
+    'Sprite': 0,
+    'Pepsi': 815,
+    'Royal': 545,
+    'Mountain Dew': 1080,
+    '7Up': 1360,
+  };
+  static const _brandColors = <String, List<Color>>{
+    'Coca-Cola': [Color(0xFF3B1712), Color(0xFFB9271E)],
+    'Sprite': [Color(0xFF133D2E), Color(0xFF2E9B52)],
+    'Pepsi': [Color(0xFF12243B), Color(0xFF235E9B)],
+    'Royal': [Color(0xFF4C2814), Color(0xFFE88424)],
+    'Mountain Dew': [Color(0xFF19331D), Color(0xFF79A82A)],
+    '7Up': [Color(0xFF153C2A), Color(0xFF59A94A)],
+  };
+
+  final String brand;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      image: true,
+      label: '$brand drink',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final height = constraints.maxHeight;
+          final scale = height / _cropHeight;
+          final imageWidth = _sourceWidth * scale;
+          final imageHeight = _sourceHeight * scale;
+          final viewportWidth = _cropWidth * scale;
+          final maxHorizontalOffset = _sourceWidth - _cropWidth;
+          final alignmentX =
+              2 * (_brandCropLeft[brand]! / maxHorizontalOffset) - 1;
+          final colors = _brandColors[brand]!;
+
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: colors,
+              ),
+            ),
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: const Alignment(0, -.2),
+                        radius: 1.1,
+                        colors: [
+                          Colors.white.withValues(alpha: .18),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: SizedBox(
+                    width: viewportWidth,
+                    height: height,
+                    child: ClipRect(
+                      child: OverflowBox(
+                        alignment: Alignment(alignmentX, 1),
+                        minWidth: 0,
+                        maxWidth: imageWidth,
+                        minHeight: 0,
+                        maxHeight: imageHeight,
+                        child: Image.asset(
+                          'assets/products/hero_drinks_showcase.jpg',
+                          width: imageWidth,
+                          height: imageHeight,
+                          fit: BoxFit.fill,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Icon(
+                              Icons.local_drink_rounded,
+                              color: Colors.white.withValues(alpha: .9),
+                              size: 82,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _HeroPill extends StatelessWidget {
   const _HeroPill({
     required this.icon,
@@ -861,7 +938,7 @@ class _HeroPill extends StatelessWidget {
         Icon(icon, color: color, size: 15),
         const SizedBox(width: 5),
         Text(
-          label,
+          label.tr,
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 10,
@@ -918,13 +995,13 @@ class _FieldHeading extends StatelessWidget {
       const SizedBox(width: 8),
       Expanded(
         child: Text(
-          title,
+          title.tr,
           style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
         ),
       ),
       Text(
-        trailing,
-        style: const TextStyle(
+        trailing.tr,
+        style: TextStyle(
           color: AppColors.textSecondary,
           fontSize: 11,
           fontWeight: FontWeight.w600,
@@ -935,15 +1012,11 @@ class _FieldHeading extends StatelessWidget {
 }
 
 class _ProductInfoChip extends StatelessWidget {
-  const _ProductInfoChip({
-    required this.icon,
-    required this.label,
-    this.color = AppColors.textSecondary,
-  });
+  const _ProductInfoChip({required this.icon, required this.label, this.color});
 
   final IconData icon;
   final String label;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -957,12 +1030,12 @@ class _ProductInfoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
+          Icon(icon, size: 14, color: color ?? AppColors.textSecondary),
           const SizedBox(width: 5),
           Text(
-            label,
+            label.tr,
             style: TextStyle(
-              color: color,
+              color: color ?? AppColors.textSecondary,
               fontSize: 10,
               fontWeight: FontWeight.w700,
             ),
@@ -1033,11 +1106,11 @@ class _SizeOption extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    label,
+                    label.tr,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w800,
                       fontSize: 11,
@@ -1101,7 +1174,7 @@ class _BrandOption extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (selected) ...[
-                const Icon(
+                Icon(
                   Icons.check_rounded,
                   size: 15,
                   color: AppColors.brandOrange,
@@ -1141,49 +1214,46 @@ class _ExtraOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      margin: const EdgeInsets.only(bottom: 7),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      decoration: BoxDecoration(
-        color: selected ? AppColors.surfaceMuted : AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: selected ? AppColors.brandOrange : AppColors.border,
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
       child: Material(
-        color: Colors.transparent,
-        child: CheckboxListTile(
-          value: selected,
-          onChanged: (value) => onChanged(value ?? false),
-          dense: true,
-          contentPadding: EdgeInsets.zero,
-          activeColor: AppColors.brandOrange,
-          controlAffinity: ListTileControlAffinity.trailing,
-          secondary: CircleAvatar(
-            radius: 20,
-            backgroundColor: selected
-                ? AppColors.brandGlow
-                : AppColors.surfaceMuted,
-            child: Icon(
-              label == 'Extra cheese'
-                  ? Icons.lunch_dining_rounded
-                  : Icons.local_fire_department_rounded,
-              color: AppColors.brandOrange,
-              size: 19,
+        color: selected ? AppColors.surfaceMuted : AppColors.surface,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: selected ? AppColors.brandOrange : AppColors.border,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          child: CheckboxListTile(
+            value: selected,
+            onChanged: (value) => onChanged(value ?? false),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            activeColor: AppColors.brandOrange,
+            controlAffinity: ListTileControlAffinity.trailing,
+            secondary: CircleAvatar(
+              radius: 20,
+              backgroundColor: selected
+                  ? AppColors.brandGlow
+                  : AppColors.surfaceMuted,
+              child: Icon(
+                label == 'Extra cheese'
+                    ? Icons.lunch_dining_rounded
+                    : Icons.local_fire_department_rounded,
+                color: AppColors.brandOrange,
+                size: 19,
+              ),
             ),
-          ),
-          title: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
-          ),
-          subtitle: Text(
-            detail,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 10,
+            title: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+            ),
+            subtitle: Text(
+              detail,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
             ),
           ),
         ),

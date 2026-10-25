@@ -46,6 +46,12 @@ final class Auth
             'phone' => $user['phone'] ?? null,
             'branch_name' => $user['branch_name'] ?? null,
             'default_address' => $user['default_address'] ?? null,
+            'created_at' => isset($user['created_at'])
+                ? gmdate('Y-m-d\TH:i:s\Z', strtotime((string)$user['created_at'] . ' UTC'))
+                : null,
+            'reward_points' => isset($user['reward_points']) ? (float)$user['reward_points'] : 0.0,
+            'profile_image_base64' => !empty($user['profile_image']) ? base64_encode((string)$user['profile_image']) : null,
+            'profile_image_mime' => $user['profile_image_mime'] ?? null,
         ];
     }
 }

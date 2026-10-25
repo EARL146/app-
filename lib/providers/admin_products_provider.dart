@@ -77,6 +77,8 @@ class AdminProductsProvider extends ChangeNotifier {
     required String imageUrl,
     int stockQuantity = 0,
     bool available = true,
+    double discountPercent = 0,
+    String discountScope = 'all',
   }) async {
     if (!_validate(name, description, price, category, stockQuantity)) {
       return false;
@@ -91,6 +93,8 @@ class AdminProductsProvider extends ChangeNotifier {
       imageUrl: imageUrl,
       stockQuantity: stockQuantity,
       available: available,
+      discountPercent: discountPercent,
+      discountScope: discountScope,
     );
   }
 
@@ -103,6 +107,8 @@ class AdminProductsProvider extends ChangeNotifier {
     required String imageUrl,
     int? stockQuantity,
     bool available = true,
+    double discountPercent = 0,
+    String discountScope = 'all',
   }) async {
     final matches = _products.where((product) => product.id == productId);
     final old = matches.isEmpty ? null : matches.first;
@@ -118,6 +124,8 @@ class AdminProductsProvider extends ChangeNotifier {
       imageUrl: imageUrl,
       stockQuantity: stock,
       available: available,
+      discountPercent: discountPercent,
+      discountScope: discountScope,
     );
   }
 
@@ -154,6 +162,8 @@ class AdminProductsProvider extends ChangeNotifier {
     required String imageUrl,
     required int stockQuantity,
     required bool available,
+    required double discountPercent,
+    required String discountScope,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -167,6 +177,8 @@ class AdminProductsProvider extends ChangeNotifier {
       'image_url': imageUrl.trim(),
       'stock_quantity': stockQuantity,
       'available': available,
+      'discount_percent': discountPercent,
+      'discount_scope': discountScope,
     };
     final response = create
         ? await _apiService.post<Map<String, dynamic>>(
@@ -222,6 +234,8 @@ class AdminProductsProvider extends ChangeNotifier {
         name: _products[index].name,
         description: _products[index].description,
         price: _products[index].price,
+        discountPercent: _products[index].discountPercent,
+        discountScope: _products[index].discountScope,
         imageUrl: _products[index].imageUrl,
         category: _products[index].category,
         rating: _products[index].rating,

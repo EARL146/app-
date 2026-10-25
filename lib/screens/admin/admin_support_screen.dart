@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../constants/app_colors.dart';
@@ -71,6 +73,66 @@ class _AdminSupportScreenState extends State<AdminSupportScreen> {
     setState(() => message['status'] = status);
   }
 
+  Future<void> _showAttachments(Map<String, dynamic> message) async {
+    final id = message['id'].toString();
+    final response = await _api.get<Map<String, dynamic>>(
+      '/admin/contact-messages/$id/attachments',
+      fromJson: (json) => json is Map<String, dynamic>
+          ? json
+          : throw const FormatException(
+              'Invalid support attachments response.',
+            ),
+    );
+    if (!mounted) return;
+    final raw = response.data?['attachments'];
+    if (!response.success || raw is! List) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(response.error ?? 'Unable to load photos.')),
+      );
+      return;
+    }
+    final photos = raw.whereType<Map<String, dynamic>>().toList();
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Customer photos'),
+        content: SizedBox(
+          width: 440,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final photo in photos)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          photo['name'] as String? ?? 'Photo',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        const SizedBox(height: 5),
+                        Image.memory(
+                          base64Decode(photo['image_base64'] as String),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.pageBackground,
@@ -104,7 +166,7 @@ class _AdminSupportScreenState extends State<AdminSupportScreen> {
               onRefresh: _load,
               child: _messages.isEmpty
                   ? ListView(
-                      children: const [
+                      children: [
                         SizedBox(height: 180),
                         Icon(
                           Icons.inbox_outlined,
@@ -171,23 +233,29 @@ class _AdminSupportScreenState extends State<AdminSupportScreen> {
           ),
           Text(
             '${message['full_name'] ?? ''} · ${message['email_or_phone'] ?? ''}',
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 11,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 11),
           ),
           if (createdAt != null) ...[
             const SizedBox(height: 3),
             Text(
               '${createdAt.toLocal()}',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 9,
-              ),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
             ),
           ],
           const Divider(height: 18),
           Text(message['message'] as String? ?? ''),
+          if ((message['attachment_count'] as num?)?.toInt() case final count?
+              when count > 0) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () => _showAttachments(message),
+                icon: const Icon(Icons.photo_library_outlined, size: 16),
+                label: Text('View $count photo${count == 1 ? '' : 's'}'),
+              ),
+            ),
+          ],
         ],
       ),
     );
