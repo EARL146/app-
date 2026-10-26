@@ -453,13 +453,21 @@ class _OrderCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          order.id,
+                          order.customerName.trim().isEmpty
+                              ? 'Customer'
+                              : order.customerName.trim(),
                           style: Theme.of(context).textTheme.titleMedium!
                               .copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Items: ${order.items.length} | Total: ₱${order.total.toStringAsFixed(2)}',
+                          'Order #${order.id}',
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Items: ${order.items.fold<int>(0, (sum, item) => sum + item.quantity)} | Total: ₱${order.total.toStringAsFixed(2)}',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -500,14 +508,28 @@ class _OrderCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 9),
                     Expanded(
-                      child: Text(
-                        '${order.items.first.productName}  ×${order.items.first.quantity}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${order.items.first.productName}  ×${order.items.first.quantity}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (order.items.first.saleDiscountPercent > 0)
+                            Text(
+                              '${order.items.first.saleDiscountPercent.toStringAsFixed(order.items.first.saleDiscountPercent % 1 == 0 ? 0 : 2)}% Discount Sale',
+                              style: TextStyle(
+                                color: AppColors.brandOrange,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     if (order.items.length > 1)
@@ -603,12 +625,25 @@ class _OrderDetailsBottomSheet extends StatelessWidget {
               const SizedBox(height: 16),
               _DetailRow('Order ID', order.id),
               _DetailRow(
+                'Customer',
+                order.customerName.trim().isEmpty
+                    ? 'Name unavailable'
+                    : order.customerName,
+              ),
+              if (order.customerPhone.trim().isNotEmpty)
+                _DetailRow('Phone', order.customerPhone),
+              if (order.deliveryAddress?.trim().isNotEmpty == true)
+                _DetailRow('Delivery address', order.deliveryAddress!),
+              _DetailRow(
                 'Status',
                 _getStatusLabel(order.status),
                 statusColor: _getStatusColor(order.status),
               ),
               _DetailRow('Date', _formatDate(order.createdAt)),
-              _DetailRow('Items', '${order.items.length}'),
+              _DetailRow(
+                'Items',
+                '${order.items.fold<int>(0, (sum, item) => sum + item.quantity)} items across ${order.items.length} products',
+              ),
               const SizedBox(height: 16),
               Text(
                 'Items',
@@ -620,18 +655,64 @@ class _OrderDetailsBottomSheet extends StatelessWidget {
                 (item) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Text(
-                          '${item.productName} x${item.quantity}',
-                          style: Theme.of(context).textTheme.bodySmall,
+                      SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: FoodImage(
+                          imageUrl: item.productImage,
+                          category: item.productCategory,
+                          borderRadius: 10,
                         ),
                       ),
-                      Text(
-                        '₱${item.subtotal.toStringAsFixed(2)}',
-                        style: Theme.of(context).textTheme.bodySmall!
-                            .copyWith(fontWeight: FontWeight.bold),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${item.productName} ×${item.quantity}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            if (_customizationSummary(item.customizations)
+                                .isNotEmpty)
+                              Text(
+                                _customizationSummary(item.customizations),
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(color: AppColors.textSecondary),
+                              ),
+                            if (item.saleDiscountPercent > 0)
+                              Text(
+                                '${item.saleDiscountPercent.toStringAsFixed(item.saleDiscountPercent % 1 == 0 ? 0 : 2)}% Discount Sale · saved ₱${item.saleDiscountAmount.toStringAsFixed(2)}',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: AppColors.brandOrange,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '₱${item.subtotal.toStringAsFixed(2)}',
+                            style: Theme.of(context).textTheme.bodySmall!
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          if (item.saleDiscountPercent > 0)
+                            Text(
+                              'was ₱${item.originalSubtotal.toStringAsFixed(2)}',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: AppColors.textSecondary,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
@@ -689,6 +770,19 @@ class _OrderDetailsBottomSheet extends StatelessWidget {
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
+}
+
+String _customizationSummary(Map<String, dynamic> customizations) {
+  final parts = <String>[];
+  final brand = customizations['drink_brand']?.toString().trim();
+  final size = customizations['size']?.toString().trim();
+  if (brand != null && brand.isNotEmpty) parts.add(brand);
+  if (size != null && size.isNotEmpty) parts.add(size);
+  final toppings = customizations['toppings'];
+  if (toppings is List && toppings.isNotEmpty) {
+    parts.add(toppings.map((value) => value.toString()).join(', '));
+  }
+  return parts.join(' · ');
 }
 
 class _DetailRow extends StatelessWidget {

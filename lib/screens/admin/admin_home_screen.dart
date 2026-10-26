@@ -8,6 +8,7 @@ import '../../providers/admin_dashboard_provider.dart';
 import '../../providers/admin_orders_provider.dart';
 import '../../widgets/admin_page_frame.dart';
 import '../../widgets/animated_brand_button.dart';
+import '../../widgets/food_image.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -57,15 +58,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           child: Consumer2<AdminOrdersProvider, AdminDashboardProvider>(
             builder: (context, orderProvider, dashboardProvider, _) {
               final recentOrders = orderProvider.orders.take(3).toList();
-              final dashboardStatus = dashboardProvider.hasData
-                  ? dashboardProvider.errorMessage == null
-                        ? 'SQL totals loaded'
-                        : 'Refresh failed · showing last saved totals'
-                  : dashboardProvider.isLoading
-                  ? 'Loading SQL totals'
-                  : dashboardProvider.errorMessage == null
-                  ? 'Waiting for SQL totals'
-                  : 'SQL totals unavailable';
               return CustomScrollView(
                 slivers: [
                   SliverPadding(
@@ -204,34 +196,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                         fontSize: 10,
                                       ),
                                     ),
-                                    const SizedBox(height: 10),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: .7,
-                                        ),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Text(
-                                        dashboardStatus,
-                                        style: const TextStyle(
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ),
-                              Icon(
-                                Icons.fastfood_rounded,
-                                color: AppColors.brandOrange,
-                                size: 39,
-                              ),
+                              const _DashboardFoodMark(),
                             ],
                           ),
                         ),
@@ -276,7 +244,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               value: dashboardProvider.hasData
                                   ? '${dashboardProvider.totalProducts}'
                                   : '—',
-                              icon: Icons.lunch_dining_rounded,
+                              icon: Icons.restaurant_menu_rounded,
                               color: const Color(0xFF8963E8),
                               trend: 'Catalog',
                             ),
@@ -302,7 +270,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 children: [
                                   Text(
                                     dashboardProvider.hasData
-                                        ? '₱${dashboardProvider.deliveredRevenue.toStringAsFixed(0)}'
+                                        ? '₱${dashboardProvider.sevenDayOrderValue.toStringAsFixed(0)}'
                                         : '—',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w900,
@@ -312,7 +280,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                   const SizedBox(width: 7),
                                   const Spacer(),
                                   Text(
-                                    'Order value',
+                                    'Order value · 7 days',
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 9,
@@ -500,46 +468,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               ),
                             ),
                           ),
-                        const SizedBox(height: 13),
-                        Container(
-                          padding: const EdgeInsets.all(11),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceMuted,
-                            borderRadius: BorderRadius.circular(13),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline_rounded,
-                                color: AppColors.brandOrange,
-                                size: 15,
-                              ),
-                              const SizedBox(width: 7),
-                              Expanded(
-                                child: Text(
-                                  dashboardProvider.errorMessage ??
-                                      (dashboardProvider.hasData
-                                          ? 'Order, product, and customer totals loaded from the admin dashboard endpoint.'
-                                          : dashboardStatus),
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 9,
-                                    height: 1.3,
-                                  ),
-                                ),
-                              ),
-                              if (dashboardProvider.errorMessage != null)
-                                IconButton(
-                                  tooltip: 'Retry dashboard load',
-                                  visualDensity: VisualDensity.compact,
-                                  onPressed: dashboardProvider.isLoading
-                                      ? null
-                                      : dashboardProvider.load,
-                                  icon: const Icon(Icons.refresh_rounded),
-                                ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -754,17 +682,17 @@ class _LatestOrderRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 35,
-            height: 35,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceMuted,
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(
-              Icons.lunch_dining_rounded,
-              color: AppColors.brandOrange,
-              size: 17,
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: FoodImage(
+              imageUrl: order.items.isEmpty
+                  ? null
+                  : order.items.first.productImage,
+              category: order.items.isEmpty
+                  ? null
+                  : order.items.first.productCategory,
+              borderRadius: 12,
             ),
           ),
           const SizedBox(width: 9),
@@ -773,7 +701,9 @@ class _LatestOrderRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  order.id,
+                  order.customerName.trim().isEmpty
+                      ? 'Customer'
+                      : order.customerName.trim(),
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 10,
@@ -781,8 +711,8 @@ class _LatestOrderRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  order.items.isEmpty ? 'Order' : order.items.first.productName,
-                  maxLines: 1,
+                  'Order #${order.id} · ${_orderItemSummary(order)}',
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: AppColors.textSecondary, fontSize: 9),
                 ),
@@ -810,6 +740,94 @@ class _LatestOrderRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  String _orderItemSummary(Order order) {
+    if (order.items.isEmpty) return 'No item details';
+    final visible = order.items
+        .take(2)
+        .map((item) {
+          final quantity = '×${item.quantity}';
+          final options = <String>[];
+          for (final key in ['drink_brand', 'brand', 'size']) {
+            final value = item.customizations[key]?.toString().trim();
+            if (value != null && value.isNotEmpty && !options.contains(value)) {
+              options.add(value);
+            }
+          }
+          final suffix = options.isEmpty ? '' : ' (${options.join(', ')})';
+          return '${item.productName}$suffix $quantity';
+        })
+        .join(' · ');
+    final remaining = order.items.length - 2;
+    return remaining > 0 ? '$visible · +$remaining more' : visible;
+  }
+}
+
+class _DashboardFoodMark extends StatefulWidget {
+  const _DashboardFoodMark();
+
+  @override
+  State<_DashboardFoodMark> createState() => _DashboardFoodMarkState();
+}
+
+class _DashboardFoodMarkState extends State<_DashboardFoodMark>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(
+        begin: .94,
+        end: 1.04,
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .68),
+          borderRadius: BorderRadius.circular(19),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              left: 7,
+              top: 9,
+              child: Icon(
+                Icons.local_drink_rounded,
+                size: 20,
+                color: AppColors.info,
+              ),
+            ),
+            Positioned(
+              right: 7,
+              top: 10,
+              child: Icon(
+                Icons.fastfood_rounded,
+                size: 20,
+                color: AppColors.success,
+              ),
+            ),
+            Icon(
+              Icons.lunch_dining_rounded,
+              size: 35,
+              color: AppColors.brandOrange,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,7 +16,8 @@ class AdminCustomersScreen extends StatefulWidget {
 
 class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
   final TextEditingController _searchController = TextEditingController();
-  bool _showOnlyActive = false;
+  bool _showOnlyOnline = false;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
@@ -22,11 +25,17 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<AdminCustomersProvider>().loadCustomers();
     });
+    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (mounted) {
+        context.read<AdminCustomersProvider>().loadCustomers(force: true);
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
@@ -86,8 +95,8 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                     children: [
                       Expanded(
                         child: _StatCard(
-                          label: 'Active',
-                          value: provider.activeCustomers.toString(),
+                          label: 'Online now',
+                          value: provider.onlineCustomers.toString(),
                           color: AppColors.info,
                         ),
                       ),
@@ -129,13 +138,13 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                       Row(
                         children: [
                           Checkbox(
-                            value: _showOnlyActive,
+                            value: _showOnlyOnline,
                             onChanged: (value) {
-                              setState(() => _showOnlyActive = value ?? false);
+                              setState(() => _showOnlyOnline = value ?? false);
                             },
                             activeColor: AppColors.brandOrange,
                           ),
-                          const Text('Show Active Only'),
+                          const Text('Show Online Only'),
                         ],
                       ),
                     ],
@@ -175,6 +184,7 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
                             final customer = customers[index];
                             return _CustomerCard(
                               customer: customer,
+                              provider: provider,
                               onTap: () => _showCustomerDetails(
                                 context,
                                 customer,
@@ -195,8 +205,8 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
   }
 
   List<Customer> _getFilteredCustomers(AdminCustomersProvider provider) {
-    final baseList = _showOnlyActive
-        ? provider.customers.where((c) => c.isActive).toList()
+    final baseList = _showOnlyOnline
+        ? provider.customers.where((c) => c.isOnline).toList()
         : provider.customers;
 
     final query = _searchController.text.trim().toLowerCase();
@@ -305,11 +315,13 @@ class _StatCard extends StatelessWidget {
 
 class _CustomerCard extends StatelessWidget {
   final Customer customer;
+  final AdminCustomersProvider provider;
   final VoidCallback onTap;
   final VoidCallback onToggleStatus;
 
   const _CustomerCard({
     required this.customer,
+    required this.provider,
     required this.onTap,
     required this.onToggleStatus,
   });
@@ -327,8 +339,34 @@ class _CustomerCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  FutureBuilder(
+                    future: provider.loadCustomerPhoto(customer.id),
+                    builder: (context, snapshot) {
+                      final photo = snapshot.data;
+                      return CircleAvatar(
+                        radius: 24,
+                        backgroundColor: AppColors.brandOrange.withValues(
+                          alpha: .12,
+                        ),
+                        backgroundImage: photo == null
+                            ? null
+                            : MemoryImage(photo),
+                        child: photo == null
+                            ? Text(
+                                customer.name.trim().isEmpty
+                                    ? '?'
+                                    : customer.name.trim()[0].toUpperCase(),
+                                style: TextStyle(
+                                  color: AppColors.brandOrange,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              )
+                            : null,
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,9 +388,20 @@ class _CustomerCard extends StatelessWidget {
                           customer.phone,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          customer.address.isEmpty
+                              ? 'Address not provided'
+                              : customer.address,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -381,7 +430,7 @@ class _CustomerCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${customer.orderCount} orders',
+                        customer.activityLabel,
                         style: Theme.of(context).textTheme.labelSmall,
                       ),
                       const SizedBox(height: 3),
@@ -404,6 +453,10 @@ class _CustomerCard extends StatelessWidget {
                     'Total Spent: ₱${customer.totalSpent.toStringAsFixed(2)}',
                     style: Theme.of(context).textTheme.bodySmall!
                         .copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    '${customer.orderCount} orders',
+                    style: Theme.of(context).textTheme.labelSmall,
                   ),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.edit, size: 16),
@@ -456,8 +509,34 @@ class _CustomerDetailsBottomSheet extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge!
                     .copyWith(fontWeight: FontWeight.bold),
               ),
+              const SizedBox(height: 12),
+              Center(
+                child: FutureBuilder(
+                  future: provider.loadCustomerPhoto(customer.id),
+                  builder: (context, snapshot) {
+                    final photo = snapshot.data;
+                    return CircleAvatar(
+                      radius: 42,
+                      backgroundColor: AppColors.brandOrange.withValues(
+                        alpha: .12,
+                      ),
+                      backgroundImage: photo == null
+                          ? null
+                          : MemoryImage(photo),
+                      child: photo == null
+                          ? Icon(
+                              Icons.person_rounded,
+                              size: 38,
+                              color: AppColors.brandOrange,
+                            )
+                          : null,
+                    );
+                  },
+                ),
+              ),
               const SizedBox(height: 16),
               _DetailRow('Status', customer.isActive ? 'Active' : 'Inactive'),
+              _DetailRow('Activity', customer.activityLabel),
               _DetailRow('Email', customer.email),
               _DetailRow('Phone', customer.phone),
               _DetailRow('Address', customer.address),

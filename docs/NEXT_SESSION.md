@@ -2,6 +2,17 @@
 
 [[PROJECT_HOME]] · [[INTEGRATION_MAP]] · [[AGENT_TEAM]] · [[AGENT_MONITOR]] · [[BACKUP_WORKFLOW]] · [[PRODUCTION_READINESS_AUDIT]] · [[KNOWN_ISSUES]] · [[TESTING]]
 
+## Admin dashboard, customer presence, and product sales update (2026-10-25)
+
+- Added the admin customer details needed in the request: customer profile photos, address, email, phone, active-account state, online status, and elapsed offline time. Authenticated customer sessions send a best-effort presence heartbeat every 60 seconds and mark themselves offline when logging out. The online indicator expires after 120 seconds without a heartbeat.
+- Updated the admin dashboard to remove the SQL-status banner and show the same last-seven-day order total represented by its chart. Recent orders now show the customer's name, order reference, product photo, and size/brand customizations. Admin order details show the customer owner, phone/address, item quantities, photos, and selected sizes, drink brands, and toppings.
+- Admin add/edit product forms accept up to three image paths or URLs, show a preview, and configure a discount percent, product size or drink brand scope, start time, and expiry. Home and Menu product cards rotate their images and display a countdown; the Home Explore categories and Menu category list include current or upcoming sales. Checkout pricing respects the sale window on the API.
+- Added `backend/database/migrations/006_customer_presence_product_gallery_sales.sql` for `users.last_seen_at`, product image galleries, and sale start/end timestamps. **Confirmed applied on 2026-10-25** with a read-only PDO check: all four required columns and both migration indexes exist in `burger_bites`. Do not re-import migration 006. Admin More → App Information checks the new columns.
+- Updated `backend/README.md` with migration 006. The baseline checkpoint commit for this task is `6129a30 Checkpoint baseline before admin dashboard upgrades`; task changes remain uncommitted and unpushed.
+- Verification: `dart format` completed; `flutter analyze --no-pub` reported **No issues found**; `php -l backend/src/ApiApplication.php` reported no syntax errors; `git diff --check` was clean; `graphify update .` completed. No tests, browser session, or live database workflow were run in this pass.
+- The API on `127.0.0.1:8081` was stopped during the migration check (connection refused); MySQL on `127.0.0.1:3306` and PHP PDO access to `burger_bites` worked. Schema import is verified, but app/API workflows have not been verified after the import.
+- Next: start the local API, then verify customer sign-in/logout presence, three-image product persistence/rotation, scheduled discount display and API price behavior, and customer-owned order details. Do not re-import migration 006.
+
 ## Runtime and integration audit (2026-10-22)
 
 - Flutter verification: `flutter test --reporter compact` reported **All tests passed**; `flutter analyze` reported **No issues found**. These checks validate app code, not live server connectivity.

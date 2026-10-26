@@ -8,6 +8,8 @@ use Throwable;
 
 final class ApiApplication
 {
+    private static array $columnCache = [];
+
     public static function run(): never
     {
         ini_set('display_errors', '0');
@@ -68,6 +70,19 @@ final class ApiApplication
         }
 
         $user = self::requireUser($db, $pepper);
+        if ($method === 'POST' && $path === '/me/activity') {
+            $body = Http::body();
+            $offline = $body['offline'] ?? false;
+            if (!is_bool($offline)) throw new ApiException(422, 'Activity state must be true or false.');
+            if (self::hasColumn($db, 'users', 'last_seen_at')) {
+                $timestamp = $offline
+                    ? 'UTC_TIMESTAMP() - INTERVAL 121 SECOND'
+                    : 'UTC_TIMESTAMP()';
+                $activity = $db->prepare('UPDATE users SET last_seen_at = ' . $timestamp . ' WHERE id = ?');
+                $activity->execute([$user['id']]);
+            }
+            Http::json(['success' => true, 'tracking_available' => self::hasColumn($db, 'users', 'last_seen_at')]);
+        }
         if ($method === 'GET' && $path === '/me') {
             Http::json(['user' => Auth::publicUser($user)]);
         }
@@ -152,6 +167,9 @@ final class ApiApplication
                 self::archiveProduct($db, $match[1]);
             }
             if ($method === 'GET' && $path === '/admin/customers') self::adminCustomers($db);
+            if ($method === 'GET' && preg_match('#^/admin/customers/(\d+)/photo$#', $path, $match)) {
+                self::adminCustomerPhoto($db, $match[1]);
+            }
             if ($method === 'PUT' && preg_match('#^/admin/customers/(\d+)$#', $path, $match)) {
                 self::updateCustomerStatus($db, $match[1], Http::body());
             }
@@ -399,7 +417,7 @@ final class ApiApplication
     private static function products(PDO $db, string $path): never
     {
         if (preg_match('#^/products/([A-Za-z0-9_-]{1,64})$#', $path, $match)) {
-            $query = $db->prepare('SELECT id, name, description, price, discount_percent, discount_scope, image_url, category, rating, review_count, stock_quantity, is_available, created_at FROM products WHERE id = ? LIMIT 1');
+            $query = $db->prepare('SELECT ' . self::productFields($db, '', true) . ' FROM products WHERE id = ? LIMIT 1');
             $query->execute([$match[1]]);
             $product = $query->fetch();
             if (!$product) throw new ApiException(404, 'Product not found.');
@@ -418,7 +436,7 @@ final class ApiApplication
             'rating' => 'rating DESC, id ASC',
             default => 'created_at DESC, id ASC',
         };
-        $query = $db->prepare('SELECT id, name, description, price, discount_percent, discount_scope, image_url, category, rating, review_count, is_available, created_at FROM products WHERE ' . implode(' AND ', $filters) . ' ORDER BY ' . $sort . ' LIMIT ? OFFSET ?');
+        $query = $db->prepare('SELECT ' . self::productFields($db) . ' FROM products WHERE ' . implode(' AND ', $filters) . ' ORDER BY ' . $sort . ' LIMIT ? OFFSET ?');
         $index = 1;
         foreach ($values as $value) $query->bindValue($index++, $value, PDO::PARAM_STR);
         $query->bindValue($index++, $limit, PDO::PARAM_INT);
@@ -429,7 +447,7 @@ final class ApiApplication
 
     private static function favorites(PDO $db, string $userId): never
     {
-        $query = $db->prepare('SELECT p.id, p.name, p.description, p.price, p.discount_percent, p.discount_scope, p.image_url, p.category, p.rating, p.review_count, p.stock_quantity, p.is_available, p.created_at FROM favorites f JOIN products p ON p.id = f.product_id WHERE f.user_id = ? ORDER BY f.created_at DESC');
+        $query = $db->prepare('SELECT ' . self::productFields($db, 'p', true) . ' FROM favorites f JOIN products p ON p.id = f.product_id WHERE f.user_id = ? ORDER BY f.created_at DESC');
         $query->execute([$userId]);
         Http::json(['favorites' => array_map([self::class, 'productJson'], $query->fetchAll())]);
     }
@@ -451,7 +469,7 @@ final class ApiApplication
         if ($user['role'] !== 'customer') throw new ApiException(403, 'Only customer accounts can use a shopping cart.');
         $query = $db->prepare(
             'SELECT ci.product_id, ci.quantity, ci.customizations_json,
-                    p.name, p.price, p.discount_percent, p.discount_scope, p.image_url, p.category
+                    p.name, p.price, p.discount_percent, p.discount_scope, p.image_url, p.category, ' . self::discountFields($db, 'p') . '
              FROM cart_items ci
              INNER JOIN products p ON p.id = ci.product_id
              WHERE ci.user_id = ?
@@ -605,7 +623,7 @@ final class ApiApplication
             $pointsRedeemed = $redeemRewards ? 2500 : 0;
             $rewardUnitsRemaining = $redeemRewards ? 5 : 0;
             $rewardDiscount = 0;
-            $productQuery = $db->prepare('SELECT id, name, price, discount_percent, discount_scope, image_url, category, is_available, stock_quantity FROM products WHERE id = ? FOR UPDATE');
+            $productQuery = $db->prepare('SELECT id, name, price, discount_percent, discount_scope, image_url, category, is_available, stock_quantity, ' . self::discountFields($db) . ' FROM products WHERE id = ? FOR UPDATE');
             $subtotal = 0;
             $totalOrderedUnits = 0;
             $orderLines = [];
@@ -622,7 +640,8 @@ final class ApiApplication
                 if ($remainingStock[$id] < $quantity) throw new ApiException(409, 'There is not enough stock for ' . $product['name'] . '.');
                 $remainingStock[$id] -= $quantity;
                 self::validateProductCustomizations((string)$product['name'], (string)$product['category'], $customizations);
-                $unitPrice = self::productUnitPrice($product, $customizations);
+                $pricing = self::productPriceBreakdown($product, $customizations);
+                $unitPrice = $pricing['unit_price'];
                 $customName = self::customizedProductName((string)$product['name'], (string)$product['category'], $customizations);
                 $rewardQuantity = min($quantity, $rewardUnitsRemaining);
                 $rewardUnitsRemaining -= $rewardQuantity;
@@ -634,6 +653,9 @@ final class ApiApplication
                     $orderLines[] = [
                         'product' => $product, 'quantity' => $rewardQuantity, 'unit_price' => $rewardUnitPrice,
                         'product_name' => $customName . ' · 80% reward',
+                        'original_unit_price' => $pricing['original_unit_price'],
+                        'sale_discount_percent' => $pricing['sale_discount_percent'],
+                        'sale_discount_amount' => $pricing['sale_discount_amount'] * $rewardQuantity,
                         'customizations' => $customizations,
                     ];
                 }
@@ -642,6 +664,9 @@ final class ApiApplication
                     $orderLines[] = [
                         'product' => $product, 'quantity' => $regularQuantity, 'unit_price' => $unitPrice,
                         'product_name' => $customName,
+                        'original_unit_price' => $pricing['original_unit_price'],
+                        'sale_discount_percent' => $pricing['sale_discount_percent'],
+                        'sale_discount_amount' => $pricing['sale_discount_amount'] * $regularQuantity,
                         'customizations' => $customizations,
                     ];
                 }
@@ -652,14 +677,26 @@ final class ApiApplication
             $insert = $db->prepare('INSERT INTO orders (user_id, customer_name, delivery_address, phone, payment_method, status, notes, subtotal, tax, delivery_fee, total, reward_points_awarded, reward_points_redeemed, reward_discount) VALUES (?, ?, ?, ?, \'cod\', \'pending\', ?, ?, ?, ?, ?, ?, ?, ?)');
             $insert->execute([$user['id'], $name, $address, $phone, $notes === '' ? null : $notes, self::decimal($subtotal), self::decimal($tax), self::decimal($deliveryFee), self::decimal($total), $pointsAwarded, $pointsRedeemed, self::decimal($rewardDiscount)]);
             $orderId = (string)$db->lastInsertId();
-            $lineInsert = $db->prepare('INSERT INTO order_items (order_id, product_id, product_name, image_url, customizations_json, quantity, unit_price, line_total) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            $hasSaleSnapshot = self::hasColumn($db, 'order_items', 'original_unit_price')
+                && self::hasColumn($db, 'order_items', 'sale_discount_percent')
+                && self::hasColumn($db, 'order_items', 'sale_discount_amount');
+            $lineInsert = $db->prepare($hasSaleSnapshot
+                ? 'INSERT INTO order_items (order_id, product_id, product_name, image_url, customizations_json, quantity, unit_price, original_unit_price, sale_discount_percent, sale_discount_amount, line_total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                : 'INSERT INTO order_items (order_id, product_id, product_name, image_url, customizations_json, quantity, unit_price, line_total) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
             $stockUpdate = $db->prepare('UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?');
             foreach ($orderLines as $line) {
                 $product = $line['product']; $quantity = $line['quantity']; $unit = $line['unit_price'];
                 $stockUpdate->execute([$quantity, $product['id'], $quantity]);
                 if ($stockUpdate->rowCount() !== 1) throw new ApiException(409, 'Stock changed while placing your order. Please try again.');
                 $customizationsJson = $line['customizations'] === null ? null : json_encode($line['customizations'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                $lineInsert->execute([$orderId, $product['id'], $line['product_name'], $product['image_url'], $customizationsJson, $quantity, self::decimal($unit), self::decimal($unit * $quantity)]);
+                $lineValues = [$orderId, $product['id'], $line['product_name'], $product['image_url'], $customizationsJson, $quantity, self::decimal($unit)];
+                if ($hasSaleSnapshot) {
+                    $lineValues[] = self::decimal($line['original_unit_price']);
+                    $lineValues[] = number_format($line['sale_discount_percent'], 2, '.', '');
+                    $lineValues[] = self::decimal($line['sale_discount_amount']);
+                }
+                $lineValues[] = self::decimal($unit * $quantity);
+                $lineInsert->execute($lineValues);
             }
             $pointsUpdate = $db->prepare('UPDATE users SET reward_points = reward_points - ? + ? WHERE id = ?');
             $pointsUpdate->execute([$pointsRedeemed, $pointsAwarded, $user['id']]);
@@ -699,11 +736,17 @@ final class ApiApplication
 
         $ids = array_map(static fn(array $order): string => (string)$order['id'], $orders);
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $itemQuery = $db->prepare("SELECT CAST(order_id AS CHAR) AS order_id, product_id, product_name, unit_price AS price, quantity, image_url AS product_image, customizations_json FROM order_items WHERE order_id IN ($placeholders) ORDER BY id");
+        $originalUnitPrice = self::hasColumn($db, 'order_items', 'original_unit_price') ? 'oi.original_unit_price' : 'oi.unit_price';
+        $saleDiscountPercent = self::hasColumn($db, 'order_items', 'sale_discount_percent') ? 'oi.sale_discount_percent' : '0';
+        $saleDiscountAmount = self::hasColumn($db, 'order_items', 'sale_discount_amount') ? 'oi.sale_discount_amount' : '0';
+        $itemQuery = $db->prepare("SELECT CAST(oi.order_id AS CHAR) AS order_id, oi.product_id, oi.product_name, oi.unit_price AS price, $originalUnitPrice AS original_unit_price, $saleDiscountPercent AS sale_discount_percent, $saleDiscountAmount AS sale_discount_amount, oi.quantity, oi.image_url AS product_image, p.category AS product_category, oi.customizations_json FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id WHERE oi.order_id IN ($placeholders) ORDER BY oi.id");
         $itemQuery->execute($ids);
         $itemsByOrder = [];
         foreach ($itemQuery->fetchAll() as $item) {
             $item['price'] = (float)$item['price'];
+            $item['original_unit_price'] = (float)$item['original_unit_price'];
+            $item['sale_discount_percent'] = (float)$item['sale_discount_percent'];
+            $item['sale_discount_amount'] = (float)$item['sale_discount_amount'];
             $item['quantity'] = (int)$item['quantity'];
             $item['customizations'] = $item['customizations_json'] === null ? null : json_decode((string)$item['customizations_json'], true);
             unset($item['customizations_json']);
@@ -812,13 +855,14 @@ final class ApiApplication
 
     private static function adminProducts(PDO $db): never
     {
-        $query = $db->query('SELECT id, name, description, price, discount_percent, discount_scope, image_url, category, rating, review_count, stock_quantity, is_available, created_at FROM products ORDER BY created_at DESC, id');
+        $query = $db->query('SELECT ' . self::productFields($db, '', true) . ' FROM products ORDER BY created_at DESC, id');
         Http::json(['products' => array_map(static fn(array $product): array => self::productJson($product, true), $query->fetchAll())]);
     }
 
     private static function createProduct(PDO $db, array $body): never
     {
         $product = self::validatedProduct($body);
+        self::requireProductFeatureSchema($db, $product);
         $baseId = strtolower(trim((string)preg_replace('/[^A-Za-z0-9]+/', '-', $product['name']), '-'));
         $baseId = substr($baseId === '' ? 'product' : $baseId, 0, 52);
         $id = $baseId;
@@ -828,14 +872,26 @@ final class ApiApplication
             if (!$check->fetchColumn()) break;
             $id = substr($baseId, 0, 44) . '-' . bin2hex(random_bytes(4));
         }
-        $insert = $db->prepare('INSERT INTO products (id, name, description, price, discount_percent, discount_scope, image_url, category, stock_quantity, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $columns = ['id', 'name', 'description', 'price', 'discount_percent', 'discount_scope', 'image_url', 'category', 'stock_quantity', 'is_available'];
+        $values = [$id, $product['name'], $product['description'], $product['price'], $product['discount_percent'], $product['discount_scope'], $product['image_url'], $product['category'], $product['stock_quantity'], $product['available'] ? 1 : 0];
+        if (self::hasColumn($db, 'products', 'image_urls_json')) {
+            $columns[] = 'image_urls_json';
+            $values[] = json_encode($product['image_urls'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        if (self::hasColumn($db, 'products', 'discount_starts_at') && self::hasColumn($db, 'products', 'discount_ends_at')) {
+            $columns[] = 'discount_starts_at';
+            $columns[] = 'discount_ends_at';
+            $values[] = $product['discount_starts_at'];
+            $values[] = $product['discount_ends_at'];
+        }
+        $insert = $db->prepare('INSERT INTO products (' . implode(', ', $columns) . ') VALUES (' . implode(', ', array_fill(0, count($columns), '?')) . ')');
         try {
-            $insert->execute([$id, $product['name'], $product['description'], $product['price'], $product['discount_percent'], $product['discount_scope'], $product['image_url'], $product['category'], $product['stock_quantity'], $product['available'] ? 1 : 0]);
+            $insert->execute($values);
         } catch (\PDOException $error) {
             if ($error->getCode() === '23000') throw new ApiException(409, 'A product with that identifier already exists.');
             throw $error;
         }
-        $query = $db->prepare('SELECT id, name, description, price, discount_percent, discount_scope, image_url, category, rating, review_count, stock_quantity, is_available, created_at FROM products WHERE id = ?');
+        $query = $db->prepare('SELECT ' . self::productFields($db, '', true) . ' FROM products WHERE id = ?');
         $query->execute([$id]);
         Http::json(['product' => self::productJson($query->fetch(), true)], 201);
     }
@@ -843,14 +899,28 @@ final class ApiApplication
     private static function updateProduct(PDO $db, string $id, array $body): never
     {
         $product = self::validatedProduct($body);
-        $update = $db->prepare('UPDATE products SET name = ?, description = ?, price = ?, discount_percent = ?, discount_scope = ?, image_url = ?, category = ?, stock_quantity = ?, is_available = ? WHERE id = ?');
-        $update->execute([$product['name'], $product['description'], $product['price'], $product['discount_percent'], $product['discount_scope'], $product['image_url'], $product['category'], $product['stock_quantity'], $product['available'] ? 1 : 0, $id]);
+        self::requireProductFeatureSchema($db, $product);
+        $sets = ['name = ?', 'description = ?', 'price = ?', 'discount_percent = ?', 'discount_scope = ?', 'image_url = ?', 'category = ?', 'stock_quantity = ?', 'is_available = ?'];
+        $values = [$product['name'], $product['description'], $product['price'], $product['discount_percent'], $product['discount_scope'], $product['image_url'], $product['category'], $product['stock_quantity'], $product['available'] ? 1 : 0];
+        if (self::hasColumn($db, 'products', 'image_urls_json')) {
+            $sets[] = 'image_urls_json = ?';
+            $values[] = json_encode($product['image_urls'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        if (self::hasColumn($db, 'products', 'discount_starts_at') && self::hasColumn($db, 'products', 'discount_ends_at')) {
+            $sets[] = 'discount_starts_at = ?';
+            $sets[] = 'discount_ends_at = ?';
+            $values[] = $product['discount_starts_at'];
+            $values[] = $product['discount_ends_at'];
+        }
+        $values[] = $id;
+        $update = $db->prepare('UPDATE products SET ' . implode(', ', $sets) . ' WHERE id = ?');
+        $update->execute($values);
         if ($update->rowCount() === 0) {
             $exists = $db->prepare('SELECT 1 FROM products WHERE id = ?');
             $exists->execute([$id]);
             if (!$exists->fetchColumn()) throw new ApiException(404, 'Product not found.');
         }
-        $query = $db->prepare('SELECT id, name, description, price, discount_percent, discount_scope, image_url, category, rating, review_count, stock_quantity, is_available, created_at FROM products WHERE id = ?');
+        $query = $db->prepare('SELECT ' . self::productFields($db, '', true) . ' FROM products WHERE id = ?');
         $query->execute([$id]);
         Http::json(['product' => self::productJson($query->fetch(), true)]);
     }
@@ -873,18 +943,47 @@ final class ApiApplication
         $description = trim((string)($body['description'] ?? ''));
         $category = trim((string)($body['category'] ?? ''));
         $image = trim((string)($body['image_url'] ?? ''));
+        $rawImages = $body['image_urls'] ?? null;
+        $imageUrls = [];
         $price = $body['price'] ?? null;
         $stock = filter_var($body['stock_quantity'] ?? 0, FILTER_VALIDATE_INT);
         $discount = $body['discount_percent'] ?? 0;
         $discountScope = $body['discount_scope'] ?? 'all';
+        $discountValue = is_numeric($discount) ? (float)$discount : 0.0;
+        $scheduleProvided = array_key_exists('discount_starts_at', $body) || array_key_exists('discount_ends_at', $body);
+        $discountStartsAt = self::normalizeSaleDate($body['discount_starts_at'] ?? null);
+        $discountEndsAt = self::normalizeSaleDate($body['discount_ends_at'] ?? null);
+        $hasScheduleDate = $discountStartsAt !== null || $discountEndsAt !== null;
+        $invalidSchedule = $scheduleProvided && (
+            ($discountValue > 0 && $discountEndsAt === null) ||
+            ($hasScheduleDate && (
+                $discountStartsAt === null || $discountEndsAt === null ||
+                $discountStartsAt >= $discountEndsAt
+            ))
+        );
+        if ($rawImages !== null && (!is_array($rawImages) || !array_is_list($rawImages) || count($rawImages) > 3)) {
+            throw new ApiException(422, 'Add no more than three product images.');
+        }
+        if (is_array($rawImages)) {
+            foreach ($rawImages as $rawImage) {
+                if (!is_string($rawImage)) throw new ApiException(422, 'Each product image must be an image path or URL.');
+                $value = trim($rawImage);
+                if ($value !== '') $imageUrls[] = $value;
+            }
+        }
+        if ($imageUrls === [] && $image !== '') $imageUrls[] = $image;
+        if ($imageUrls !== []) $image = $imageUrls[0];
+        $validImage = static fn(string $value): bool => mb_strlen($value) <= 1000 && preg_match('#^(https?://|assets/|[A-Za-z0-9_-]{1,80}$)#i', $value) === 1;
         if (mb_strlen($name) < 2 || mb_strlen($name) > 160 || mb_strlen($description) > 5000 ||
             mb_strlen($category) < 2 || mb_strlen($category) > 80 || mb_strlen($image) > 1000 ||
-            ($image !== '' && !preg_match('#^(https?://|assets/|[A-Za-z0-9_-]{1,80}$)#i', $image)) ||
+            ($image !== '' && !$validImage($image)) ||
+            array_filter($imageUrls, static fn(string $value): bool => !$validImage($value)) !== [] ||
             (!is_int($price) && !is_float($price) && !is_string($price)) ||
             !is_numeric($price) || (float)$price <= 0 || (float)$price > 99999999.99 ||
             (!is_int($discount) && !is_float($discount) && !is_string($discount)) ||
             !is_numeric($discount) || (float)$discount < 0 || (float)$discount > 90 ||
             !is_string($discountScope) || !preg_match('/^(all|size:(Regular|Small|Medium|Large|Double|XL)|brand:(Coca-Cola|Sprite|Pepsi|Royal|Mountain Dew|7Up))$/', $discountScope) ||
+            $invalidSchedule ||
             $stock === false || $stock < 0 || $stock > 100000 ||
             (isset($body['available']) && !is_bool($body['available']))) {
             throw new ApiException(422, 'Check the product name, description, price, category, image, and stock.');
@@ -892,26 +991,79 @@ final class ApiApplication
         return [
             'name' => $name, 'description' => $description, 'category' => $category,
             'image_url' => $image === '' ? null : $image,
+            'image_urls' => array_slice($imageUrls, 0, 3),
             'price' => number_format((float)$price, 2, '.', ''), 'stock_quantity' => $stock,
             'discount_percent' => number_format((float)$discount, 2, '.', ''),
             'discount_scope' => $discountScope,
+            'discount_starts_at' => $discountStartsAt,
+            'discount_ends_at' => $discountEndsAt,
             'available' => $body['available'] ?? true,
         ];
     }
 
+    private static function normalizeSaleDate(mixed $value): ?string
+    {
+        if ($value === null || $value === '') return null;
+        if (!is_string($value) || strlen($value) > 64) throw new ApiException(422, 'Choose a valid sale start and end time.');
+        try {
+            return (new \DateTimeImmutable($value))
+                ->setTimezone(new \DateTimeZone('UTC'))
+                ->format('Y-m-d H:i:s');
+        } catch (\Throwable) {
+            throw new ApiException(422, 'Choose a valid sale start and end time.');
+        }
+    }
+
+    private static function requireProductFeatureSchema(PDO $db, array $product): void
+    {
+        if (count($product['image_urls']) > 1 && !self::hasColumn($db, 'products', 'image_urls_json')) {
+            throw new ApiException(503, 'Import migration 006 to save product galleries.');
+        }
+        $hasSaleSchedule = self::hasColumn($db, 'products', 'discount_starts_at') && self::hasColumn($db, 'products', 'discount_ends_at');
+        if (($product['discount_starts_at'] !== null || $product['discount_ends_at'] !== null) && !$hasSaleSchedule) {
+            throw new ApiException(503, 'Import migration 006 to schedule timed discount sales.');
+        }
+    }
+
     private static function adminCustomers(PDO $db): never
     {
-        $query = $db->query("SELECT CAST(u.id AS CHAR) AS id, u.full_name AS name, u.email, COALESCE(u.phone, '') AS phone, COALESCE(u.default_address, '') AS address, u.reward_points, u.created_at AS joined_at, u.is_active, COUNT(DISTINCT o.id) AS order_count, COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN o.total ELSE 0 END), 0) AS total_spent FROM users u LEFT JOIN orders o ON o.user_id = u.id WHERE u.role = 'customer' GROUP BY u.id ORDER BY u.created_at DESC LIMIT 500");
+        $lastSeen = self::hasColumn($db, 'users', 'last_seen_at') ? 'u.last_seen_at' : 'NULL AS last_seen_at';
+        $query = $db->query("SELECT CAST(u.id AS CHAR) AS id, u.full_name AS name, u.email, COALESCE(u.phone, '') AS phone, COALESCE(u.default_address, '') AS address, u.reward_points, u.created_at AS joined_at, u.is_active, $lastSeen, COUNT(DISTINCT o.id) AS order_count, COALESCE(SUM(CASE WHEN o.status <> 'cancelled' THEN o.total ELSE 0 END), 0) AS total_spent FROM users u LEFT JOIN orders o ON o.user_id = u.id WHERE u.role = 'customer' GROUP BY u.id ORDER BY u.created_at DESC LIMIT 500");
         $customers = $query->fetchAll();
+        $now = time();
+        $onlineCount = 0;
         foreach ($customers as &$customer) {
             $customer['order_count'] = (int)$customer['order_count'];
             $customer['total_spent'] = (float)$customer['total_spent'];
             $customer['reward_points'] = (float)$customer['reward_points'];
             $customer['is_active'] = (bool)$customer['is_active'];
             $customer['joined_at'] = self::isoDate((string)$customer['joined_at']);
+            $lastSeenAt = $customer['last_seen_at'] === null ? null : self::isoDate((string)$customer['last_seen_at']);
+            $lastSeenTimestamp = $lastSeenAt === null ? false : strtotime($lastSeenAt);
+            $customer['is_online'] = $lastSeenTimestamp !== false && $now - $lastSeenTimestamp <= 120;
+            if ($customer['is_online']) $onlineCount++;
+            $customer['last_seen_at'] = $lastSeenAt;
         }
         unset($customer);
-        Http::json(['customers' => $customers]);
+        $totalQuery = $db->query("SELECT COUNT(*) FROM users WHERE role = 'customer'");
+        Http::json(['customers' => $customers, 'total_customers' => (int)$totalQuery->fetchColumn(), 'online_customers' => $onlineCount]);
+    }
+
+    private static function adminCustomerPhoto(PDO $db, string $id): never
+    {
+        if (!self::hasColumn($db, 'users', 'profile_image')) {
+            Http::json(['image_base64' => null, 'mime_type' => null]);
+        }
+        $hasMime = self::hasColumn($db, 'users', 'profile_image_mime');
+        $mimeField = $hasMime ? 'profile_image_mime' : 'NULL AS profile_image_mime';
+        $query = $db->prepare("SELECT profile_image, $mimeField FROM users WHERE id = ? AND role = 'customer' LIMIT 1");
+        $query->execute([$id]);
+        $row = $query->fetch();
+        if (!$row) throw new ApiException(404, 'Customer not found.');
+        Http::json([
+            'image_base64' => empty($row['profile_image']) ? null : base64_encode((string)$row['profile_image']),
+            'mime_type' => $row['profile_image_mime'] ?? null,
+        ]);
     }
 
     private static function updateCustomerStatus(PDO $db, string $id, array $body): never
@@ -971,10 +1123,12 @@ final class ApiApplication
              FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE()
                AND ((TABLE_NAME = \'users\' AND COLUMN_NAME = \'is_active\')
+                 OR (TABLE_NAME = \'users\' AND COLUMN_NAME = \'last_seen_at\')
                  OR (TABLE_NAME = \'users\' AND COLUMN_NAME IN (\'reward_points\', \'profile_image\'))
                  OR (TABLE_NAME = \'order_items\' AND COLUMN_NAME = \'customizations_json\')
+                 OR (TABLE_NAME = \'order_items\' AND COLUMN_NAME IN (\'original_unit_price\', \'sale_discount_percent\', \'sale_discount_amount\'))
                  OR (TABLE_NAME = \'orders\' AND COLUMN_NAME IN (\'status\', \'reward_points_awarded\', \'reward_points_redeemed\', \'reward_discount\', \'reward_reversed\'))
-                 OR (TABLE_NAME = \'products\' AND COLUMN_NAME IN (\'discount_percent\', \'discount_scope\'))
+                 OR (TABLE_NAME = \'products\' AND COLUMN_NAME IN (\'discount_percent\', \'discount_scope\', \'image_urls_json\', \'discount_starts_at\', \'discount_ends_at\'))
                  OR (TABLE_NAME = \'user_calendar_reminders\' AND COLUMN_NAME = \'reminder_time\'))'
         );
         $columnQuery->execute();
@@ -993,12 +1147,17 @@ final class ApiApplication
 
         $requirements = [
             'users.is_active' => isset($columns['users.is_active']),
+            'users.last_seen_at' => isset($columns['users.last_seen_at']),
             'order_items.customizations_json' => isset($columns['order_items.customizations_json']),
+            'order_items.sale_price_snapshots' => isset($columns['order_items.original_unit_price']) && isset($columns['order_items.sale_discount_percent']) && isset($columns['order_items.sale_discount_amount']),
             'orders.status.out_for_delivery' => isset($columns['orders.status']) && str_contains($columns['orders.status'], 'out_for_delivery'),
             'users.reward_points' => isset($columns['users.reward_points']),
             'users.profile_image' => isset($columns['users.profile_image']),
             'products.discount_percent' => isset($columns['products.discount_percent']),
             'products.discount_scope' => isset($columns['products.discount_scope']),
+            'products.image_urls_json' => isset($columns['products.image_urls_json']),
+            'products.discount_starts_at' => isset($columns['products.discount_starts_at']),
+            'products.discount_ends_at' => isset($columns['products.discount_ends_at']),
             'orders.reward_columns' => isset($columns['orders.reward_points_awarded']) && isset($columns['orders.reward_points_redeemed']) && isset($columns['orders.reward_discount']) && isset($columns['orders.reward_reversed']),
             'user_preferences' => isset($tables['user_preferences']),
             'contact_messages' => isset($tables['contact_messages']),
@@ -1339,12 +1498,25 @@ final class ApiApplication
 
     private static function productJson(array $product, bool $includeStock = false): array
     {
+        $images = [];
+        if (isset($product['image_urls_json']) && is_string($product['image_urls_json'])) {
+            $decoded = json_decode($product['image_urls_json'], true);
+            if (is_array($decoded) && array_is_list($decoded)) {
+                $images = array_values(array_slice(array_filter($decoded, static fn($value): bool => is_string($value) && trim($value) !== ''), 0, 3));
+            }
+        }
+        if ($images === [] && is_string($product['image_url'] ?? null) && trim((string)$product['image_url']) !== '') {
+            $images[] = (string)$product['image_url'];
+        }
         $result = [
             'id' => (string)$product['id'], 'name' => (string)$product['name'],
             'description' => (string)($product['description'] ?? ''),
             'price' => (float)$product['price'], 'image_url' => $product['image_url'],
+            'image_urls' => $images,
             'discount_percent' => isset($product['discount_percent']) ? (float)$product['discount_percent'] : 0.0,
             'discount_scope' => (string)($product['discount_scope'] ?? 'all'),
+            'discount_starts_at' => !empty($product['discount_starts_at']) ? self::isoDate((string)$product['discount_starts_at']) : null,
+            'discount_ends_at' => !empty($product['discount_ends_at']) ? self::isoDate((string)$product['discount_ends_at']) : null,
             'category' => $product['category'], 'rating' => $product['rating'] === null ? null : (float)$product['rating'],
             'review_count' => $product['review_count'] === null ? null : (int)$product['review_count'],
             'available' => (bool)$product['is_available'] && (!isset($product['stock_quantity']) || (int)$product['stock_quantity'] > 0),
@@ -1356,7 +1528,13 @@ final class ApiApplication
 
     private static function productUnitPrice(array $product, array $customizations): int
     {
-        $price = self::customizedUnitPrice(
+        return self::productPriceBreakdown($product, $customizations)['unit_price'];
+    }
+
+    /** Return server-authoritative list price and timed-sale price in cents. */
+    private static function productPriceBreakdown(array $product, array $customizations): array
+    {
+        $listPrice = self::customizedUnitPrice(
             (string)$product['price'],
             (string)$product['category'],
             $customizations,
@@ -1364,11 +1542,63 @@ final class ApiApplication
         );
         $discount = (float)($product['discount_percent'] ?? 0);
         $scope = (string)($product['discount_scope'] ?? 'all');
+        $now = time();
+        $startsAt = !empty($product['discount_starts_at']) ? strtotime((string)$product['discount_starts_at'] . ' UTC') : false;
+        $endsAt = !empty($product['discount_ends_at']) ? strtotime((string)$product['discount_ends_at'] . ' UTC') : false;
         $matches = $scope === 'all'
             || (str_starts_with($scope, 'size:') && substr($scope, 5) === $customizations['size'])
             || (str_starts_with($scope, 'brand:') && substr($scope, 6) === $customizations['drink_brand']);
-        if ($discount <= 0 || !$matches) return $price;
-        return (int)round($price * (100 - $discount) / 100);
+        $appliedDiscount = $discount > 0 && $matches
+            && !($startsAt !== false && $now < $startsAt)
+            && !($endsAt !== false && $now >= $endsAt)
+            ? $discount
+            : 0.0;
+        $unitPrice = $appliedDiscount > 0
+            ? (int)round($listPrice * (100 - $appliedDiscount) / 100)
+            : $listPrice;
+        return [
+            'original_unit_price' => $listPrice,
+            'sale_discount_percent' => $appliedDiscount,
+            'sale_discount_amount' => $listPrice - $unitPrice,
+            'unit_price' => $unitPrice,
+        ];
+    }
+
+    private static function productFields(PDO $db, string $alias = '', bool $includeStock = false): string
+    {
+        $prefix = $alias === '' ? '' : $alias . '.';
+        $fields = ['id', 'name', 'description', 'price', 'discount_percent', 'discount_scope', 'image_url', 'category', 'rating', 'review_count'];
+        if ($includeStock) $fields[] = 'stock_quantity';
+        $fields[] = 'is_available';
+        $fields[] = 'created_at';
+        $selected = array_map(static fn(string $field): string => $prefix . $field, $fields);
+        foreach (['image_urls_json', 'discount_starts_at', 'discount_ends_at'] as $optional) {
+            $selected[] = self::hasColumn($db, 'products', $optional)
+                ? $prefix . $optional
+                : 'NULL AS ' . $optional;
+        }
+        return implode(', ', $selected);
+    }
+
+    private static function discountFields(PDO $db, string $alias = ''): string
+    {
+        $prefix = $alias === '' ? '' : $alias . '.';
+        $fields = [];
+        foreach (['discount_starts_at', 'discount_ends_at'] as $column) {
+            $fields[] = self::hasColumn($db, 'products', $column)
+                ? $prefix . $column
+                : 'NULL AS ' . $column;
+        }
+        return implode(', ', $fields);
+    }
+
+    private static function hasColumn(PDO $db, string $table, string $column): bool
+    {
+        $key = $table . '.' . $column;
+        if (array_key_exists($key, self::$columnCache)) return self::$columnCache[$key];
+        $query = $db->prepare('SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1');
+        $query->execute([$table, $column]);
+        return self::$columnCache[$key] = (bool)$query->fetchColumn();
     }
 
     private static function normalizeCustomizations(mixed $customizations): array

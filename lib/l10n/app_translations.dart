@@ -27,6 +27,11 @@ class AppTranslations {
       'Chicken': 'Manok',
       'Drinks': 'Inumin',
       'Sides': 'Mga Side',
+      'Discount Sale': 'Mga Sale',
+      'Limited-time deals': 'Mga alok na may takdang oras',
+      'Discount applies to selected option':
+          'Ilalapat ang diskuwento sa piniling opsyon',
+      'Starts soon': 'Magsisimula na',
       'Fries': 'Fries',
       'Popular picks': 'Patok na pagkain',
       'Browse menu': 'Tingnan ang menu',
@@ -37,6 +42,8 @@ class AppTranslations {
       'Loading menu…': 'Naglo-load ng menu…',
       'No products are available in this category yet.':
           'Wala pang produktong available sa kategoryang ito.',
+      'No sale items are available right now. Please check back later.':
+          'Wala pang sale items sa ngayon. Bumalik ulit mamaya.',
       'Try again': 'Subukan ulit',
       'Refresh menu': 'I-refresh ang menu',
       'Color themes': 'Mga tema ng kulay',
@@ -102,6 +109,11 @@ class AppTranslations {
       'Chicken': 'Manok',
       'Drinks': 'Ilimnon',
       'Sides': 'Mga Side',
+      'Discount Sale': 'Mga Sale',
+      'Limited-time deals': 'Mga deal nga limitado sa oras',
+      'Discount applies to selected option':
+          'I-apply ang discount sa napiling opsyon',
+      'Starts soon': 'Magsugod na',
       'Fries': 'Fries',
       'Popular picks': 'Mga paborito',
       'Browse menu': 'Tan-awa ang menu',
@@ -111,6 +123,8 @@ class AppTranslations {
       'Loading menu…': 'Nagkarga ang menu…',
       'No products are available in this category yet.':
           'Walay produkto karon niining kategorya.',
+      'No sale items are available right now. Please check back later.':
+          'Walay sale nga produkto karon. Balik unya.',
       'Try again': 'Sulayi pag-usab',
       'Refresh menu': 'I-refresh ang menu',
       'Color themes': 'Mga tema sa kolor',
@@ -179,6 +193,13 @@ class AppTranslations {
       'Chicken': 'Manok',
       'Drinks': 'Mainom',
       'Sides': 'Dagiti Side',
+      'Discount Sale': 'Dagiti Sale',
+      'Limited-time deals': 'Dagiti promo a limitado ti oras',
+      'Discount applies to selected option':
+          'Maipakat ti diskwento iti napili a opsyon',
+      'Starts soon': 'Rugianen',
+      'No sale items are available right now. Please check back later.':
+          'Awan pay produkto a naka-sale ita. Kitaen manen inton sumaruno.',
       'Popular picks': 'Dagiti paborito',
       'Browse menu': 'Kitaen ti menu',
       'Color themes': 'Dagiti tema ti kolor',
@@ -230,6 +251,13 @@ class AppTranslations {
       'Chicken': 'Manok',
       'Drinks': 'Irinmon',
       'Sides': 'Mga Side',
+      'Discount Sale': 'Mga Sale',
+      'Limited-time deals': 'Mga alok nga may takna la',
+      'Discount applies to selected option':
+          'I-aaplikar an discount ha pinili nga opsyon',
+      'Starts soon': 'Magtitikang na',
+      'No sale items are available right now. Please check back later.':
+          'Waray pa sale nga produkto yana. Balik la liwat.',
       'Popular picks': 'Mga paborito',
       'Browse menu': 'Kitaa an menu',
       'Color themes': 'Mga tema hin kolor',
@@ -281,6 +309,11 @@ class AppTranslations {
       'Chicken': 'Pollo',
       'Drinks': 'Bebidas',
       'Sides': 'Acompañamientos',
+      'Discount Sale': 'Ofertas',
+      'Limited-time deals': 'Ofertas por tiempo limitado',
+      'Discount applies to selected option':
+          'El descuento se aplica a la opción elegida',
+      'Starts soon': 'Comienza pronto',
       'Popular picks': 'Favoritos',
       'Browse menu': 'Ver menú',
       'Delicious food,\ndelivered fast': 'Comida deliciosa,\nentrega rápida',
@@ -288,6 +321,8 @@ class AppTranslations {
       'Loading menu…': 'Cargando menú…',
       'No products are available in this category yet.':
           'Todavía no hay productos en esta categoría.',
+      'No sale items are available right now. Please check back later.':
+          'No hay productos en oferta por ahora. Vuelve pronto.',
       'Try again': 'Intentar de nuevo',
       'Color themes': 'Temas de color',
       'Change language': 'Cambiar idioma',
@@ -353,12 +388,18 @@ class AppTranslations {
       'Chicken': 'チキン',
       'Drinks': 'ドリンク',
       'Sides': 'サイド',
+      'Discount Sale': 'セール',
+      'Limited-time deals': '期間限定のお得情報',
+      'Discount applies to selected option': '選択したオプションに割引が適用されます',
+      'Starts soon': 'まもなく開始',
       'Popular picks': '人気メニュー',
       'Browse menu': 'メニューを見る',
       'Delicious food,\ndelivered fast': 'おいしい料理を\nすばやくお届け',
       'Burgers, fries & drinks': 'バーガー、フライ、ドリンク',
       'Loading menu…': 'メニューを読み込み中…',
       'No products are available in this category yet.': 'このカテゴリーの商品はまだありません。',
+      'No sale items are available right now. Please check back later.':
+          '現在、セール商品はありません。また後でご確認ください。',
       'Try again': '再試行',
       'Color themes': 'カラーテーマ',
       'Change language': '言語を変更',
@@ -421,12 +462,18 @@ class AppTranslations {
       'Chicken': '치킨',
       'Drinks': '음료',
       'Sides': '사이드',
+      'Discount Sale': '할인 행사',
+      'Limited-time deals': '기간 한정 할인',
+      'Discount applies to selected option': '선택한 옵션에 할인이 적용됩니다',
+      'Starts soon': '곧 시작',
       'Popular picks': '인기 메뉴',
       'Browse menu': '메뉴 보기',
       'Delicious food,\ndelivered fast': '맛있는 음식을\n빠르게 배달해요',
       'Burgers, fries & drinks': '버거, 감자튀김, 음료',
       'Loading menu…': '메뉴 불러오는 중…',
       'No products are available in this category yet.': '이 카테고리에 아직 상품이 없습니다.',
+      'No sale items are available right now. Please check back later.':
+          '현재 할인 상품이 없습니다. 나중에 다시 확인해 주세요.',
       'Try again': '다시 시도',
       'Color themes': '색상 테마',
       'Change language': '언어 변경',

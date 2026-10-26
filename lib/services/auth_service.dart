@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -29,6 +30,7 @@ class AuthService extends ChangeNotifier {
   double _currentUserRewardPoints = 0;
   Uint8List? _currentUserProfileImage;
   String? _errorMessage;
+  Timer? _activityTimer;
 
   factory AuthService() => _instance;
 
@@ -146,6 +148,7 @@ class AuthService extends ChangeNotifier {
         await _storageService.saveUserAddress(_currentUserAddress!);
       }
       _isAuthenticated = true;
+      _startActivityHeartbeat();
     } catch (_) {
       // A transport, server, or local read error is not proof that the saved
       // credentials are invalid. Preserve the cached identity and try again
@@ -169,6 +172,37 @@ class AuthService extends ChangeNotifier {
     _currentUserCreatedAt = null;
     _currentUserRewardPoints = 0;
     _currentUserProfileImage = null;
+    _activityTimer?.cancel();
+    _activityTimer = null;
+  }
+
+  void _startActivityHeartbeat() {
+    _activityTimer?.cancel();
+    if (!_isAuthenticated ||
+        _currentUserRole != 'customer' ||
+        !_apiService.isConfigured) {
+      return;
+    }
+    unawaited(_sendActivityHeartbeat());
+    _activityTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) => unawaited(_sendActivityHeartbeat()),
+    );
+  }
+
+  Future<void> _sendActivityHeartbeat() async {
+    if (!_isAuthenticated || _currentUserRole != 'customer') return;
+    try {
+      await _apiService.post<Map<String, dynamic>>(
+        '/me/activity',
+        body: const {},
+        fromJson: (json) => json is Map<String, dynamic>
+            ? json
+            : throw const FormatException('Invalid activity response.'),
+      );
+    } catch (_) {
+      // Presence is best-effort and must not interrupt customer actions.
+    }
   }
 
   Future<void> _clearSavedSession() async {
@@ -285,6 +319,7 @@ class AuthService extends ChangeNotifier {
     _currentUserRewardPoints = rewardPoints;
     _currentUserProfileImage = profileImage;
     _isAuthenticated = true;
+    _startActivityHeartbeat();
     _errorMessage = null;
     notifyListeners();
     return true;
@@ -455,7 +490,22 @@ class AuthService extends ChangeNotifier {
 
   Future<void> logout() async {
     _errorMessage = null;
+    _activityTimer?.cancel();
+    _activityTimer = null;
     if (_isAuthenticated && _apiService.isConfigured) {
+      if (_currentUserRole == 'customer') {
+        try {
+          await _apiService.post<Map<String, dynamic>>(
+            '/me/activity',
+            body: const {'offline': true},
+            fromJson: (json) => json is Map<String, dynamic>
+                ? json
+                : throw const FormatException('Invalid activity response.'),
+          );
+        } catch (_) {
+          // Logout must still finish if presence tracking is unavailable.
+        }
+      }
       await _apiService.post<Map<String, dynamic>>(
         '/auth/logout',
         fromJson: (json) =>

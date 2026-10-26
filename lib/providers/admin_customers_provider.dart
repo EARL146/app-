@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import '../services/api_service.dart';
@@ -13,6 +15,8 @@ class Customer {
   final String address;
   final DateTime joinedDate;
   final bool isActive;
+  final bool isOnline;
+  final DateTime? lastSeenAt;
 
   const Customer({
     required this.id,
@@ -25,6 +29,8 @@ class Customer {
     required this.address,
     required this.joinedDate,
     this.isActive = true,
+    this.isOnline = false,
+    this.lastSeenAt,
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) => Customer(
@@ -39,7 +45,21 @@ class Customer {
     joinedDate:
         DateTime.tryParse(json['joined_at'] as String? ?? '') ?? DateTime.now(),
     isActive: json['is_active'] as bool? ?? true,
+    isOnline: json['is_online'] as bool? ?? false,
+    lastSeenAt: DateTime.tryParse(json['last_seen_at'] as String? ?? ''),
   );
+
+  String get activityLabel {
+    if (isOnline) return 'Online now';
+    if (lastSeenAt == null) return 'Offline · no recent activity';
+    final elapsed = DateTime.now().difference(lastSeenAt!.toLocal());
+    if (elapsed.inMinutes < 1) return 'Offline · just now';
+    if (elapsed.inHours < 1) return 'Offline · ${elapsed.inMinutes}m';
+    if (elapsed.inDays < 1) {
+      return 'Offline · ${elapsed.inHours}h ${elapsed.inMinutes % 60}m';
+    }
+    return 'Offline · ${elapsed.inDays}d ${elapsed.inHours % 24}h';
+  }
 }
 
 class AdminCustomersProvider extends ChangeNotifier {
@@ -48,17 +68,22 @@ class AdminCustomersProvider extends ChangeNotifier {
 
   final ApiService _apiService;
   final List<Customer> _customers = [];
+  final Map<String, Uint8List?> _photoCache = {};
+  final Map<String, Future<Uint8List?>> _photoRequests = {};
   String? _errorMessage;
   bool _isLoading = false;
   String? _successMessage;
   Customer? _selectedCustomer;
+  int? _reportedCustomerCount;
+  int _reportedOnlineCount = 0;
 
   List<Customer> get customers => List.unmodifiable(_customers);
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
   String? get successMessage => _successMessage;
   Customer? get selectedCustomer => _selectedCustomer;
-  int get totalCustomers => _customers.length;
+  int get totalCustomers => _reportedCustomerCount ?? _customers.length;
+  int get onlineCustomers => _reportedOnlineCount;
   int get activeCustomers =>
       _customers.where((customer) => customer.isActive).length;
   int get totalOrderCount =>
@@ -90,6 +115,12 @@ class AdminCustomersProvider extends ChangeNotifier {
           ..addAll(
             rows.whereType<Map<String, dynamic>>().map(Customer.fromJson),
           );
+        _reportedCustomerCount =
+            (response.data!['total_customers'] as num?)?.toInt() ??
+            _customers.length;
+        _reportedOnlineCount =
+            (response.data!['online_customers'] as num?)?.toInt() ??
+            _customers.where((customer) => customer.isOnline).length;
       } catch (_) {
         _errorMessage = 'The server returned an invalid customer list.';
       }
@@ -102,6 +133,37 @@ class AdminCustomersProvider extends ChangeNotifier {
     _errorMessage = null;
     _successMessage = null;
     notifyListeners();
+  }
+
+  Future<Uint8List?> loadCustomerPhoto(String customerId) async {
+    if (_photoCache.containsKey(customerId)) return _photoCache[customerId];
+    final pending = _photoRequests[customerId];
+    if (pending != null) return pending;
+    final request = _fetchCustomerPhoto(customerId);
+    _photoRequests[customerId] = request;
+    try {
+      return await request;
+    } finally {
+      _photoRequests.remove(customerId);
+    }
+  }
+
+  Future<Uint8List?> _fetchCustomerPhoto(String customerId) async {
+    final response = await _apiService.get<Map<String, dynamic>>(
+      '/admin/customers/${Uri.encodeComponent(customerId)}/photo',
+      fromJson: _asMap,
+    );
+    final encoded = response.data?['image_base64'];
+    Uint8List? bytes;
+    if (response.success && encoded is String && encoded.isNotEmpty) {
+      try {
+        bytes = Uint8List.fromList(base64Decode(encoded));
+      } on FormatException {
+        bytes = null;
+      }
+    }
+    _photoCache[customerId] = bytes;
+    return bytes;
   }
 
   void selectCustomer(Customer customer) {
@@ -176,6 +238,8 @@ class AdminCustomersProvider extends ChangeNotifier {
       address: customer.address,
       joinedDate: customer.joinedDate,
       isActive: !customer.isActive,
+      isOnline: customer.isOnline,
+      lastSeenAt: customer.lastSeenAt,
     );
     _customers[index] = updated;
     if (_selectedCustomer?.id == customerId) _selectedCustomer = updated;

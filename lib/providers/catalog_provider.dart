@@ -13,25 +13,50 @@ class CatalogProvider extends ChangeNotifier {
   List<Product> _products = [];
   bool _isLoading = false;
   bool _hasAttemptedLoad = false;
+  bool _forceReloadRequested = false;
   String? _errorMessage;
 
   List<Product> get products => List.unmodifiable(_products);
-  List<String> get categories => [
-    'All',
-    ...(_products
-        .map((product) => product.category)
-        .whereType<String>()
-        .toSet()
-        .toList()
-      ..sort()),
-    if (_products.any((product) => product.discountPercent > 0))
-      'Discount Sale',
-  ];
+  List<String> get categories {
+    final categories =
+        _products
+            .map((product) => product.category?.trim())
+            .whereType<String>()
+            .where((category) => category.isNotEmpty)
+            .where((category) => category.toLowerCase() != 'discount sale')
+            .toSet()
+            .toList()
+          ..sort();
+    return ['All', ...categories, 'Discount Sale'];
+  }
+
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  void upsertProduct(Product product) {
+    final index = _products.indexWhere((item) => item.id == product.id);
+    if (!product.available || product.stockQuantity <= 0) {
+      if (index >= 0) {
+        _products.removeAt(index);
+        notifyListeners();
+      }
+      return;
+    }
+
+    if (index < 0) {
+      _products.insert(0, product);
+    } else {
+      _products[index] = product;
+    }
+    notifyListeners();
+  }
+
   Future<void> loadProducts({bool force = false}) async {
-    if (_isLoading || (!force && _hasAttemptedLoad)) return;
+    if (_isLoading) {
+      if (force) _forceReloadRequested = true;
+      return;
+    }
+    if (!force && _hasAttemptedLoad) return;
     _isLoading = true;
     _hasAttemptedLoad = true;
     _errorMessage = null;
@@ -67,6 +92,10 @@ class CatalogProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+      if (_forceReloadRequested) {
+        _forceReloadRequested = false;
+        unawaited(loadProducts(force: true));
+      }
     }
   }
 }

@@ -12,8 +12,11 @@ import '../../providers/cart_provider.dart';
 import '../../providers/catalog_provider.dart';
 import '../../widgets/animated_brand_button.dart';
 import '../../widgets/food_image.dart';
+import '../../widgets/product_image_carousel.dart';
+import '../../widgets/discount_sale_badge.dart';
 import '../../widgets/favorite_button.dart';
 import '../../widgets/customer_account_prompt.dart';
+import '../../widgets/discount_sale_section.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key, this.initialCategory = 'All'});
@@ -30,9 +33,12 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
+    final menuCategories = catalog.categories
+        .where((category) => category != 'Discount Sale')
+        .toList(growable: false);
     final filteredProducts = _selectedCategory == 'Discount Sale'
         ? catalog.products
-              .where((product) => product.discountPercent > 0)
+              .where((product) => product.hasCurrentOrUpcomingDiscount)
               .toList()
         : _selectedCategory == 'All'
         ? catalog.products
@@ -152,10 +158,10 @@ class _MenuScreenState extends State<MenuScreen> {
                       child: ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 18),
                         scrollDirection: Axis.horizontal,
-                        itemCount: catalog.categories.length,
+                        itemCount: menuCategories.length,
                         separatorBuilder: (_, _) => const SizedBox(width: 8),
                         itemBuilder: (context, index) {
-                          final category = catalog.categories[index];
+                          final category = menuCategories[index];
                           final selected = category == _selectedCategory;
                           return AnimatedPressScale(
                             child: ChoiceChip(
@@ -187,7 +193,18 @@ class _MenuScreenState extends State<MenuScreen> {
                       ),
                     ),
                   ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 6)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: DiscountSaleSection(
+                        products: catalog.products,
+                        isLoading: catalog.isLoading,
+                        onSeeAll: () => _selectCategory('Discount Sale'),
+                      ),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 14)),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(18, 4, 18, 8),
@@ -226,6 +243,9 @@ class _MenuScreenState extends State<MenuScreen> {
                                 catalog.errorMessage ??
                                     (catalog.isLoading
                                         ? 'Loading menu…'.tr
+                                        : _selectedCategory == 'Discount Sale'
+                                        ? 'No sale items are available right now. Please check back later.'
+                                              .tr
                                         : 'No products are available in this category yet.'
                                               .tr),
                                 textAlign: TextAlign.center,
@@ -651,11 +671,18 @@ class MenuProductCard extends StatelessWidget {
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: FoodImage(
-                        imageUrl: product.imageUrl,
-                        category: product.category,
-                        borderRadius: 12,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: ProductImageCarousel(
+                          images: product.galleryImages,
+                          category: product.category,
+                        ),
                       ),
+                    ),
+                    Positioned(
+                      left: 6,
+                      bottom: 6,
+                      child: DiscountSaleBadge(product: product),
                     ),
                     if (product.rating != null)
                       Positioned(

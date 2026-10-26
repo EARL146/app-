@@ -3,28 +3,45 @@ class OrderItem {
   final String productId;
   final String productName;
   final double price;
+  final double originalUnitPrice;
+  final double saleDiscountPercent;
+  final double saleDiscountAmount;
   final int quantity;
   final String? productImage;
+  final String? productCategory;
   final Map<String, dynamic> customizations;
 
   OrderItem({
     required this.productId,
     required this.productName,
     required this.price,
+    this.originalUnitPrice = 0,
+    this.saleDiscountPercent = 0,
+    this.saleDiscountAmount = 0,
     required this.quantity,
     this.productImage,
+    this.productCategory,
     this.customizations = const {},
   });
 
   double get subtotal => price * quantity;
+  double get originalSubtotal => originalUnitPrice * quantity;
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
+    final unitPrice = ((json['price'] ?? json['unit_price']) as num).toDouble();
     return OrderItem(
       productId: json['product_id'].toString(),
       productName: json['product_name'] as String? ?? 'Product',
-      price: ((json['price'] ?? json['unit_price']) as num).toDouble(),
+      price: unitPrice,
+      originalUnitPrice:
+          (json['original_unit_price'] as num?)?.toDouble() ?? unitPrice,
+      saleDiscountPercent:
+          (json['sale_discount_percent'] as num?)?.toDouble() ?? 0,
+      saleDiscountAmount:
+          (json['sale_discount_amount'] as num?)?.toDouble() ?? 0,
       quantity: (json['quantity'] as num).toInt(),
       productImage: (json['product_image'] ?? json['image_url']) as String?,
+      productCategory: json['product_category'] as String?,
       customizations: json['customizations'] is Map<String, dynamic>
           ? json['customizations'] as Map<String, dynamic>
           : const {},
@@ -36,8 +53,12 @@ class OrderItem {
       'product_id': productId,
       'product_name': productName,
       'price': price,
+      'original_unit_price': originalUnitPrice,
+      'sale_discount_percent': saleDiscountPercent,
+      'sale_discount_amount': saleDiscountAmount,
       'quantity': quantity,
       'product_image': productImage,
+      'product_category': productCategory,
       'customizations': customizations,
     };
   }
@@ -60,6 +81,8 @@ enum OrderStatus {
 class Order {
   final String id;
   final String userId;
+  final String customerName;
+  final String customerPhone;
   final List<OrderItem> items;
   final double subtotal;
   final double tax;
@@ -75,6 +98,8 @@ class Order {
   Order({
     required this.id,
     required this.userId,
+    this.customerName = '',
+    this.customerPhone = '',
     required this.items,
     required this.subtotal,
     required this.tax,
@@ -119,6 +144,8 @@ class Order {
     return Order(
       id: json['id'].toString(),
       userId: json['user_id']?.toString() ?? '',
+      customerName: json['customer_name'] as String? ?? '',
+      customerPhone: json['phone'] as String? ?? '',
       items:
           (json['items'] as List<dynamic>?)
               ?.map((e) => OrderItem.fromJson(e as Map<String, dynamic>))
@@ -149,6 +176,8 @@ class Order {
     return {
       'id': id,
       'user_id': userId,
+      'customer_name': customerName,
+      'phone': customerPhone,
       'items': items.map((e) => e.toJson()).toList(),
       'subtotal': subtotal,
       'tax': tax,

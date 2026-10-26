@@ -11,6 +11,7 @@ import '../../widgets/animated_brand_button.dart';
 import '../../widgets/favorite_button.dart';
 import '../../widgets/food_image.dart';
 import '../../widgets/customer_account_prompt.dart';
+import '../../widgets/product_image_carousel.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   const ProductDetailsScreen({required this.product, super.key});
@@ -163,6 +164,11 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                       key: ValueKey(_drinkBrand),
                                       brand: _drinkBrand,
                                     ),
+                                  )
+                                else if (product.galleryImages.length > 1)
+                                  ProductImageCarousel(
+                                    images: product.galleryImages,
+                                    category: product.category,
                                   )
                                 else
                                   FoodImage(

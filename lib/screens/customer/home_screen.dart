@@ -14,6 +14,9 @@ import '../../widgets/animated_brand_button.dart';
 import '../../widgets/brand_logo.dart';
 import '../../widgets/customer_account_prompt.dart';
 import '../../widgets/food_image.dart';
+import '../../widgets/product_image_carousel.dart';
+import '../../widgets/discount_sale_badge.dart';
+import '../../widgets/discount_sale_section.dart';
 import 'menu_screen.dart';
 import 'order_history_screen.dart';
 import 'profile_screen.dart';
@@ -376,12 +379,10 @@ class _HomeTab extends StatelessWidget {
             .map((product) => product.category?.trim())
             .whereType<String>()
             .where((category) => category.isNotEmpty)
+            .where((category) => category.toLowerCase() != 'discount sale')
             .toSet()
             .toList()
           ..sort();
-    if (products.any((product) => product.discountPercent > 0)) {
-      categories.insert(0, 'Discount Sale');
-    }
     final auth = context.watch<AuthService>();
     final deliveryAddress = auth.currentUserAddress?.trim().isNotEmpty == true
         ? auth.currentUserAddress!
@@ -692,6 +693,14 @@ class _HomeTab extends StatelessWidget {
                         },
                       ),
                     ),
+                  const SizedBox(height: 12),
+                  DiscountSaleSection(
+                    products: products,
+                    isLoading: catalog.isLoading,
+                    onSeeAll: () =>
+                        Navigator.of(context)
+                            .pushNamed('/menu', arguments: 'Discount Sale'),
+                  ),
                   const SizedBox(height: 18),
                   _SectionHeading(
                     title: 'From the menu',
@@ -3055,11 +3064,18 @@ class _ProductCard extends StatelessWidget {
                 child: Stack(
                   children: [
                     Positioned.fill(
-                      child: FoodImage(
-                        imageUrl: product.imageUrl,
-                        category: product.category,
-                        borderRadius: 12,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: ProductImageCarousel(
+                          images: product.galleryImages,
+                          category: product.category,
+                        ),
                       ),
+                    ),
+                    Positioned(
+                      left: 7,
+                      bottom: 7,
+                      child: DiscountSaleBadge(product: product),
                     ),
                     if (product.rating != null)
                       Positioned(

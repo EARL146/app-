@@ -75,10 +75,13 @@ class AdminProductsProvider extends ChangeNotifier {
     required double price,
     required String category,
     required String imageUrl,
+    List<String> imageUrls = const [],
     int stockQuantity = 0,
     bool available = true,
     double discountPercent = 0,
     String discountScope = 'all',
+    DateTime? discountStartsAt,
+    DateTime? discountEndsAt,
   }) async {
     if (!_validate(name, description, price, category, stockQuantity)) {
       return false;
@@ -91,10 +94,13 @@ class AdminProductsProvider extends ChangeNotifier {
       price: price,
       category: category,
       imageUrl: imageUrl,
+      imageUrls: imageUrls,
       stockQuantity: stockQuantity,
       available: available,
       discountPercent: discountPercent,
       discountScope: discountScope,
+      discountStartsAt: discountStartsAt,
+      discountEndsAt: discountEndsAt,
     );
   }
 
@@ -105,10 +111,14 @@ class AdminProductsProvider extends ChangeNotifier {
     required double price,
     required String category,
     required String imageUrl,
+    List<String>? imageUrls,
     int? stockQuantity,
     bool available = true,
-    double discountPercent = 0,
-    String discountScope = 'all',
+    double? discountPercent,
+    String? discountScope,
+    DateTime? discountStartsAt,
+    DateTime? discountEndsAt,
+    bool showSuccessMessage = true,
   }) async {
     final matches = _products.where((product) => product.id == productId);
     final old = matches.isEmpty ? null : matches.first;
@@ -122,10 +132,18 @@ class AdminProductsProvider extends ChangeNotifier {
       price: price,
       category: category,
       imageUrl: imageUrl,
+      imageUrls: imageUrls ?? old?.galleryImages ?? const [],
       stockQuantity: stock,
       available: available,
-      discountPercent: discountPercent,
-      discountScope: discountScope,
+      discountPercent: discountPercent ?? old?.discountPercent ?? 0,
+      discountScope: discountScope ?? old?.discountScope ?? 'all',
+      discountStartsAt: discountPercent == null
+          ? discountStartsAt ?? old?.discountStartsAt
+          : discountStartsAt,
+      discountEndsAt: discountPercent == null
+          ? discountEndsAt ?? old?.discountEndsAt
+          : discountEndsAt,
+      showSuccessMessage: showSuccessMessage,
     );
   }
 
@@ -160,10 +178,14 @@ class AdminProductsProvider extends ChangeNotifier {
     required double price,
     required String category,
     required String imageUrl,
+    required List<String> imageUrls,
     required int stockQuantity,
     required bool available,
     required double discountPercent,
     required String discountScope,
+    required DateTime? discountStartsAt,
+    required DateTime? discountEndsAt,
+    bool showSuccessMessage = true,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -175,10 +197,13 @@ class AdminProductsProvider extends ChangeNotifier {
       'price': price,
       'category': category.trim(),
       'image_url': imageUrl.trim(),
+      'image_urls': imageUrls.take(3).toList(growable: false),
       'stock_quantity': stockQuantity,
       'available': available,
       'discount_percent': discountPercent,
       'discount_scope': discountScope,
+      'discount_starts_at': discountStartsAt?.toUtc().toIso8601String(),
+      'discount_ends_at': discountEndsAt?.toUtc().toIso8601String(),
     };
     final response = create
         ? await _apiService.post<Map<String, dynamic>>(
@@ -206,7 +231,11 @@ class AdminProductsProvider extends ChangeNotifier {
       _products[index] = product;
     }
     _selectedProduct = product;
-    _successMessage = create ? 'Product added.' : 'Product updated.';
+    _successMessage = showSuccessMessage
+        ? create
+              ? 'Product added.'
+              : 'Product updated.'
+        : null;
     _isLoading = false;
     notifyListeners();
     return true;
@@ -243,6 +272,9 @@ class AdminProductsProvider extends ChangeNotifier {
         stockQuantity: _products[index].stockQuantity,
         available: false,
         createdAt: _products[index].createdAt,
+        imageUrls: _products[index].imageUrls,
+        discountStartsAt: _products[index].discountStartsAt,
+        discountEndsAt: _products[index].discountEndsAt,
       );
       _selectedProduct = null;
     }
@@ -262,6 +294,7 @@ class AdminProductsProvider extends ChangeNotifier {
       price: product.price,
       category: product.category ?? 'Burgers',
       imageUrl: product.imageUrl ?? '',
+      imageUrls: product.galleryImages,
       stockQuantity: product.stockQuantity,
       available: !product.available,
     );

@@ -40,13 +40,13 @@ The Flutter client calls the API paths below. PHP/PDO implements authentication,
 | `GET /me/favorites` | Bearer access token | Returns `{favorites:[product objects]}` for the authenticated user. |
 | `POST /me/favorites` | Bearer access token | `{product_id}`; duplicate favorites are ignored. |
 | `DELETE /me/favorites/{productId}` | Bearer access token | Deletes only the authenticated user's favorite. |
-| `POST /orders` | Customer bearer access token | Customer name/address/phone, `payment_method:"cod"`, notes, and product/quantity items. Burgers may include `customizations:{size,toppings}`; the server validates and prices options, reloads stock, and commits the order transactionally. Requires migration 003 for customization persistence. |
-| `GET /me/orders` | Bearer access token | Returns only the authenticated customer's orders and line items. |
+| `POST /orders` | Customer bearer access token | Customer name/address/phone, `payment_method:"cod"`, notes, and product/quantity items. The server reloads product prices, active timed discounts, stock, and customizations from MySQL before calculating subtotal, tax, and total. Requires migration 003 for customization persistence and migration 007 to snapshot each sale's original price, applied percentage, and savings. |
+| `GET /me/orders` | Bearer access token | Returns only the authenticated customer's orders and line items, including the paid unit price and (when migration 007 is applied) original price and timed-sale savings. |
 | `PUT /me/orders/{id}/cancel` | Bearer access token | Cancels a pending order and restores stock transactionally. |
 | `POST /contact` | Public; rate limited | Saves a validated support request to the SQL inbox. Requires migration 003. |
 | `GET /admin/dashboard` | Admin bearer access token | Returns SQL order, revenue, product, and customer totals plus the last seven days of non-cancelled order value. Requires migration 003. |
 | `GET /admin/system-status` | Admin bearer access token | Checks database reachability and whether the migration 003 workflow schema is installed; does not return credentials or customer data. |
-| `GET /admin/orders` | Admin bearer access token | Returns recent orders and line items. |
+| `GET /admin/orders` | Admin bearer access token | Returns recent orders and line items, including timed-sale snapshots when migration 007 is applied. |
 | `PUT /admin/orders/{id}` | Admin bearer access token | Advances order status through the allowed lifecycle; cancellation restores stock. |
 | `GET /admin/products` | Admin bearer access token | Returns all products, including unavailable items and stock quantities. |
 | `POST /admin/products` | Admin bearer access token | Creates a catalog item with server-validated fields and stock. |

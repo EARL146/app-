@@ -22,6 +22,8 @@ class AdminDashboardProvider extends ChangeNotifier {
   int availableProducts = 0;
   List<double> dailyRevenue = const [];
   List<String> dailyRevenueLabels = const [];
+  double get sevenDayOrderValue =>
+      dailyRevenue.fold<double>(0, (total, value) => total + value);
 
   Future<void> load() async {
     if (isLoading) return;
