@@ -37,14 +37,45 @@ class CustomerHomeScreen extends StatefulWidget {
   State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
 }
 
-class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+class _CustomerHomeScreenState extends State<CustomerHomeScreen>
+    with WidgetsBindingObserver {
   late int _selectedIndex;
+  Timer? _catalogRefreshTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _selectedIndex =
         widget.initialTabIndex ?? (widget.openMenuInitially ? 1 : 0);
+    // Customer sessions can stay open while an admin updates the shared
+    // catalog from another device or browser. Keep the visible catalog in
+    // sync with the database without requiring a sign-out or app restart.
+    _catalogRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _refreshCatalog(),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshCatalog());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshCatalog();
+  }
+
+  void _refreshCatalog() {
+    if (!mounted) return;
+    final catalog = context.read<CatalogProvider>();
+    if (!catalog.isLoading) {
+      unawaited(catalog.loadProducts(force: true));
+    }
+  }
+
+  @override
+  void dispose() {
+    _catalogRefreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   List<Widget> get _screens => [
@@ -77,7 +108,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           currentIndex: _selectedIndex,
           elevation: 0,
           backgroundColor: Colors.transparent,
-          onTap: (index) => setState(() => _selectedIndex = index),
+          onTap: (index) {
+            setState(() => _selectedIndex = index);
+            if (index <= 1) _refreshCatalog();
+          },
           items: [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
@@ -3034,6 +3068,11 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final originalPrice = product.discountTargetBasePrice;
+    final salePricePreview = product.previewDiscountPrice(originalPrice);
+    final displayPrice =
+        salePricePreview ?? product.applyDiscount(originalPrice);
+
     return AnimatedPressScale(
       child: InkWell(
         onTap: () =>
@@ -3126,13 +3165,31 @@ class _ProductCard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      '₱${product.applyDiscount(product.price).toStringAsFixed(0)}',
-                      style: TextStyle(
-                        color: AppColors.brandOrange,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
-                      ),
+                    child: Row(
+                      children: [
+                        Text(
+                          '₱${displayPrice.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            color: AppColors.brandOrange,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (salePricePreview != null) ...[
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '₱${originalPrice.toStringAsFixed(0)}',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 9,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   Consumer<CartProvider>(

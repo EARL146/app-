@@ -52,6 +52,37 @@ void main() {
     expect(cart.errorMessage, 'This item is currently unavailable.');
   });
 
+  test('sale price reaches the cart without changing catalog price', () {
+    final loadedFries = Product(
+      id: 'loaded-fries-sale',
+      name: 'Loaded Fries',
+      description: 'Seasoned fries',
+      price: 180,
+      discountPercent: 90,
+      discountScope: 'size:Small',
+      discountStartsAt: DateTime.now().toUtc().add(const Duration(days: 5)),
+      discountEndsAt: DateTime.now().toUtc().add(const Duration(days: 6)),
+      category: 'Sides',
+      createdAt: DateTime(2026),
+    );
+
+    cart.addItem(
+      loadedFries,
+      unitPrice: 170,
+      displayName: 'Small Loaded Fries',
+      customizations: const {'size': 'Small'},
+    );
+
+    expect(loadedFries.price, 180);
+    expect(loadedFries.discountTargetBasePrice, 170);
+    expect(
+      loadedFries.previewDiscountPriceForSelection(170, size: 'Small'),
+      17,
+    );
+    expect(cart.items.single.price, 17);
+    expect(cart.subtotal, 17);
+  });
+
   test(
     'customized versions stay separate and merge regardless of topping order',
     () {

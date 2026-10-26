@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../constants/app_colors.dart';
 import '../../navigation/app_routes.dart';
@@ -20,6 +21,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
 
   bool _editing = false;
   bool _saving = false;
+  bool _savingPhoto = false;
   bool _changingPassword = false;
 
   @override
@@ -147,16 +149,52 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 31,
-            backgroundColor: Colors.white,
-            child: Text(
-              _initials(name),
-              style: TextStyle(
-                color: AppColors.brandOrangeDark,
-                fontWeight: FontWeight.w900,
-                fontSize: 20,
-              ),
+          GestureDetector(
+            onTap: _savingPhoto ? null : _pickProfileImage,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                CircleAvatar(
+                  radius: 34,
+                  backgroundColor: Colors.white,
+                  backgroundImage: auth.currentUserProfileImage == null
+                      ? null
+                      : MemoryImage(auth.currentUserProfileImage!),
+                  child: auth.currentUserProfileImage == null
+                      ? Text(
+                          _initials(name),
+                          style: TextStyle(
+                            color: AppColors.brandOrangeDark,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 20,
+                          ),
+                        )
+                      : null,
+                ),
+                Positioned(
+                  right: -2,
+                  bottom: -1,
+                  child: Container(
+                    width: 25,
+                    height: 25,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.brandOrange),
+                    ),
+                    child: _savingPhoto
+                        ? const Padding(
+                            padding: EdgeInsets.all(5),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            Icons.camera_alt_rounded,
+                            size: 14,
+                            color: AppColors.brandOrange,
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 14),
@@ -456,6 +494,37 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     _phoneController.text = auth.currentUserPhone ?? '';
     _branchController.text = auth.currentUserBranch ?? '';
     setState(() => _editing = true);
+  }
+
+  Future<void> _pickProfileImage() async {
+    final selection = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+      withData: true,
+    );
+    if (selection == null || selection.files.isEmpty || !mounted) return;
+    final bytes = selection.files.single.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not read that image. Try another file.')),
+      );
+      return;
+    }
+
+    setState(() => _savingPhoto = true);
+    final auth = context.read<AuthService>();
+    final saved = await auth.updateProfileImage(bytes);
+    if (!mounted) return;
+    setState(() => _savingPhoto = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          saved
+              ? 'Profile photo saved to your account.'
+              : auth.errorMessage ?? 'Unable to save your profile photo.',
+        ),
+      ),
+    );
   }
 
   void _cancelEditing() => setState(() => _editing = false);

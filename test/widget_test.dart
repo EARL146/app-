@@ -13,6 +13,7 @@ import 'package:burger_bites/screens/customer/theme_screen.dart';
 import 'package:burger_bites/navigation/app_router.dart';
 import 'package:burger_bites/providers/admin_dashboard_provider.dart';
 import 'package:burger_bites/providers/admin_orders_provider.dart';
+import 'package:burger_bites/providers/app_preferences_provider.dart';
 import 'package:burger_bites/providers/cart_provider.dart';
 import 'package:burger_bites/providers/catalog_provider.dart';
 import 'package:burger_bites/providers/customer_orders_provider.dart';
@@ -20,13 +21,18 @@ import 'package:burger_bites/providers/favorites_provider.dart';
 import 'package:burger_bites/models/product_model.dart';
 import 'package:burger_bites/services/api_service.dart';
 import 'package:burger_bites/services/auth_service.dart';
+import 'package:burger_bites/services/storage_service.dart';
 import 'package:burger_bites/screens/customer/settings_screen.dart';
 import 'package:burger_bites/screens/customer/contact_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
+  });
   testWidgets('fresh startup opens the menu after the burger intro', (
     WidgetTester tester,
   ) async {
@@ -142,7 +148,23 @@ void main() {
   testWidgets('theme palette selection keeps ListTile ink visible', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: ThemeScreen()));
+    final auth = AuthService();
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthService>.value(value: auth),
+          ChangeNotifierProvider(create: (_) => CatalogProvider()),
+          ChangeNotifierProvider(
+            create: (_) => AppPreferencesProvider(
+              authService: auth,
+              apiService: ApiService(),
+              storageService: StorageService(),
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: ThemeScreen()),
+      ),
+    );
     await tester.pump();
 
     await tester.tap(find.text('Sizzling Crimson'));
@@ -176,16 +198,18 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(_customerHomeHarness(AuthService()));
-    await tester.pump();
-    await tester.scrollUntilVisible(
-      find.text('Sign in to view your order history.'),
-      400,
-      scrollable: find.byType(Scrollable).first,
-    );
+    final auth = AuthService.forTesting();
+    await auth.initialization;
+    addTearDown(auth.dispose);
 
-    expect(find.text('Sign in to view your order history.'), findsOneWidget);
-    expect(find.text('Your saved orders will appear here.'), findsNothing);
+    await tester.pumpWidget(_customerHomeHarness(auth));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.receipt_long_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Sign in to see your orders'), findsOneWidget);
+    expect(find.text('No orders yet'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -235,6 +259,14 @@ void main() {
       MultiProvider(
         providers: [
           ChangeNotifierProvider<AuthService>.value(value: auth),
+          ChangeNotifierProvider(create: (_) => CatalogProvider()),
+          ChangeNotifierProvider(
+            create: (_) => AppPreferencesProvider(
+              authService: auth,
+              apiService: ApiService(),
+              storageService: StorageService(),
+            ),
+          ),
           ChangeNotifierProvider(
             create: (_) => CartProvider(authService: auth),
           ),
@@ -303,11 +335,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(_adminHomeHarness());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Live account totals'), findsNothing);
     expect(find.text('No orders yet'), findsNothing);
-    expect(find.text('SQL totals unavailable'), findsOneWidget);
+    expect(find.text('—'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
@@ -428,6 +461,13 @@ Widget _customerHomeHarness(
 }) => MultiProvider(
   providers: [
     ChangeNotifierProvider<AuthService>.value(value: auth),
+    ChangeNotifierProvider(
+      create: (_) => AppPreferencesProvider(
+        authService: auth,
+        apiService: ApiService(),
+        storageService: StorageService(),
+      ),
+    ),
     ChangeNotifierProvider(create: (_) => CatalogProvider()),
     ChangeNotifierProvider(create: (_) => CartProvider(authService: auth)),
     ChangeNotifierProvider(create: (_) => CustomerOrdersProvider(auth)),

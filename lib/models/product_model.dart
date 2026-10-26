@@ -1,4 +1,7 @@
-/// Product model representing food items in the menu
+import '../constants/drink_options.dart';
+import '../constants/fries_options.dart';
+
+/// Product model representing food items in the menu.
 class Product {
   final String id;
   final String name;
@@ -99,20 +102,13 @@ class Product {
   bool get hasActiveDiscount {
     if (discountPercent <= 0) return false;
     final now = DateTime.now().toUtc();
-    final starts = discountStartsAt?.toUtc();
     final ends = discountEndsAt?.toUtc();
-    return (starts == null || !now.isBefore(starts)) &&
-        (ends == null || now.isBefore(ends));
+    return ends == null || now.isBefore(ends);
   }
 
-  bool get hasCurrentOrUpcomingDiscount {
-    if (discountPercent <= 0) return false;
-    final now = DateTime.now().toUtc();
-    return discountEndsAt == null || now.isBefore(discountEndsAt!.toUtc());
-  }
+  bool get hasCurrentOrUpcomingDiscount => hasActiveDiscount;
 
-  bool discountApplies({String size = 'Regular', String? drinkBrand}) {
-    if (!hasActiveDiscount) return false;
+  bool discountMatchesSelection({String size = 'Regular', String? drinkBrand}) {
     if (discountScope == 'all') return true;
     if (discountScope.startsWith('size:')) {
       return discountScope.substring(5) == size;
@@ -121,6 +117,48 @@ class Product {
       return discountScope.substring(6) == drinkBrand;
     }
     return false;
+  }
+
+  double get discountTargetBasePrice {
+    if (!discountScope.startsWith('size:')) return price;
+    final size = discountScope.substring(5);
+    final normalizedCategory = category?.trim().toLowerCase();
+    if (normalizedCategory == 'drinks') return DrinkOptions.priceForSize(size);
+    if (FriesOptions.isFries(category, name)) {
+      return FriesOptions.priceForSize(size);
+    }
+    if (normalizedCategory == 'burgers') {
+      return price +
+          switch (size) {
+            'Large' => 80.0,
+            'Double' => 120.0,
+            _ => 0.0,
+          };
+    }
+    return price;
+  }
+
+  bool discountApplies({String size = 'Regular', String? drinkBrand}) =>
+      hasActiveDiscount &&
+      discountMatchesSelection(size: size, drinkBrand: drinkBrand);
+
+  /// Returns the sale price for display against the catalog price. Cart and
+  /// checkout use [applyDiscount] to enforce the selected size or brand.
+  double? previewDiscountPrice(double amount) {
+    if (!hasCurrentOrUpcomingDiscount) return null;
+    return amount * (100 - discountPercent) / 100;
+  }
+
+  double? previewDiscountPriceForSelection(
+    double amount, {
+    String size = 'Regular',
+    String? drinkBrand,
+  }) {
+    if (!hasCurrentOrUpcomingDiscount ||
+        !discountMatchesSelection(size: size, drinkBrand: drinkBrand)) {
+      return null;
+    }
+    return previewDiscountPrice(amount);
   }
 
   double applyDiscount(

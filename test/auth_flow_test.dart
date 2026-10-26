@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:burger_bites/navigation/app_router.dart';
+import 'package:burger_bites/providers/app_preferences_provider.dart';
 import 'package:burger_bites/providers/cart_provider.dart';
 import 'package:burger_bites/providers/catalog_provider.dart';
 import 'package:burger_bites/providers/customer_orders_provider.dart';
 import 'package:burger_bites/screens/customer/order_history_screen.dart';
 import 'package:burger_bites/services/api_service.dart';
 import 'package:burger_bites/services/auth_service.dart';
+import 'package:burger_bites/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,6 +51,7 @@ void main() {
   });
 
   tearDown(() {
+    auth.dispose();
     if (previousHttpClient != null) {
       ApiService().replaceHttpClientForTesting(previousHttpClient!);
     }
@@ -68,8 +71,17 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
 
         await tester.pumpWidget(
-          ChangeNotifierProvider<AuthService>.value(
-            value: auth,
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider<AuthService>.value(value: auth),
+              ChangeNotifierProvider<AppPreferencesProvider>(
+                create: (_) => AppPreferencesProvider(
+                  authService: auth,
+                  apiService: ApiService(),
+                  storageService: StorageService(),
+                ),
+              ),
+            ],
             child: MaterialApp(
               onGenerateRoute: AppRouter.generateRoute,
               home: _FlowHarness(startRoute: flow.startRoute),
@@ -145,16 +157,28 @@ void main() {
 
     for (final item in cases) {
       await tester.pumpWidget(
-        MaterialApp(
-          key: ValueKey(item.route),
-          onGenerateRoute: AppRouter.generateRoute,
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: TextButton(
-                onPressed: () =>
-                    Navigator.of(context)
-                        .pushNamed(item.route, arguments: item.arguments),
-                child: Text(item.label),
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AuthService>.value(value: auth),
+            ChangeNotifierProvider<AppPreferencesProvider>(
+              create: (_) => AppPreferencesProvider(
+                authService: auth,
+                apiService: ApiService(),
+                storageService: StorageService(),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            key: ValueKey(item.route),
+            onGenerateRoute: AppRouter.generateRoute,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () =>
+                      Navigator.of(context)
+                          .pushNamed(item.route, arguments: item.arguments),
+                  child: Text(item.label),
+                ),
               ),
             ),
           ),

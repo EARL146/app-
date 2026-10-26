@@ -8,6 +8,7 @@ import '../../providers/admin_dashboard_provider.dart';
 import '../../providers/admin_orders_provider.dart';
 import '../../widgets/admin_page_frame.dart';
 import '../../widgets/animated_brand_button.dart';
+import '../../widgets/brand_logo.dart';
 import '../../widgets/food_image.dart';
 
 class AdminHomeScreen extends StatefulWidget {
@@ -790,44 +791,13 @@ class _DashboardFoodMarkState extends State<_DashboardFoodMark>
   Widget build(BuildContext context) {
     return ScaleTransition(
       scale: Tween<double>(
-        begin: .94,
-        end: 1.04,
+        begin: .97,
+        end: 1.02,
       ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut)),
-      child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: .68),
-          borderRadius: BorderRadius.circular(19),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Positioned(
-              left: 7,
-              top: 9,
-              child: Icon(
-                Icons.local_drink_rounded,
-                size: 20,
-                color: AppColors.info,
-              ),
-            ),
-            Positioned(
-              right: 7,
-              top: 10,
-              child: Icon(
-                Icons.fastfood_rounded,
-                size: 20,
-                color: AppColors.success,
-              ),
-            ),
-            Icon(
-              Icons.lunch_dining_rounded,
-              size: 35,
-              color: AppColors.brandOrange,
-            ),
-          ],
-        ),
+      child: const SizedBox(
+        width: 82,
+        height: 82,
+        child: BrandLogo(width: 82, height: 82),
       ),
     );
   }

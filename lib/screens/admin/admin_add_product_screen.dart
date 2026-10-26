@@ -35,7 +35,6 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   bool _hasRequestedProducts = false;
   String _saleTargetId = _newProductSaleTarget;
   String _saleScope = 'all';
-  DateTime? _saleStartsAt;
   DateTime? _saleEndsAt;
 
   @override
@@ -470,24 +469,23 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
               ),
             ),
             subtitle: const Text(
-              'Choose a product and discount target; expiry defaults to 24 hours after start',
+              'Sale starts as soon as you apply it; expiry defaults to 24 hours later',
               style: TextStyle(color: AdminFormStyles.mutedText, fontSize: 10),
             ),
             onChanged: (value) => setState(() {
               _saleEnabled = value;
               if (value) {
-                _saleStartsAt ??= DateTime.now();
-                _saleEndsAt ??= _saleStartsAt!.add(const Duration(days: 1));
+                final now = DateTime.now();
+                if (_saleEndsAt == null || !_saleEndsAt!.isAfter(now)) {
+                  _saleEndsAt = now.add(const Duration(days: 1));
+                }
               }
             }),
           ),
-          if (!_saleEnabled && (_saleStartsAt != null || _saleEndsAt != null))
+          if (!_saleEnabled && _saleEndsAt != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: AdminSaleScheduleSummary(
-                startsAt: _saleStartsAt,
-                endsAt: _saleEndsAt,
-              ),
+              child: AdminSaleScheduleSummary(endsAt: _saleEndsAt),
             ),
           if (_saleEnabled)
             Padding(
@@ -595,20 +593,6 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
                   const SizedBox(height: 10),
                   _dateTimePicker(
                     context,
-                    'Starts',
-                    _saleStartsAt,
-                    (value) => setState(() {
-                      _saleStartsAt = value;
-                      if (value != null &&
-                          (_saleEndsAt == null ||
-                              !_saleEndsAt!.isAfter(value))) {
-                        _saleEndsAt = value.add(const Duration(days: 1));
-                      }
-                    }),
-                  ),
-                  const SizedBox(height: 8),
-                  _dateTimePicker(
-                    context,
                     'Expires',
                     _saleEndsAt,
                     (value) => setState(() => _saleEndsAt = value),
@@ -695,7 +679,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       available: product.available,
       discountPercent: discountPercent,
       discountScope: _saleScope,
-      discountStartsAt: _saleStartsAt ?? DateTime.now(),
+      discountStartsAt: DateTime.now(),
       discountEndsAt: _saleEndsAt,
       showSuccessMessage: false,
     );
@@ -785,23 +769,19 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
   }
 
   bool _isSaleConfigurationValid(double discountPercent) {
-    final startsAt = _saleStartsAt;
     final endsAt = _saleEndsAt;
     return _saleEnabled &&
         discountPercent.isFinite &&
         discountPercent > 0 &&
         discountPercent <= 90 &&
-        startsAt != null &&
         endsAt != null &&
-        startsAt.isBefore(endsAt);
+        endsAt.isAfter(DateTime.now());
   }
 
   void _showSaleValidationMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'Set a valid discount and expiry later than its start time.',
-        ),
+        content: Text('Set a valid discount and an expiry time in the future.'),
       ),
     );
   }
@@ -839,7 +819,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
       available: _isAvailable,
       discountPercent: saleAppliesToNewProduct ? discountPercent : 0,
       discountScope: saleAppliesToNewProduct ? _saleScope : 'all',
-      discountStartsAt: saleTargetsNewProduct ? _saleStartsAt : null,
+      discountStartsAt: saleAppliesToNewProduct ? DateTime.now() : null,
       discountEndsAt: saleTargetsNewProduct ? _saleEndsAt : null,
     );
 

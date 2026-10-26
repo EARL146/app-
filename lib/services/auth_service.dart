@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import 'api_service.dart';
 import 'storage_service.dart';
@@ -10,7 +11,7 @@ import 'storage_service.dart';
 ///
 /// This class deliberately has no local demo credential fallback. Until an API
 /// base URL is configured, login and registration return a setup error.
-class AuthService extends ChangeNotifier {
+class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   static final AuthService _instance = AuthService._internal();
 
   final ApiService _apiService;
@@ -31,17 +32,20 @@ class AuthService extends ChangeNotifier {
   Uint8List? _currentUserProfileImage;
   String? _errorMessage;
   Timer? _activityTimer;
+  final bool _enableHeartbeat;
 
   factory AuthService() => _instance;
 
-  AuthService._internal() : this._();
+  AuthService._internal() : this._(enableHeartbeat: true);
 
   @visibleForTesting
-  AuthService.forTesting() : this._();
+  AuthService.forTesting({bool enableHeartbeat = false})
+      : this._(enableHeartbeat: enableHeartbeat);
 
-  AuthService._()
-    : _apiService = ApiService(),
-      _storageService = StorageService() {
+  AuthService._({this._enableHeartbeat = true})
+      : _apiService = ApiService(),
+        _storageService = StorageService() {
+    if (_enableHeartbeat) WidgetsBinding.instance.addObserver(this);
     initialization = _initializeAuth();
   }
 
@@ -178,28 +182,54 @@ class AuthService extends ChangeNotifier {
 
   void _startActivityHeartbeat() {
     _activityTimer?.cancel();
-    if (!_isAuthenticated ||
-        _currentUserRole != 'customer' ||
+    if (!_enableHeartbeat ||
+        !_isAuthenticated ||
         !_apiService.isConfigured) {
       return;
     }
-    unawaited(_sendActivityHeartbeat());
-    _activityTimer = Timer.periodic(
-      const Duration(seconds: 60),
-      (_) => unawaited(_sendActivityHeartbeat()),
-    );
+    if (_currentUserRole == 'customer') {
+      unawaited(_sendActivityHeartbeat());
+      _activityTimer = Timer.periodic(
+        const Duration(seconds: 60),
+        (_) => unawaited(_sendActivityHeartbeat()),
+      );
+    } else if (_currentUserRole == 'admin') {
+      // Access tokens expire after 15 minutes. Refresh before expiry so
+      // admin screens remain connected during a long session.
+      _activityTimer = Timer.periodic(
+        const Duration(minutes: 10),
+        (_) => unawaited(refreshToken()),
+      );
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !_isAuthenticated) return;
+    if (_currentUserRole == 'admin') {
+      unawaited(refreshToken());
+    } else if (_currentUserRole == 'customer') {
+      unawaited(_sendActivityHeartbeat());
+    }
   }
 
   Future<void> _sendActivityHeartbeat() async {
     if (!_isAuthenticated || _currentUserRole != 'customer') return;
     try {
-      await _apiService.post<Map<String, dynamic>>(
+      final response = await _apiService.post<Map<String, dynamic>>(
         '/me/activity',
-        body: const {},
+        body: const {'offline': false},
         fromJson: (json) => json is Map<String, dynamic>
             ? json
             : throw const FormatException('Invalid activity response.'),
       );
+      if (response.statusCode == 401) {
+        _activityTimer?.cancel();
+        _activityTimer = null;
+        if (await refreshToken()) {
+          _startActivityHeartbeat();
+        }
+      }
     } catch (_) {
       // Presence is best-effort and must not interrupt customer actions.
     }
@@ -598,5 +628,13 @@ class AuthService extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _activityTimer?.cancel();
+    _activityTimer = null;
+    if (_enableHeartbeat) WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 }

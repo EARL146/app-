@@ -26,16 +26,14 @@ class _DiscountSaleBadgeState extends State<DiscountSaleBadge> {
   @override
   void didUpdateWidget(covariant DiscountSaleBadge oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.product.discountStartsAt != widget.product.discountStartsAt ||
-        oldWidget.product.discountEndsAt != widget.product.discountEndsAt) {
+    if (oldWidget.product.discountEndsAt != widget.product.discountEndsAt) {
       _startTimer();
     }
   }
 
   void _startTimer() {
     _timer?.cancel();
-    if (widget.product.discountStartsAt != null ||
-        widget.product.discountEndsAt != null) {
+    if (widget.product.discountEndsAt != null) {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() {});
       });
@@ -54,17 +52,13 @@ class _DiscountSaleBadgeState extends State<DiscountSaleBadge> {
     if (!product.hasCurrentOrUpcomingDiscount) return const SizedBox.shrink();
 
     final now = DateTime.now().toUtc();
-    final startsAt = product.discountStartsAt?.toUtc();
     final endsAt = product.discountEndsAt?.toUtc();
-    final waitingForStart = startsAt != null && now.isBefore(startsAt);
-    final deadline = waitingForStart ? startsAt : endsAt;
-    final countdown = deadline == null
+    final countdown = endsAt == null
         ? null
-        : _formatDuration(deadline.difference(now));
-    final title = waitingForStart ? 'Starts' : 'Sale';
+        : _formatDuration(endsAt.difference(now));
     final text = countdown == null
-        ? '$title · ${product.discountPercent.toStringAsFixed(0)}% OFF'
-        : '$title · ${product.discountPercent.toStringAsFixed(0)}% · $countdown';
+        ? 'Sale · ${product.discountPercent.toStringAsFixed(0)}% OFF'
+        : 'Sale · ${product.discountPercent.toStringAsFixed(0)}% · $countdown';
 
     return DecoratedBox(
       decoration: BoxDecoration(

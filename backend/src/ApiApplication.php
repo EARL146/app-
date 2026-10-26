@@ -953,9 +953,11 @@ final class ApiApplication
         $scheduleProvided = array_key_exists('discount_starts_at', $body) || array_key_exists('discount_ends_at', $body);
         $discountStartsAt = self::normalizeSaleDate($body['discount_starts_at'] ?? null);
         $discountEndsAt = self::normalizeSaleDate($body['discount_ends_at'] ?? null);
+        $nowSaleDate = gmdate('Y-m-d H:i:s');
         $hasScheduleDate = $discountStartsAt !== null || $discountEndsAt !== null;
         $invalidSchedule = $scheduleProvided && (
             ($discountValue > 0 && $discountEndsAt === null) ||
+            ($discountValue > 0 && $discountEndsAt !== null && $discountEndsAt <= $nowSaleDate) ||
             ($hasScheduleDate && (
                 $discountStartsAt === null || $discountEndsAt === null ||
                 $discountStartsAt >= $discountEndsAt
@@ -995,7 +997,7 @@ final class ApiApplication
             'price' => number_format((float)$price, 2, '.', ''), 'stock_quantity' => $stock,
             'discount_percent' => number_format((float)$discount, 2, '.', ''),
             'discount_scope' => $discountScope,
-            'discount_starts_at' => $discountStartsAt,
+            'discount_starts_at' => $discountValue > 0 ? $nowSaleDate : null,
             'discount_ends_at' => $discountEndsAt,
             'available' => $body['available'] ?? true,
         ];
@@ -1543,13 +1545,11 @@ final class ApiApplication
         $discount = (float)($product['discount_percent'] ?? 0);
         $scope = (string)($product['discount_scope'] ?? 'all');
         $now = time();
-        $startsAt = !empty($product['discount_starts_at']) ? strtotime((string)$product['discount_starts_at'] . ' UTC') : false;
         $endsAt = !empty($product['discount_ends_at']) ? strtotime((string)$product['discount_ends_at'] . ' UTC') : false;
         $matches = $scope === 'all'
             || (str_starts_with($scope, 'size:') && substr($scope, 5) === $customizations['size'])
             || (str_starts_with($scope, 'brand:') && substr($scope, 6) === $customizations['drink_brand']);
         $appliedDiscount = $discount > 0 && $matches
-            && !($startsAt !== false && $now < $startsAt)
             && !($endsAt !== false && $now >= $endsAt)
             ? $discount
             : 0.0;

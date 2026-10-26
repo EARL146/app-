@@ -7,6 +7,7 @@ import '../../constants/fries_options.dart';
 import '../../l10n/app_translations.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/catalog_provider.dart';
 import '../../widgets/animated_brand_button.dart';
 import '../../widgets/favorite_button.dart';
 import '../../widgets/food_image.dart';
@@ -51,10 +52,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   String get _drinkDisplayName =>
       [_drinkBrand, if (_size != 'Regular') _size].join(' ');
 
-  double get _baseUnitPrice {
-    if (_isDrink(widget.product)) return DrinkOptions.priceForSize(_size);
-    if (_isFries(widget.product)) return FriesOptions.priceForSize(_size);
-    final isBurger = _isBurger(widget.product);
+  double _baseUnitPrice(Product product) {
+    if (_isDrink(product)) return DrinkOptions.priceForSize(_size);
+    if (_isFries(product)) return FriesOptions.priceForSize(_size);
+    final isBurger = _isBurger(product);
     final sizePrice = isBurger
         ? switch (_size) {
             'Large' => 80.0,
@@ -66,13 +67,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       0,
       (sum, item) => sum + (item == 'Extra cheese' ? 25 : 45),
     );
-    return widget.product.price + sizePrice + extrasPrice;
+    return product.price + sizePrice + extrasPrice;
   }
 
-  double get _unitPrice => widget.product.applyDiscount(
-    _baseUnitPrice,
+  double _unitPrice(Product product) => product.applyDiscount(
+    _baseUnitPrice(product),
     size: _size,
-    drinkBrand: _isDrink(widget.product) ? _drinkBrand : null,
+    drinkBrand: _isDrink(product) ? _drinkBrand : null,
   );
 
   bool _isBurger(Product product) =>
@@ -89,10 +90,22 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final product = widget.product;
+    final catalog = context.watch<CatalogProvider>();
+    final matchingProducts = catalog.products.where(
+      (item) => item.id == widget.product.id,
+    );
+    final product = matchingProducts.isEmpty
+        ? widget.product
+        : matchingProducts.first;
+    final baseUnitPrice = _baseUnitPrice(product);
+    final unitPrice = _unitPrice(product);
     final isBurgerProduct = _isBurger(product);
     final isFriesProduct = _isFries(product);
     final isDrinkProduct = _isDrink(product);
+    final saleAppliesToSelection = product.discountApplies(
+      size: _size,
+      drinkBrand: isDrinkProduct ? _drinkBrand : null,
+    );
     final categoryLabel = product.category?.trim();
     final heroHeight = (MediaQuery.sizeOf(context).height * 0.33)
         .clamp(220.0, 300.0)
@@ -281,7 +294,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      '₱${_unitPrice.toStringAsFixed(0)}',
+                                      '₱${unitPrice.toStringAsFixed(0)}',
                                       style: TextStyle(
                                         color: AppColors.brandOrange,
                                         fontSize: 21,
@@ -290,13 +303,24 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 3),
-                                    Text(
-                                      'Selected price',
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 10,
+                                    if (saleAppliesToSelection)
+                                      Text(
+                                        '₱${baseUnitPrice.toStringAsFixed(0)}',
+                                        style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 10,
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                        ),
+                                      )
+                                    else
+                                      Text(
+                                        'Selected price',
+                                        style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 10,
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               ],
@@ -724,7 +748,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                           cart.addItem(
                                             product,
                                             quantity: _quantity,
-                                            unitPrice: _baseUnitPrice,
+                                            unitPrice: baseUnitPrice,
                                             displayName: displayName,
                                             customizations: isBurgerProduct
                                                 ? {
@@ -778,9 +802,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                           milliseconds: 180,
                                         ),
                                         child: Text(
-                                          '₱${(_unitPrice * _quantity).toStringAsFixed(0)}',
+                                          '₱${(unitPrice * _quantity).toStringAsFixed(0)}',
                                           key: ValueKey(
-                                            (_unitPrice * _quantity)
+                                            (unitPrice * _quantity)
                                                 .toStringAsFixed(0),
                                           ),
                                           style: const TextStyle(

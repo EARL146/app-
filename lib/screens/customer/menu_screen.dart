@@ -638,11 +638,18 @@ class MenuProductCard extends StatelessWidget {
         : isFries
         ? FriesOptions.priceForSize('Small')
         : product.price;
-    final discountedDisplayPrice = product.applyDiscount(
+    final salePricePreview = product.previewDiscountPriceForSelection(
       displayPrice,
       size: isFries ? 'Small' : 'Regular',
       drinkBrand: isDrink ? drinkBrand : null,
     );
+    final discountedDisplayPrice = product.hasActiveDiscount
+        ? product.applyDiscount(
+            displayPrice,
+            size: isFries ? 'Small' : 'Regular',
+            drinkBrand: isDrink ? drinkBrand : null,
+          )
+        : salePricePreview ?? displayPrice;
 
     return AnimatedPressScale(
       child: InkWell(
@@ -809,15 +816,33 @@ class MenuProductCard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      isFries
-                          ? 'From ₱${discountedDisplayPrice.toStringAsFixed(0)}'
-                          : '₱${discountedDisplayPrice.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        color: AppColors.brandOrange,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 13,
-                      ),
+                    child: Row(
+                      children: [
+                        Text(
+                          isFries
+                              ? 'From ₱${discountedDisplayPrice.toStringAsFixed(0)}'
+                              : '₱${discountedDisplayPrice.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            color: AppColors.brandOrange,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                          ),
+                        ),
+                        if (salePricePreview != null) ...[
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '₱${displayPrice.toStringAsFixed(0)}',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 8,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   Text(

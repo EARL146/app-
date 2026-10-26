@@ -31,7 +31,7 @@ final class Http
         } catch (\JsonException) {
             throw new ApiException(400, 'Send a valid JSON request.');
         }
-        if (!is_array($data) || array_is_list($data)) {
+        if (!is_array($data) || ($data !== [] && array_is_list($data)) || trim($raw) === '[]') {
             throw new ApiException(400, 'Send a JSON object.');
         }
         return $data;

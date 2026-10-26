@@ -17,6 +17,7 @@ class AdminOrdersProvider extends ChangeNotifier {
   OrderStatus? _filterStatus;
 
   List<Order> get orders => List.unmodifiable(_filteredOrders);
+  List<Order> get allOrders => List.unmodifiable(_orders);
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
   bool get hasLoaded => _hasLoaded;

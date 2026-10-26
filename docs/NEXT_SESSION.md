@@ -2,6 +2,22 @@
 
 [[PROJECT_HOME]] · [[INTEGRATION_MAP]] · [[AGENT_TEAM]] · [[AGENT_MONITOR]] · [[BACKUP_WORKFLOW]] · [[PRODUCTION_READINESS_AUDIT]] · [[KNOWN_ISSUES]] · [[TESTING]]
 
+## Backend API restoration, presence heartbeat fixes, and test suite pass (2026-10-26)
+
+- Resolved browser `net::ERR_CONNECTION_REFUSED` for `http://127.0.0.1:8081/api/v1/products`: identified local PHP interpreter at `D:\Ampps\php\php.exe`, started the development API server on port 8081 pointing to `backend/public/index.php`, and added convenience launcher `backend/tools/start_api.bat` for one-click startup.
+- Fixed `POST /api/v1/me/activity` 400 Bad Request: `Http::body()` in `backend/src/Http.php` incorrectly rejected empty JSON objects `{}` due to PHP 8.1+ `array_is_list([]) === true`. Updated condition to allow empty associative JSON objects `{}` while preserving strict rejection of JSON arrays `[]`.
+- Fixed `POST /api/v1/me/activity` 401 Unauthorized handling: `AuthService._sendActivityHeartbeat()` now passes `{'offline': false}` body explicitly, cancels the periodic 60-second activity timer on 401 and invokes `refreshToken()`, and implements `AuthService.dispose()` to cancel pending timers. Added `AuthService.forTesting({bool enableHeartbeat = false})` to prevent leaks in tests.
+- Strengthened `AppPreferencesProvider` with safe listener notifications to prevent post-dispose assertions during asynchronous theme and preference updates.
+- Updated `test/widget_test.dart` to initialize `FlutterSecureStorage.setMockInitialValues({})`, update placeholder assertions for admin dashboard, and use testing auth service with teardown disposal.
+- Verification:
+  - `php -l backend/src/Http.php` and `backend/src/ApiApplication.php`: No syntax errors.
+  - `flutter analyze --no-pub`: No issues found! (ran in 12.0s).
+  - `flutter test`: All 34 tests passed! (including `test/auth_service_test.dart`, `test/auth_flow_test.dart`, `test/cart_provider_test.dart`, and all 15 tests in `test/widget_test.dart`).
+  - `graphify update .`: Rebuilt 2,636 nodes, 4,501 edges, 148 communities.
+  - `git diff --check`: Clean.
+- Blockers: None. Local PHP API is running on `127.0.0.1:8081`; MySQL is running on `127.0.0.1:3306`.
+- One next task: Verify live customer sign-in and scheduled discount cart checkout flow in the Edge browser against the live 8081 API.
+
 ## Admin dashboard, customer presence, and product sales update (2026-10-25)
 
 - Added the admin customer details needed in the request: customer profile photos, address, email, phone, active-account state, online status, and elapsed offline time. Authenticated customer sessions send a best-effort presence heartbeat every 60 seconds and mark themselves offline when logging out. The online indicator expires after 120 seconds without a heartbeat.

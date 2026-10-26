@@ -3,13 +3,8 @@ import 'package:flutter/material.dart';
 import '../constants/admin_form_styles.dart';
 
 class AdminSaleScheduleSummary extends StatelessWidget {
-  const AdminSaleScheduleSummary({
-    super.key,
-    required this.startsAt,
-    required this.endsAt,
-  });
+  const AdminSaleScheduleSummary({super.key, required this.endsAt});
 
-  final DateTime? startsAt;
   final DateTime? endsAt;
 
   String _display(DateTime? value) =>
@@ -39,7 +34,7 @@ class AdminSaleScheduleSummary extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Sale is off · saved schedule',
+                  'Sale is off · saved expiry',
                   style: TextStyle(
                     color: AdminFormStyles.text,
                     fontSize: 11,
@@ -48,7 +43,7 @@ class AdminSaleScheduleSummary extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Starts: ${_display(startsAt)}',
+                  'Sale starts immediately when enabled.',
                   style: const TextStyle(
                     color: AdminFormStyles.mutedText,
                     fontSize: 10,

@@ -210,8 +210,8 @@ class _DiscountSaleProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = product.hasActiveDiscount;
-    final hasOneSalePrice = isActive && product.discountScope == 'all';
-    final discountedPrice = product.applyDiscount(product.price);
+    final originalPrice = product.discountTargetBasePrice;
+    final discountedPrice = product.previewDiscountPrice(originalPrice);
 
     return AnimatedPressScale(
       child: InkWell(
@@ -289,24 +289,46 @@ class _DiscountSaleProductCard extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      if (hasOneSalePrice) ...[
-                        Text(
-                          '₱${discountedPrice.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            color: AppColors.brandOrange,
-                            fontSize: 16,
-                            height: 1.05,
-                            fontWeight: FontWeight.w900,
+                      if (discountedPrice != null) ...[
+                        if (!isActive) ...[
+                          Text(
+                            'Starts soon'.tr,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.brandOrange,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '₱${product.price.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 9,
-                            decoration: TextDecoration.lineThrough,
-                          ),
+                          const SizedBox(height: 2),
+                        ],
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '₱${discountedPrice.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                color: AppColors.brandOrange,
+                                fontSize: 16,
+                                height: 1.05,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                '₱${originalPrice.toStringAsFixed(0)}',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 9,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ] else ...[
                         Text(

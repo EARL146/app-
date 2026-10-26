@@ -41,6 +41,13 @@ class AppPreferencesProvider extends ChangeNotifier
   bool _remoteLoadInProgress = false;
   String? _loadedRemoteUserId;
   String? _errorMessage;
+  bool _isDisposed = false;
+
+  void _safeNotifyListeners() {
+    if (!_isDisposed && hasListeners) {
+      notifyListeners();
+    }
+  }
 
   String get themePalette => _themePalette;
   String get themeMode => _themeMode;
@@ -113,12 +120,16 @@ class AppPreferencesProvider extends ChangeNotifier
       _applyPreferences();
     } finally {
       _isLoading = false;
-      notifyListeners();
+      _safeNotifyListeners();
     }
   }
 
   void _handleAuthChange() {
-    if (_authService.isInitializing || !_authService.isAuthenticated) return;
+    if (_isDisposed ||
+        _authService.isInitializing ||
+        !_authService.isAuthenticated) {
+      return;
+    }
     unawaited(_loadRemotePreferences());
   }
 
@@ -158,11 +169,11 @@ class AppPreferencesProvider extends ChangeNotifier
       }
       _loadedRemoteUserId = userId;
       _applyPreferences();
-      notifyListeners();
+      _safeNotifyListeners();
     } catch (_) {
       _errorMessage =
           'Unable to sync appearance preferences from your account.';
-      notifyListeners();
+      _safeNotifyListeners();
     } finally {
       _remoteLoadInProgress = false;
     }
@@ -238,6 +249,7 @@ class AppPreferencesProvider extends ChangeNotifier
 
   @override
   void dispose() {
+    _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
     _authService.removeListener(_handleAuthChange);
     super.dispose();

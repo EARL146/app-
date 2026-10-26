@@ -25,8 +25,8 @@ class AdminDashboardProvider extends ChangeNotifier {
   double get sevenDayOrderValue =>
       dailyRevenue.fold<double>(0, (total, value) => total + value);
 
-  Future<void> load() async {
-    if (isLoading) return;
+  Future<void> load({bool force = false}) async {
+    if (isLoading || (hasData && !force)) return;
     isLoading = true;
     errorMessage = null;
     notifyListeners();
