@@ -105,6 +105,8 @@ void main() {
       tester.view.physicalSize = Size(width.toDouble(), 700);
       await tester.pumpWidget(const MaterialApp(home: WelcomeScreen()));
       await tester.pump();
+      expect(find.text('Burger'), findsOneWidget, reason: 'welcome wordmark');
+      expect(find.text('Bites'), findsOneWidget, reason: 'welcome wordmark');
       expect(tester.takeException(), isNull, reason: 'welcome at $width px');
 
       await tester.pumpWidget(
@@ -114,6 +116,8 @@ void main() {
         ),
       );
       await tester.pump();
+      expect(find.text('Burger'), findsOneWidget, reason: 'sign-in wordmark');
+      expect(find.text('Bites'), findsOneWidget, reason: 'sign-in wordmark');
       expect(tester.takeException(), isNull, reason: 'sign-in at $width px');
 
       await tester.pumpWidget(
@@ -123,6 +127,8 @@ void main() {
         ),
       );
       await tester.pump();
+      expect(find.text('Burger'), findsOneWidget, reason: 'register wordmark');
+      expect(find.text('Bites'), findsOneWidget, reason: 'register wordmark');
       expect(tester.takeException(), isNull, reason: 'register at $width px');
     }
   });

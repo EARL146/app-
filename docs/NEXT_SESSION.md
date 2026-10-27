@@ -16,9 +16,10 @@
 
 - Reworked the loading screen to use a white background, centered BurgerBites chef/burger wordmark, large circular loader, and subtle outlined food icons around the edges. It restores an existing session before showing the guest flow.
 - Added the centered welcome screen with the BurgerBites wordmark and red-accented greeting, then routes guests into the menu after a short pause.
+- Fixed the missing logo text reported on splash/welcome/sign-in: the chef-burger art now renders behind the red “Burger” and burgundy “Bites” wordmark, and sign-in uses the shared full lockup instead of the art-only image.
 - Redesigned account creation with the same brand, white spacious layout, email/password/full-name fields, black Continue action, Google/Apple buttons, and terms text. Email/password registration and the sign-in return-to-caller flow remain connected to the existing API. Google and Apple sign-in are still unconfigured and show an explanatory message.
 - Fixed the 320 px registration button overflow and made the splash navigation timer cancel safely when the screen is disposed. Updated the auth-flow test for the current sign-up field order and the splash→welcome→menu path.
-- Verification: `flutter analyze --no-pub` reported no issues; `flutter test --no-pub` passed all 34 tests. Browser visual review and live auth-provider sign-in were not performed.
+- Verification: `flutter analyze --no-pub` reported no issues; `flutter test --no-pub` passed all 34 tests, including visible Burger/Bites labels at 320–430 px; `graphify update .` rebuilt 2,676 nodes / 4,584 edges / 155 communities. Browser visual review and live auth-provider sign-in were not performed.
 
 ## Backend API restoration, presence heartbeat fixes, and test suite pass (2026-10-26)
 

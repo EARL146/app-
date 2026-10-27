@@ -46,14 +46,17 @@ class _SignInScreenState extends State<SignInScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 2),
-                    const Center(
-                      child: Column(
-                        children: [
-                          BrandLogo(width: 142, height: 142, animate: true),
-                        ],
+                    Center(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => BurgerBitesWordmark(
+                          width: constraints.maxWidth < 320
+                              ? constraints.maxWidth
+                              : 320,
+                          animate: true,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 10),
                     Text(
                       'Welcome back',
                       textAlign: TextAlign.center,

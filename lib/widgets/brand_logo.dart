@@ -38,6 +38,14 @@ class BurgerBitesWordmark extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
+          Align(
+            alignment: Alignment.topCenter,
+            child: BrandLogo(
+              width: width * .62,
+              height: height,
+              animate: animate,
+            ),
+          ),
           Positioned(
             left: 0,
             right: 0,
@@ -48,6 +56,8 @@ class BurgerBitesWordmark extends StatelessWidget {
                   child: Text(
                     'Burger',
                     textAlign: TextAlign.right,
+                    maxLines: 1,
+                    softWrap: false,
                     style: TextStyle(
                       color: const Color(0xFFE61928),
                       fontSize: fontSize,
@@ -60,6 +70,8 @@ class BurgerBitesWordmark extends StatelessWidget {
                   child: Text(
                     'Bites',
                     textAlign: TextAlign.left,
+                    maxLines: 1,
+                    softWrap: false,
                     style: TextStyle(
                       color: const Color(0xFF9B141B),
                       fontSize: fontSize,
@@ -69,14 +81,6 @@ class BurgerBitesWordmark extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-          Align(
-            alignment: Alignment.topCenter,
-            child: BrandLogo(
-              width: width * .62,
-              height: height,
-              animate: animate,
             ),
           ),
         ],
