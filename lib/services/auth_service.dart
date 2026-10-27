@@ -32,6 +32,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   Uint8List? _currentUserProfileImage;
   String? _errorMessage;
   Timer? _activityTimer;
+  Future<bool>? _refreshInFlight;
   final bool _enableHeartbeat;
 
   factory AuthService() => _instance;
@@ -567,6 +568,16 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<bool> refreshToken() async {
+    final inFlight = _refreshInFlight;
+    if (inFlight != null) return inFlight;
+    final attempt = _performTokenRefresh();
+    _refreshInFlight = attempt;
+    return attempt.whenComplete(() {
+      if (identical(_refreshInFlight, attempt)) _refreshInFlight = null;
+    });
+  }
+
+  Future<bool> _performTokenRefresh() async {
     _errorMessage = null;
     final refreshToken = await _storageService.getRefreshToken();
     if (refreshToken == null) {

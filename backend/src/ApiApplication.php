@@ -153,6 +153,12 @@ final class ApiApplication
             if ($method === 'PUT' && $path === '/admin/store-profile') {
                 self::updateStoreProfile($db, Http::body());
             }
+            if ($method === 'GET' && $path === '/admin/payment-summary') {
+                self::adminPaymentSummary($db);
+            }
+            if ($method === 'POST' && $path === '/admin/withdrawals') {
+                self::createAdminWithdrawal($db, $user, Http::body());
+            }
             if ($method === 'GET' && $path === '/admin/dashboard') self::adminDashboard($db);
             if ($method === 'GET' && $path === '/admin/orders') self::orders($db, null);
             if ($method === 'PUT' && preg_match('#^/admin/orders/(\d+)$#', $path, $match)) {
@@ -1117,6 +1123,106 @@ final class ApiApplication
         Http::json(['dashboard' => $stats]);
     }
 
+    private static function adminPaymentSummary(PDO $db): never
+    {
+        if (!self::hasColumn($db, 'store_withdrawals', 'amount')) {
+            throw new ApiException(503, 'Apply database migration 008 before using Payment Setup.');
+        }
+        Http::json(self::paymentSummary($db));
+    }
+
+    private static function createAdminWithdrawal(PDO $db, array $admin, array $body): never
+    {
+        if (!self::hasColumn($db, 'store_withdrawals', 'amount')) {
+            throw new ApiException(503, 'Apply database migration 008 before using Payment Setup.');
+        }
+
+        $rawAmount = $body['amount'] ?? null;
+        $amount = is_string($rawAmount)
+            ? trim($rawAmount)
+            : (is_int($rawAmount) || is_float($rawAmount)
+                ? json_encode($rawAmount, JSON_PRESERVE_ZERO_FRACTION)
+                : false);
+        if (!is_string($amount) || !preg_match('/^\d{1,8}(?:\.\d{1,2})?$/', $amount)) {
+            throw new ApiException(422, 'Enter a valid withdrawal amount with up to two decimal places.');
+        }
+        [$whole, $fraction] = array_pad(explode('.', $amount, 2), 2, '');
+        $amountCents = ((int)$whole * 100) + (int)str_pad($fraction, 2, '0');
+        if ($amountCents <= 0) {
+            throw new ApiException(422, 'Withdrawal amount must be greater than zero.');
+        }
+
+        $note = $body['note'] ?? null;
+        if ($note !== null && (!is_string($note) || mb_strlen(trim($note)) > 200)) {
+            throw new ApiException(422, 'Withdrawal note must be 200 characters or fewer.');
+        }
+        $note = is_string($note) && trim($note) !== '' ? trim($note) : null;
+
+        try {
+            $db->beginTransaction();
+            // Serialize admin withdrawals against the same row so two requests
+            // cannot both spend the same available balance.
+            $db->exec('INSERT IGNORE INTO store_profile (id) VALUES (1)');
+            $db->query('SELECT id FROM store_profile WHERE id = 1 FOR UPDATE')->fetch();
+            $revenueQuery = $db->query("SELECT COALESCE(SUM(total), 0) FROM orders WHERE status = 'delivered'");
+            $withdrawnQuery = $db->query('SELECT COALESCE(SUM(amount), 0) FROM store_withdrawals');
+            $revenueCents = self::moneyCents((string)$revenueQuery->fetchColumn());
+            $withdrawnCents = self::moneyCents((string)$withdrawnQuery->fetchColumn());
+            $availableCents = max(0, $revenueCents - $withdrawnCents);
+            if ($amountCents > $availableCents) {
+                $db->rollBack();
+                throw new ApiException(
+                    409,
+                    'Insufficient funds. Available balance is ₱' . self::decimal($availableCents) . '.'
+                );
+            }
+
+            $insert = $db->prepare(
+                'INSERT INTO store_withdrawals (admin_user_id, amount, note) VALUES (?, ?, ?)'
+            );
+            $insert->execute([(int)$admin['id'], self::decimal($amountCents), $note]);
+            $withdrawalId = (int)$db->lastInsertId();
+            $db->commit();
+        } catch (Throwable $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            throw $error;
+        }
+
+        Http::json([
+            'success' => true,
+            'withdrawal_id' => $withdrawalId,
+            'amount' => $amountCents / 100,
+            'payment_summary' => self::paymentSummary($db),
+        ], 201);
+    }
+
+    private static function paymentSummary(PDO $db): array
+    {
+        $totals = $db->query(
+            "SELECT
+                (SELECT COALESCE(SUM(total), 0) FROM orders WHERE status = 'delivered') AS delivered_revenue,
+                (SELECT COALESCE(SUM(amount), 0) FROM store_withdrawals) AS total_withdrawn"
+        )->fetch();
+        $revenueCents = self::moneyCents((string)($totals['delivered_revenue'] ?? '0'));
+        $withdrawnCents = self::moneyCents((string)($totals['total_withdrawn'] ?? '0'));
+        $query = $db->query(
+            'SELECT id, amount, note, created_at FROM store_withdrawals ORDER BY id DESC LIMIT 10'
+        );
+        $withdrawals = array_map(static fn(array $row): array => [
+            'id' => (int)$row['id'],
+            'amount' => (float)$row['amount'],
+            'note' => $row['note'],
+            'created_at' => self::isoDate((string)$row['created_at']),
+        ], $query->fetchAll());
+
+        return [
+            'delivered_revenue' => $revenueCents / 100,
+            'total_withdrawn' => $withdrawnCents / 100,
+            'available_balance' => max(0, $revenueCents - $withdrawnCents) / 100,
+            'recent_withdrawals' => $withdrawals,
+        ];
+    }
+
     private static function adminSystemStatus(PDO $db): never
     {
         $columns = [];
@@ -1142,7 +1248,7 @@ final class ApiApplication
             'SELECT TABLE_NAME
              FROM information_schema.TABLES
              WHERE TABLE_SCHEMA = DATABASE()
-               AND TABLE_NAME IN (\'user_preferences\', \'contact_messages\', \'cart_items\', \'user_calendar_reminders\', \'store_profile\', \'reward_transactions\', \'contact_attachments\')'
+               AND TABLE_NAME IN (\'user_preferences\', \'contact_messages\', \'cart_items\', \'user_calendar_reminders\', \'store_profile\', \'reward_transactions\', \'contact_attachments\', \'store_withdrawals\')'
         );
         $tableQuery->execute();
         $tables = array_fill_keys(array_map('strval', $tableQuery->fetchAll(PDO::FETCH_COLUMN)), true);
@@ -1167,6 +1273,7 @@ final class ApiApplication
             'user_calendar_reminders' => isset($tables['user_calendar_reminders']),
             'user_calendar_reminders.reminder_time' => isset($columns['user_calendar_reminders.reminder_time']),
             'store_profile' => isset($tables['store_profile']),
+            'store_withdrawals' => isset($tables['store_withdrawals']),
             'reward_transactions' => isset($tables['reward_transactions']),
             'contact_attachments' => isset($tables['contact_attachments']),
         ];
