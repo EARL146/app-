@@ -1,6 +1,6 @@
 # BurgerBites PHP API — local development
 
-This PHP 8.2 API implements the Flutter client's auth, profile/preferences, product catalog and management, favorites, account-synced carts, customer calendar reminders, COD ordering/history, admin order/customer management, and support inbox against the AMPPS MySQL database `burger_bites` (shown as `Burger_Bites` in phpMyAdmin). The unrelated `streetfood_db` database was not touched. On 2026-10-20, the local products endpoint returned six products and the public store-profile route returned HTTP 200; authenticated order and admin readiness checks remain to be verified.
+This PHP 8.2 API implements the Flutter client's auth, profile/preferences, product catalog and management, favorites, account-synced carts, customer calendar reminders, COD ordering/history, admin order/customer management, payment ledger, and support inbox against the AMPPS MySQL database `burger_bites` (shown as `Burger_Bites` in phpMyAdmin). The unrelated `streetfood_db` database was not touched. The local products and store-profile reads have returned HTTP 200; payment migration 008 was applied and its insufficient-balance guard was verified on 2026-10-27.
 
 The API uses PDO prepared statements, Argon2id password hashes, opaque random access/refresh tokens stored only as HMAC hashes, 15-minute access/30-day refresh expiry with rotation, rate-limit counters, server-derived user roles, and transactions for order, status, and stock changes. Admin product deletion archives a product so prior orders remain valid.
 
@@ -19,7 +19,7 @@ The migration history is:
 5. `backend/database/migrations/005_calendar_reminder_time.sql` adds the customer-selected time to saved calendar reminders. Existing reminders default to 9:00 AM. Back up the database and apply this migration once.
 6. `backend/database/migrations/006_customer_presence_product_gallery_sales.sql` adds customer last-seen tracking, up to three rotating product images, and timed discount-sale start/end fields. **Confirmed applied on 2026-10-25**: a read-only PDO schema check found all four columns and both indexes in `burger_bites`. Do not import this migration again.
 7. `backend/database/migrations/007_order_item_sale_snapshots.sql` stores each ordered item's original customized price, sale percentage, and total sale savings. **Confirmed applied on 2026-10-26** after backing up `order_items`; all three columns are present in `burger_bites`. Existing rows have their original price backfilled from `unit_price`. Do not re-import this migration.
-8. `backend/database/migrations/008_store_withdrawals.sql` creates the admin withdrawal ledger used by Payment Setup. Back up `Burger_Bites`, apply this additive migration once, then verify `/admin/system-status` reports `store_withdrawals`. Payment Setup counts delivered order totals less recorded withdrawals; it does not transfer funds to GCash or Maya.
+8. `backend/database/migrations/008_store_withdrawals.sql` creates the admin withdrawal ledger used by Payment Setup. **Confirmed applied on 2026-10-27** after backing up `Burger_Bites`; `store_withdrawals` is present. Do not import it again. Payment Setup counts delivered order totals less recorded withdrawals; it does not transfer funds to GCash or Maya.
 
 For production, use verified product names, prices, images, and stock rather than the sample rows.
 

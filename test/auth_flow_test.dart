@@ -97,18 +97,18 @@ void main() {
         if (flow.form == 'register') {
           await tester.enterText(
             find.byType(TextFormField).at(0),
-            'Test Customer',
-          );
-          await tester.enterText(
-            find.byType(TextFormField).at(1),
             'customer@example.test',
           );
           await tester.enterText(
-            find.byType(TextFormField).at(2),
+            find.byType(TextFormField).at(1),
             'A-secure-test-pass-123',
           );
-          await tester.ensureVisible(find.text('Create account'));
-          await tester.tap(find.text('Create account'));
+          await tester.enterText(
+            find.byType(TextFormField).at(2),
+            'Test Customer',
+          );
+          await tester.ensureVisible(find.text('Continue'));
+          await tester.tap(find.text('Continue'));
         } else {
           await tester.enterText(
             find.byType(TextFormField).at(0),

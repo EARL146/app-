@@ -506,7 +506,9 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
     final bytes = selection.files.single.bytes;
     if (bytes == null || bytes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not read that image. Try another file.')),
+        const SnackBar(
+          content: Text('Could not read that image. Try another file.'),
+        ),
       );
       return;
     }

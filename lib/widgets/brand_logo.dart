@@ -17,6 +17,74 @@ class BrandLogo extends StatefulWidget {
   State<BrandLogo> createState() => _BrandLogoState();
 }
 
+/// A compact wordmark lockup matching the supplied Burger Bites screen art.
+class BurgerBitesWordmark extends StatelessWidget {
+  const BurgerBitesWordmark({
+    super.key,
+    this.width = 320,
+    this.animate = false,
+  });
+
+  final double width;
+  final bool animate;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = width * .62;
+    final fontSize = width * .086;
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            top: height * .49,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Burger',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: const Color(0xFFE61928),
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: .2,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    'Bites',
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      color: const Color(0xFF9B141B),
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: .2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Align(
+            alignment: Alignment.topCenter,
+            child: BrandLogo(
+              width: width * .62,
+              height: height,
+              animate: animate,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _BrandLogoState extends State<BrandLogo>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(

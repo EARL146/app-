@@ -1093,8 +1093,12 @@ final class ApiApplication
 
     private static function adminDashboard(PDO $db): never
     {
-        $stats = $db->query("SELECT (SELECT COUNT(*) FROM orders) AS total_orders, (SELECT COUNT(*) FROM orders WHERE status = 'pending') AS pending_orders, (SELECT COUNT(*) FROM orders WHERE status IN ('confirmed', 'preparing', 'ready', 'out_for_delivery')) AS processing_orders, (SELECT COUNT(*) FROM orders WHERE status = 'delivered') AS delivered_orders, (SELECT COUNT(*) FROM orders WHERE status = 'cancelled') AS cancelled_orders, (SELECT COALESCE(SUM(total), 0) FROM orders WHERE status = 'delivered') AS delivered_revenue, (SELECT COUNT(*) FROM users WHERE role = 'customer') AS total_customers, (SELECT COUNT(*) FROM users WHERE role = 'customer' AND is_active = 1) AS active_customers, (SELECT COUNT(*) FROM products) AS total_products, (SELECT COUNT(*) FROM products WHERE is_available = 1 AND stock_quantity > 0) AS available_products")->fetch();
-        foreach ($stats as $key => $value) $stats[$key] = str_ends_with((string)$key, 'revenue') ? (float)$value : (int)$value;
+        $stats = $db->query("SELECT (SELECT COUNT(*) FROM orders) AS total_orders, (SELECT COUNT(*) FROM orders WHERE status = 'pending') AS pending_orders, (SELECT COUNT(*) FROM orders WHERE status IN ('confirmed', 'preparing', 'ready', 'out_for_delivery')) AS processing_orders, (SELECT COUNT(*) FROM orders WHERE status = 'delivered') AS delivered_orders, (SELECT COUNT(*) FROM orders WHERE status = 'cancelled') AS cancelled_orders, (SELECT COALESCE(SUM(total), 0) FROM orders WHERE status = 'delivered') AS delivered_revenue, (SELECT COALESCE(SUM(total), 0) FROM orders WHERE status <> 'cancelled') AS order_value, (SELECT COUNT(*) FROM users WHERE role = 'customer') AS total_customers, (SELECT COUNT(*) FROM users WHERE role = 'customer' AND is_active = 1) AS active_customers, (SELECT COUNT(*) FROM products) AS total_products, (SELECT COUNT(*) FROM products WHERE is_available = 1 AND stock_quantity > 0) AS available_products")->fetch();
+        foreach ($stats as $key => $value) {
+            $stats[$key] = str_ends_with((string)$key, 'revenue') || str_ends_with((string)$key, '_value')
+                ? (float)$value
+                : (int)$value;
+        }
         $dailyRevenue = $db->query(
             "SELECT DATE_FORMAT(calendar.day_value, '%Y-%m-%d') AS day,
                     COALESCE(SUM(orders.total), 0) AS revenue

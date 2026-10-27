@@ -1,11 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../constants/app_colors.dart';
 import '../../services/auth_service.dart';
-import '../../widgets/animated_burger_assembly.dart';
+import '../../widgets/brand_logo.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, this.restoreSession = true});
@@ -16,22 +16,12 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _introController;
-  late final Animation<double> _brandReveal;
+class _SplashScreenState extends State<SplashScreen> {
+  Timer? _welcomeTimer;
 
   @override
   void initState() {
     super.initState();
-    _introController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 4500),
-    );
-    _brandReveal = CurvedAnimation(
-      parent: _introController,
-      curve: const Interval(0.80, 0.94, curve: Curves.easeOut),
-    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_continueAfterInitialization());
     });
@@ -52,73 +42,126 @@ class _SplashScreenState extends State<SplashScreen>
       }
     }
 
-    if (MediaQuery.of(context).disableAnimations) {
-      _introController.value = 1;
-      await Future<void>.delayed(const Duration(milliseconds: 350));
-    } else {
-      await _introController.forward();
-    }
-
-    if (!mounted) return;
-    Navigator.of(context)
-        .pushReplacementNamed('/customer-home', arguments: true);
+    final delay = MediaQuery.of(context).disableAnimations
+        ? const Duration(milliseconds: 700)
+        : const Duration(milliseconds: 2200);
+    _welcomeTimer = Timer(delay, () {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed('/welcome');
+    });
   }
 
   @override
   void dispose() {
-    _introController.dispose();
+    _welcomeTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxHeight < 320;
-            final showBrand = constraints.maxHeight >= 48;
-            final brandFontSize = compact
-                ? (constraints.maxHeight * 0.2).clamp(12.0, 20.0).toDouble()
-                : 27.0;
-            final brandGap = showBrand ? (compact ? 4.0 : 8.0) : 0.0;
-            final availableMarkSize =
-                (constraints.maxHeight -
-                        (showBrand ? brandFontSize + brandGap : 0))
-                    .clamp(0.0, 290.0);
-            final markSize = (constraints.maxHeight * 0.39)
-                .clamp(0.0, availableMarkSize)
+            final compact = constraints.maxHeight < 300;
+            final widthLimit = math
+                .max(56.0, constraints.maxWidth - 32)
                 .toDouble();
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedBurgerAssembly(
-                      animation: _introController,
-                      size: markSize,
+            final heightLimit = compact
+                ? constraints.maxHeight * .80
+                : constraints.maxHeight * .48;
+            final wordmarkWidth = math
+                .min(350.0, math.min(widthLimit, heightLimit))
+                .toDouble();
+            final loaderSize = compact
+                ? math.max(24.0, constraints.maxHeight * .25).toDouble()
+                : math.min(156.0, constraints.maxHeight * .21).toDouble();
+            final logoTop = constraints.maxHeight * (compact ? .06 : .08);
+            final loaderTop = constraints.maxHeight * (compact ? .56 : .44);
+
+            return Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                Positioned(
+                  top: logoTop,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: BurgerBitesWordmark(
+                      width: wordmarkWidth,
+                      animate: true,
                     ),
-                    if (showBrand) ...[
-                      SizedBox(height: brandGap),
-                      FadeTransition(
-                        opacity: _brandReveal,
-                        child: Text(
-                          'BurgerBites',
-                          style: TextStyle(
-                            color: AppColors.brandRed,
-                            fontSize: brandFontSize,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.2,
-                          ),
+                  ),
+                ),
+                Positioned(
+                  top: loaderTop,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Semantics(
+                      label: 'Loading Burger Bites',
+                      child: SizedBox.square(
+                        dimension: loaderSize,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 10,
+                          strokeCap: StrokeCap.round,
+                          color: Colors.black,
+                          backgroundColor: Color(0xFFECEDEF),
                         ),
                       ),
-                    ],
-                  ],
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  left: -18,
+                  top: constraints.maxHeight * .10,
+                  child: Transform.rotate(
+                    angle: -.34,
+                    child: Icon(
+                      Icons.fastfood_outlined,
+                      size: 54,
+                      color: Colors.black.withValues(alpha: .24),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -20,
+                  top: constraints.maxHeight * .04,
+                  child: Transform.rotate(
+                    angle: .22,
+                    child: Icon(
+                      Icons.local_pizza_outlined,
+                      size: 56,
+                      color: Colors.black.withValues(alpha: .24),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: -15,
+                  bottom: constraints.maxHeight * .13,
+                  child: Transform.rotate(
+                    angle: .46,
+                    child: Icon(
+                      Icons.local_cafe_outlined,
+                      size: 62,
+                      color: Colors.black.withValues(alpha: .20),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -19,
+                  bottom: constraints.maxHeight * .05,
+                  child: Transform.rotate(
+                    angle: -.28,
+                    child: Icon(
+                      Icons.fastfood_outlined,
+                      size: 58,
+                      color: Colors.black.withValues(alpha: .22),
+                    ),
+                  ),
+                ),
+              ],
             );
           },
         ),

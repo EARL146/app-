@@ -182,12 +182,26 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'Good morning, Admin 👋',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w900,
-                                      ),
+                                    const Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            'Good morning, Admin',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 5),
+                                        Icon(
+                                          Icons.waving_hand_rounded,
+                                          size: 16,
+                                          color: Color(0xFFF56A2A),
+                                        ),
+                                      ],
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
@@ -223,13 +237,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               trend: 'All time',
                             ),
                             _MetricCard(
-                              label: 'Revenue',
+                              label: 'Order value',
                               value: dashboardProvider.hasData
-                                  ? '₱${dashboardProvider.deliveredRevenue.toStringAsFixed(0)}'
+                                  ? '₱${dashboardProvider.orderValue.toStringAsFixed(0)}'
                                   : '—',
                               icon: Icons.payments_outlined,
                               color: const Color(0xFF1EAD8B),
-                              trend: 'Delivered',
+                              trend: 'All time',
                             ),
                             _MetricCard(
                               label: 'Customers',

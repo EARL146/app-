@@ -41,11 +41,11 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
   @visibleForTesting
   AuthService.forTesting({bool enableHeartbeat = false})
-      : this._(enableHeartbeat: enableHeartbeat);
+    : this._(enableHeartbeat: enableHeartbeat);
 
   AuthService._({this._enableHeartbeat = true})
-      : _apiService = ApiService(),
-        _storageService = StorageService() {
+    : _apiService = ApiService(),
+      _storageService = StorageService() {
     if (_enableHeartbeat) WidgetsBinding.instance.addObserver(this);
     initialization = _initializeAuth();
   }
@@ -183,9 +183,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
   void _startActivityHeartbeat() {
     _activityTimer?.cancel();
-    if (!_enableHeartbeat ||
-        !_isAuthenticated ||
-        !_apiService.isConfigured) {
+    if (!_enableHeartbeat || !_isAuthenticated || !_apiService.isConfigured) {
       return;
     }
     if (_currentUserRole == 'customer') {

@@ -53,6 +53,12 @@ void main() {
               ),
             );
           }
+          if (settings.name == '/welcome') {
+            return MaterialPageRoute<void>(
+              settings: settings,
+              builder: (_) => const WelcomeScreen(),
+            );
+          }
           return AppRouter.generateRoute(settings);
         },
         home: const SplashScreen(restoreSession: false),

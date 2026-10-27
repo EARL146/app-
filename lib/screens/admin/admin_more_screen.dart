@@ -134,7 +134,7 @@ class _RevenueSummaryCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Collected revenue',
+                      'Order value',
                       style: Theme.of(context).textTheme.titleMedium!
                           .copyWith(fontWeight: FontWeight.bold),
                     ),
@@ -159,20 +159,29 @@ class _RevenueSummaryCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   dashboard.hasData
-                      ? '₱${dashboard.deliveredRevenue.toStringAsFixed(2)}'
+                      ? '₱${dashboard.orderValue.toStringAsFixed(2)}'
                       : '—',
                   style: Theme.of(context).textTheme.displayMedium!.copyWith(
                     color: AppColors.brandOrange,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (dashboard.hasData) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Collected after delivery: ₱${dashboard.deliveredRevenue.toStringAsFixed(2)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 if (dashboard.errorMessage != null) ...[
                   const SizedBox(height: 6),
                   Text(
                     dashboard.errorMessage!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.danger,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: AppColors.danger),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -257,9 +266,7 @@ class _AdminNotificationSheetState extends State<_AdminNotificationSheet> {
           maxChildSize: .94,
           builder: (context, controller) => Material(
             color: AppColors.pageBackground,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(26),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
             clipBehavior: Clip.antiAlias,
             child: SafeArea(
               top: false,
@@ -306,9 +313,7 @@ class _AdminNotificationSheetState extends State<_AdminNotificationSheet> {
                                   ),
                                   Text(
                                     '$pendingCount pending · $activeCount in progress',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
+                                    style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
@@ -352,7 +357,10 @@ class _AdminNotificationSheetState extends State<_AdminNotificationSheet> {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.cloud_off_outlined, size: 34),
+                                  const Icon(
+                                    Icons.cloud_off_outlined,
+                                    size: 34,
+                                  ),
                                   const SizedBox(height: 10),
                                   Text(
                                     orders.errorMessage!,
@@ -422,9 +430,8 @@ class _AdminNotificationSheetState extends State<_AdminNotificationSheet> {
                                   borderRadius: BorderRadius.circular(16),
                                   onTap: () {
                                     Navigator.of(context).pop();
-                                    Navigator.of(context).pushNamed(
-                                      AppRoutes.adminOrders,
-                                    );
+                                    Navigator.of(context)
+                                        .pushNamed(AppRoutes.adminOrders);
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.all(13),
@@ -443,8 +450,9 @@ class _AdminNotificationSheetState extends State<_AdminNotificationSheet> {
                                             color: statusColor.withValues(
                                               alpha: .1,
                                             ),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
                                           child: Icon(
                                             Icons.receipt_long_rounded,
@@ -491,8 +499,9 @@ class _AdminNotificationSheetState extends State<_AdminNotificationSheet> {
                                             color: statusColor.withValues(
                                               alpha: .1,
                                             ),
-                                            borderRadius:
-                                                BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
                                           ),
                                           child: Text(
                                             order.status.displayName,
@@ -518,9 +527,8 @@ class _AdminNotificationSheetState extends State<_AdminNotificationSheet> {
                       child: FilledButton.icon(
                         onPressed: () {
                           Navigator.of(context).pop();
-                          Navigator.of(context).pushNamed(
-                            AppRoutes.adminOrders,
-                          );
+                          Navigator.of(context)
+                              .pushNamed(AppRoutes.adminOrders);
                         },
                         icon: const Icon(Icons.receipt_long_rounded),
                         label: const Text('Open orders management'),
@@ -539,8 +547,9 @@ class _AdminNotificationSheetState extends State<_AdminNotificationSheet> {
 
 Color _notificationStatusColor(OrderStatus status) => switch (status) {
   OrderStatus.pending => AppColors.warning,
-  OrderStatus.processing || OrderStatus.ready || OrderStatus.shipped =>
-    AppColors.info,
+  OrderStatus.processing ||
+  OrderStatus.ready ||
+  OrderStatus.shipped => AppColors.info,
   OrderStatus.delivered => AppColors.success,
   OrderStatus.canceled => AppColors.danger,
 };
@@ -682,7 +691,6 @@ class _AdminSettingsCard extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _SettingsTile extends StatelessWidget {
@@ -761,7 +769,7 @@ class _PayoutCardState extends State<_PayoutCard> {
   Future<void> _openWithdrawalDialog() async {
     final controller = TextEditingController();
     String? validationMessage;
-    final amount = await showDialog<double>(
+    final amount = await showDialog<String>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
@@ -799,10 +807,8 @@ class _PayoutCardState extends State<_PayoutCard> {
               const SizedBox(height: 12),
               Text(
                 'This records the withdrawal in the store ledger. It does not transfer funds to GCash or Maya automatically.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  height: 1.4,
-                ),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.textSecondary, height: 1.4),
               ),
             ],
           ),
@@ -813,21 +819,36 @@ class _PayoutCardState extends State<_PayoutCard> {
             ),
             FilledButton(
               onPressed: () {
-                final requested = double.tryParse(controller.text.trim());
-                if (requested == null || !requested.isFinite || requested <= 0) {
+                final input = controller.text.trim();
+                final validAmount = RegExp(r'^\d{1,8}(?:\.\d{1,2})?$')
+                    .hasMatch(input);
+                if (!validAmount) {
                   setDialogState(
-                    () => validationMessage = 'Enter a valid amount above ₱0.',
+                    () => validationMessage = 'Enter a positive amount with up to two decimal places.',
                   );
                   return;
                 }
-                if (requested > _available) {
+                final parts = input.split('.');
+                final requestedCents =
+                    (int.parse(parts.first) * 100) +
+                    int.parse(
+                      (parts.length > 1 ? parts[1] : '').padRight(2, '0'),
+                    );
+                final availableCents = (_available * 100).round();
+                if (requestedCents <= 0) {
+                  setDialogState(
+                    () => validationMessage = 'Amount must be above ₱0.',
+                  );
+                  return;
+                }
+                if (requestedCents > availableCents) {
                   setDialogState(
                     () => validationMessage =
                         'Insufficient funds. Only ₱${_available.toStringAsFixed(2)} is available.',
                   );
                   return;
                 }
-                Navigator.pop(dialogContext, requested);
+                Navigator.pop(dialogContext, input);
               },
               child: const Text('Continue'),
             ),
@@ -840,7 +861,7 @@ class _PayoutCardState extends State<_PayoutCard> {
     await _recordWithdrawal(amount);
   }
 
-  Future<void> _recordWithdrawal(double amount) async {
+  Future<void> _recordWithdrawal(String amount) async {
     setState(() => _submitting = true);
     final response = await _apiService.post<Map<String, dynamic>>(
       '/admin/withdrawals',
@@ -870,6 +891,8 @@ class _PayoutCardState extends State<_PayoutCard> {
 
   @override
   Widget build(BuildContext context) {
+    final hasSummary = !_loading && _error == null;
+    final canWithdraw = hasSummary && !_submitting;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -921,7 +944,7 @@ class _PayoutCardState extends State<_PayoutCard> {
                   ],
                 ),
                 Text(
-                  _loading ? '—' : '₱${_available.toStringAsFixed(2)}',
+                  canWithdraw ? '₱${_available.toStringAsFixed(2)}' : '—',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: AppColors.brandOrange,
                     fontWeight: FontWeight.w900,
@@ -933,14 +956,16 @@ class _PayoutCardState extends State<_PayoutCard> {
                     Expanded(
                       child: _PaymentMetric(
                         label: 'Delivered revenue',
-                        value: _loading ? '—' : '₱${_revenue.toStringAsFixed(2)}',
+                        value: hasSummary
+                            ? '₱${_revenue.toStringAsFixed(2)}'
+                            : '—',
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _PaymentMetric(
                         label: 'Withdrawals recorded',
-                        value: _loading
+                        value: !hasSummary
                             ? '—'
                             : '₱${_withdrawn.toStringAsFixed(2)}',
                       ),
@@ -973,7 +998,7 @@ class _PayoutCardState extends State<_PayoutCard> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: _loading || _submitting ? null : _openWithdrawalDialog,
+              onPressed: canWithdraw ? _openWithdrawalDialog : null,
               icon: _submitting
                   ? const SizedBox(
                       width: 17,
@@ -998,18 +1023,15 @@ class _PayoutCardState extends State<_PayoutCard> {
           const SizedBox(height: 9),
           Text(
             'Cash-on-delivery earnings count after an order is marked delivered. Withdrawals are recorded here; transfer them manually through your payout provider.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: AppColors.textSecondary, height: 1.4),
           ),
           if (_recentWithdrawals.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text(
               'Recent withdrawals',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
             for (final withdrawal in _recentWithdrawals.take(5))
@@ -1028,9 +1050,8 @@ class _PayoutCardState extends State<_PayoutCard> {
                         _formatWithdrawalDate(
                           withdrawal['created_at']?.toString() ?? '',
                         ),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: AppColors.textSecondary),
                       ),
                     ),
                     Text(
@@ -1082,23 +1103,19 @@ class _PaymentMetric extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 9,
-            ),
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: AppColors.textSecondary, fontSize: 9),
           ),
           const SizedBox(height: 4),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w900),
           ),
         ],
       ),
     );
   }
 }
-

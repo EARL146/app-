@@ -2,6 +2,24 @@
 
 [[PROJECT_HOME]] · [[INTEGRATION_MAP]] · [[AGENT_TEAM]] · [[AGENT_MONITOR]] · [[BACKUP_WORKFLOW]] · [[PRODUCTION_READINESS_AUDIT]] · [[KNOWN_ISSUES]] · [[TESTING]]
 
+## Admin account, earnings, and payment ledger (2026-10-27)
+
+- Admin Profile now lets the signed-in admin pick and save a profile photo through the existing `/me/profile-image` endpoint; photos are stored in `users.profile_image`.
+- Admin access and refresh tokens rotate every 10 minutes and refresh again when the app resumes. Overlapping refresh attempts share one request, avoiding refresh-token rotation races that could invalidate the session and trigger 401s on Store Profile and Support routes.
+- Admin More notifications show recent database-backed orders. Help & Support opens the support inbox, Store Profile remains editable, and the obsolete App Information panel was removed.
+- Dashboard revenue now distinguishes all non-cancelled order value from money collected on delivered orders. The local database currently has 7 pending orders with ₱2,318.68 order value, no delivered orders, and ₱0 collected; ₱0 is therefore the correct withdrawable balance until an order is delivered.
+- Added admin-only `GET /admin/payment-summary` and `POST /admin/withdrawals`; the backend serializes withdrawal attempts and refuses withdrawals above the current delivered-order balance. Migration `008_store_withdrawals.sql` was applied to `burger_bites` after backup. A PHP integration check confirmed a ₱500 withdrawal returns 409 and adds no ledger row while the balance is ₱0.
+- Backup: `%LOCALAPPDATA%\BurgerBites\database-backups\burger_bites_before_008_20261027-190636.sql` (1,316,296 bytes). GCash/Maya transfers are not connected; the ledger records withdrawals for manual transfer.
+- Verification (2026-10-27): `flutter analyze --no-pub` found no issues; `flutter test --no-pub` passed all 34 tests; `php -l backend/src/ApiApplication.php` and `php -l backend/src/Http.php` passed; `git diff --check` was clean; `graphify update .` rebuilt 2,675 nodes / 4,583 edges / 154 communities. No browser UI review or funded withdrawal was performed.
+
+## Customer splash, welcome, and sign-up refresh (2026-10-27)
+
+- Reworked the loading screen to use a white background, centered BurgerBites chef/burger wordmark, large circular loader, and subtle outlined food icons around the edges. It restores an existing session before showing the guest flow.
+- Added the centered welcome screen with the BurgerBites wordmark and red-accented greeting, then routes guests into the menu after a short pause.
+- Redesigned account creation with the same brand, white spacious layout, email/password/full-name fields, black Continue action, Google/Apple buttons, and terms text. Email/password registration and the sign-in return-to-caller flow remain connected to the existing API. Google and Apple sign-in are still unconfigured and show an explanatory message.
+- Fixed the 320 px registration button overflow and made the splash navigation timer cancel safely when the screen is disposed. Updated the auth-flow test for the current sign-up field order and the splash→welcome→menu path.
+- Verification: `flutter analyze --no-pub` reported no issues; `flutter test --no-pub` passed all 34 tests. Browser visual review and live auth-provider sign-in were not performed.
+
 ## Backend API restoration, presence heartbeat fixes, and test suite pass (2026-10-26)
 
 - Resolved browser `net::ERR_CONNECTION_REFUSED` for `http://127.0.0.1:8081/api/v1/products`: identified local PHP interpreter at `D:\Ampps\php\php.exe`, started the development API server on port 8081 pointing to `backend/public/index.php`, and added convenience launcher `backend/tools/start_api.bat` for one-click startup.

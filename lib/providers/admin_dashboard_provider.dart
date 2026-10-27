@@ -16,6 +16,7 @@ class AdminDashboardProvider extends ChangeNotifier {
   int deliveredOrders = 0;
   int cancelledOrders = 0;
   double deliveredRevenue = 0;
+  double orderValue = 0;
   int totalCustomers = 0;
   int activeCustomers = 0;
   int totalProducts = 0;
@@ -49,6 +50,7 @@ class AdminDashboardProvider extends ChangeNotifier {
         final nextCancelledOrders = integer('cancelled_orders');
         final nextDeliveredRevenue =
             (data['delivered_revenue'] as num?)?.toDouble() ?? 0;
+        final nextOrderValue = (data['order_value'] as num?)?.toDouble() ?? 0;
         final nextTotalCustomers = integer('total_customers');
         final nextActiveCustomers = integer('active_customers');
         final nextTotalProducts = integer('total_products');
@@ -75,6 +77,7 @@ class AdminDashboardProvider extends ChangeNotifier {
         deliveredOrders = nextDeliveredOrders;
         cancelledOrders = nextCancelledOrders;
         deliveredRevenue = nextDeliveredRevenue;
+        orderValue = nextOrderValue;
         totalCustomers = nextTotalCustomers;
         activeCustomers = nextActiveCustomers;
         totalProducts = nextTotalProducts;
