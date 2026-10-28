@@ -126,4 +126,16 @@ void main() {
     expect(cart.items.first.quantity, 1);
     expect(cart.items.last.quantity, 3);
   });
+
+  test('submitOrder validates customer phone number requires at least 7 digits', () async {
+    cart.addItem(burger);
+    final result = await cart.submitOrder(
+      customerName: 'Earl Pajo',
+      deliveryAddress: 'Purok 2 Poblacion Compostela',
+      phone: '12345',
+      paymentMethod: 'cod',
+    );
+    expect(result, isNull);
+    expect(cart.errorMessage, 'Enter a valid mobile number.');
+  });
 }

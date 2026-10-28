@@ -587,6 +587,7 @@ final class ApiApplication
         $address = trim((string)($body['delivery_address'] ?? ''));
         $phone = trim((string)($body['phone'] ?? ''));
         $notes = trim((string)($body['notes'] ?? ''));
+        $redeemRewards = filter_var($body['redeem_rewards'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $items = $body['items'] ?? null;
         if (mb_strlen($name) < 2 || mb_strlen($name) > 120 || mb_strlen($address) < 8 || mb_strlen($address) > 500 || mb_strlen($phone) < 7 || mb_strlen($phone) > 32) {
             throw new ApiException(422, 'Check the name, delivery address, and phone number.');

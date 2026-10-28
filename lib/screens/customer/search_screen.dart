@@ -486,11 +486,27 @@ class _SearchResultTile extends StatelessWidget {
                       }
                       if (!context.mounted) return;
                       cart.addItem(product);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      final messenger = ScaffoldMessenger.of(context);
+                      messenger.clearSnackBars();
+                      messenger.showSnackBar(
                         SnackBar(
-                          content: Text('${product.name} added to cart'),
+                          content: Row(
+                            children: [
+                              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${product.name} added to cart',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ],
+                          ),
                           behavior: SnackBarBehavior.floating,
-                          duration: const Duration(seconds: 1),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     },

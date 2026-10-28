@@ -27,7 +27,7 @@ class CatalogProvider extends ChangeNotifier {
             .toSet()
             .toList()
           ..sort();
-    return ['All', ...categories, 'Discount Sale'];
+    return ['All', ...categories];
   }
 
   bool get isLoading => _isLoading;

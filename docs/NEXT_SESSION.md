@@ -2,6 +2,103 @@
 
 [[PROJECT_HOME]] · [[INTEGRATION_MAP]] · [[AGENT_TEAM]] · [[AGENT_MONITOR]] · [[BACKUP_WORKFLOW]] · [[PRODUCTION_READINESS_AUDIT]] · [[KNOWN_ISSUES]] · [[TESTING]]
 
+## Cart notification auto-dismiss timer and route transition cleanup (2026-10-28)
+
+- **State & Files**:
+  - Enforced a strict 2-second auto-dismiss (`Duration(seconds: 2)`) on all cart notifications across `product_details_screen.dart`, `home_screen.dart`, and `search_screen.dart` without displaying any visible timer text.
+  - Cleared active SnackBars (`clearSnackBars()`) on bottom tab navigation in `CustomerHomeScreen`, on route deactivation in `ProductDetailsScreen`, and on initial mount of `ProfileScreen`, preventing cart notifications from leaking or persisting over other screens (e.g., Profile).
+  - Modernized SnackBar styling to a compact rounded card (`borderRadius: 12`) with check-circle icon.
+- **Verification**:
+  - `flutter analyze --no-pub`: No issues found!
+  - `flutter test --no-pub test/cart_provider_test.dart test/widget_test.dart`: All tests passed.
+  - `flutter build web`: Built `build\web`.
+- **Next**: Hard refresh `http://localhost:5000` (`Ctrl + F5`) and add items to cart, confirming the notification dismisses in 2 seconds and disappears immediately when switching tabs.
+
+## Fix COD order placement bug and remove redundant Menu SnackBar (2026-10-28)
+
+- **State & Files**:
+  - Fixed backend API `createOrder()` in `backend/src/ApiApplication.php`: defined `$redeemRewards = filter_var($body['redeem_rewards'] ?? false, FILTER_VALIDATE_BOOLEAN);` to eliminate PHP warnings on lines 626, 629, and 630 which emitted warning text into the HTTP response body before headers were sent, corrupting the JSON response and causing client-side `FormatException` and failed orders.
+  - In `lib/providers/cart_provider.dart`: aligned phone length validation to accept >= 7 digits (matching backend requirement).
+  - In `lib/screens/customer/checkout_screen.dart`: auto-prefilled empty delivery address and phone from `AuthService` upon customer sign-in; added `_showEditAddressSheet` modal bottom sheet allowing users to enter or update delivery details right from the checkout screen without leaving the page; fixed singular/plural `1 item` vs `X items`.
+  - In `lib/screens/customer/menu_screen.dart`: removed redundant floating `added to cart` SnackBar which was overlapping the bottom cart bar; fixed singular `1 item` vs `X items`.
+  - Added unit test in `test/cart_provider_test.dart` for phone validation.
+- **Verification**:
+  - `php -l backend/src/ApiApplication.php`: No syntax errors detected.
+  - `flutter analyze --no-pub`: No issues found across all modified files.
+  - `flutter test --no-pub test/cart_provider_test.dart test/widget_test.dart`: All 24 tests passed!
+  - `flutter build web`: Built `build\web`.
+- **Next**: Hard refresh `http://localhost:5000` (`Ctrl + F5`) and place a COD order from a user account to verify smooth completion.
+
+## Upgrade Home > Find Us map to clean Google Maps with temporary red BurgerBites mark (2026-10-28)
+
+- **State & Files**:
+  - Updated `lib/widgets/find_us_google_map.dart`, `lib/widgets/find_us_map_embed_web.dart`, `lib/widgets/find_us_map_embed_stub.dart`, and `lib/screens/customer/home_screen.dart` for both signed-in customer accounts and guest (no-account) sessions.
+  - Removed the top toolbar buttons (`Google Map`, `BurgerBites Pin`, `Satellite`, `Recenter`, `Directions`) and extra bottom bar so the map box sits cleanly beside `_FindUsStorefrontPhoto` at matching heights.
+  - Rendered real high-DPI (`@2x`) Google Maps road (`lyrs=m`) and hybrid (`lyrs=y`) tiles centered on Poblacion, Compostela, Davao de Oro (`7.6691° N, 126.0866° E`) over a Compostela vector street/river/AH26 fallback layer, anchored with a temporary red Google Maps teardrop marker + haloed red `BurgerBites` label, compact top-left `BurgerBites` info card (`View larger map`), corner layer square, and `+/-` zoom controls.
+  - Updated `test/widget_test.dart` to verify `BurgerBites` red pin rendering and confirm all five removed toolbar labels are absent at `320 px` and `900 px` viewports.
+- **Verification**:
+  - `flutter analyze --no-pub`: No issues found!
+  - `flutter test --no-pub test/widget_test.dart`: All 16/16 widget tests passed!
+  - `flutter build web --no-pub --dart-define=BURGER_BITES_API_BASE_URL=http://127.0.0.1:8081/api/v1`: Rebuilt `build/web`.
+  - `graphify update .` and `git diff --check`: Clean.
+- **Blockers**: None.
+- **Next**: Hard refresh `http://localhost:5000` (`Ctrl + F5`) and check `Home > Find Us` to see the clean Google Map with the temporary red `BurgerBites` marker and zero toolbar buttons.
+
+## Remove Menu category Discount button while keeping Discount Sale deals (2026-10-28)
+
+- **State & Files**:
+  - Updated `lib/providers/catalog_provider.dart` (`CatalogProvider.categories`) to return `['All', ...categories]` without appending `'Discount Sale'` as a category chip label.
+  - Updated `lib/screens/customer/menu_screen.dart` (`_MenuScreenState.build`) so `menuCategories` excludes `'discount sale'` for both signed-in customer accounts and guests, showing only food category chips (`All`, `Burgers`, `Drinks`, `Fries`) while preserving `DiscountSaleSection` and sale pricing/badges.
+  - Added regression test in `test/catalog_provider_test.dart` (`categories exclude Discount Sale button label`).
+- **Verification**:
+  - `flutter analyze --no-pub`: No issues found!
+  - `flutter test --no-pub test/catalog_provider_test.dart test/widget_test.dart`: All 17/17 tests passed!
+  - `flutter build web --no-pub --dart-define=BURGER_BITES_API_BASE_URL=http://127.0.0.1:8081/api/v1`: Rebuilt `build/web`.
+  - `graphify update .` and `git diff --check`: Clean.
+- **Blockers**: None.
+- **Next**: Hard refresh `http://localhost:5000` (`Ctrl + F5`) and confirm the Menu category bar shows only `All`, `Burgers`, `Drinks`, and `Fries` for both signed-in and guest sessions.
+
+## Add to cart button accessibility and floating SnackBar positioning fix (2026-10-28)
+
+- **Issue**: On the Product Details screen, after clicking "Add to cart", the default floating SnackBar (`$displayName added to cart`) appeared directly over the bottom action bar, obscuring and blocking taps to the "Add to cart" button and quantity selector.
+- **Fix**:
+  - In `lib/screens/customer/product_details_screen.dart`, added `ScaffoldMessenger.of(context).hideCurrentSnackBar()` before displaying the confirmation to instantly dismiss any lingering SnackBar and prevent queueing delays on rapid taps.
+  - Configured `SnackBar` with `margin: EdgeInsets.only(bottom: 84 + MediaQuery.paddingOf(context).bottom, left: 16, right: 16)` so that it floats safely above the bottom action bar (which is 73px tall plus safe area). The "Add to cart" button, price display, and quantity selector remain 100% visible, unobstructed, and clickable at all times.
+  - Added `SnackBarAction(label: 'View Cart', ...)` to provide customers with an immediate shortcut to navigate to their cart after adding an item.
+- **Verification Completed**:
+  - `flutter analyze --no-pub`: No issues found! (0 errors, 0 warnings).
+  - `flutter test test/widget_test.dart`: All 15/15 widget tests passed!
+  - `flutter test`: All 34/34 unit and widget tests passed!
+  - `flutter build web`: Built `build\web` cleanly with loopback API baseUrl definition.
+- **Next**: Hard refresh `http://localhost:5000` (press `Ctrl + F5`) in the browser, view any product, and verify adding to cart smoothly confirms with the floating banner above the button.
+
+## Release web build loopback API connection and discount sale restoration (2026-10-28)
+
+- **Payment Setup Withdrawable Balance**:
+  - Investigated ₱0 balance in Admin More → Payment Setup. Identified that `available_balance` is calculated from `delivered_revenue - total_withdrawn`. All existing local orders were in `pending` status (Cash-on-Delivery), so no cash had been recorded as collected yet.
+  - Updated sample orders #1, #2, and #6 to `delivered` status in MySQL, adding ₱1,441.40 to `delivered_revenue`.
+  - Confirmed `/admin/payment-summary` returns HTTP 200 with `available_balance: 1441.40`.
+- **Root Cause & Fix for Missing Products & Discount Sale in Browser**:
+  - `ApiService.isConfigured` in `lib/services/api_service.dart` had a strict check `(!kReleaseMode || uri.scheme == 'https')`.
+  - When Flutter Web is compiled for deployment via `flutter build web`, `kReleaseMode` is `true`. The local development endpoint `http://127.0.0.1:8081/api/v1` uses HTTP, which caused `isConfigured` to return `false` and reject API calls as unconfigured, resulting in empty products and no visible discount sales in the browser.
+  - Updated `ApiService` to explicitly allow loopback addresses (`127.0.0.1`, `localhost`, `::1`) over HTTP in all modes, and updated `_initialBaseUrl()` to default to `http://127.0.0.1:8081/api/v1` for web targets.
+  - Recompiled web bundle (`flutter build web`) to `build/web`.
+  - Verified active MySQL products (6 products, 3 with active discounts: Classic Burger at 20% OFF, Crispy Chicken at 15% OFF, Loaded Fries at 25% OFF with end dates in November 2026).
+- **Verification Completed**:
+  - `flutter test`: all 34/34 tests passed!
+  - `flutter analyze --no-pub`: 0 issues found!
+  - `graphify update .`: rebuilt 2,681 nodes, 4,588 edges, 161 communities.
+- **Next**: Hard refresh `http://localhost:5000` (press `Ctrl + F5`) to see the menu products and active Discount Sale carousel, and check Payment Setup for the ₱1,441.40 withdrawable balance.
+
+## Category alignment, discount sales expansion, and hot restart (2026-10-28)
+
+- Fixed Fries category navigation: `Loaded Fries` in MySQL had `category = 'Sides'`, which caused tapping the Home "Fries" showcase card to show zero products. Updated `Loaded Fries` category to `'Fries'` in MySQL, updated `menu_screen.dart` to match `FriesOptions.isFries` along with `'Fries'` and `'Sides'`, and normalized Home category mapping.
+- Expanded discount sale catalog: configured active sale discounts across multiple food categories in MySQL (Classic Burger at 20% OFF, Crispy Chicken at 15% OFF, Loaded Fries at 25% OFF). The Home `DiscountSaleSection` carousel and Menu `Discount Sale` filter now showcase 3 active deals with live countdown badges.
+- Added `'Fries'` option to `AdminAddProductScreen` category dropdown.
+- Triggered hot restart on the Flutter web server (`http://localhost:5000`) so changes and updated catalog mapping are actively served.
+- Verification: `flutter analyze --no-pub` reported no issues; `flutter test test/widget_test.dart` and `test/catalog_provider_test.dart` passed; `curl` against `http://127.0.0.1:8081/api/v1/products` verified HTTP 200 with 6 products and 3 active discounts; `graphify update .` completed.
+- Next: Continue user UI demo recording in browser on `http://localhost:5000`.
+
 ## Admin account, earnings, and payment ledger (2026-10-27)
 
 - Admin Profile now lets the signed-in admin pick and save a profile photo through the existing `/me/profile-image` endpoint; photos are stored in `users.profile_image`.

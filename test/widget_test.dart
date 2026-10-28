@@ -24,6 +24,7 @@ import 'package:burger_bites/services/auth_service.dart';
 import 'package:burger_bites/services/storage_service.dart';
 import 'package:burger_bites/screens/customer/settings_screen.dart';
 import 'package:burger_bites/screens/customer/contact_screen.dart';
+import 'package:burger_bites/widgets/find_us_google_map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -463,6 +464,54 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(find.text('Send message'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'home Find Us Google map renders temporary red BurgerBites mark without toolbar buttons',
+    (WidgetTester tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.devicePixelRatio = 1;
+
+      for (final size in [const Size(320, 844), const Size(900, 900)]) {
+        tester.view.physicalSize = size;
+        await tester.pumpWidget(_customerHomeHarness(AuthService()));
+        await tester.pump();
+
+        await tester.scrollUntilVisible(
+          find.byType(FindUsGoogleMap),
+          320,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
+
+        expect(find.text('Find Us'), findsOneWidget);
+        expect(find.byType(FindUsGoogleMap), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(FindUsGoogleMap),
+            matching: find.text('BurgerBites'),
+          ),
+          findsWidgets,
+        );
+        expect(find.text('View larger map'), findsOneWidget);
+
+        // Toolbar buttons requested to be removed must not appear
+        expect(find.text('Google Map'), findsNothing);
+        expect(find.text('BurgerBites Pin'), findsNothing);
+        expect(find.text('Satellite'), findsNothing);
+        expect(find.text('Recenter'), findsNothing);
+        expect(find.text('Directions'), findsNothing);
+        expect(tester.takeException(), isNull, reason: 'Find Us at $size');
+      }
+
+      // Corner layer icon and +/- zoom controls remain interactive
+      await tester.tap(find.byTooltip('Toggle map view'));
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     },
   );
 }

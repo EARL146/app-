@@ -28,6 +28,9 @@ class ApiService {
   );
   static const Duration _timeout = Duration(seconds: 15);
 
+  static bool _isLoopback(String host) =>
+      host == 'localhost' || host == '127.0.0.1' || host == '::1';
+
   static String _initialBaseUrl() {
     final configured = _compileTimeBaseUrl.trim();
     if (configured.isNotEmpty) {
@@ -35,8 +38,8 @@ class ApiService {
     }
 
     // Let local Edge/Chrome development use the documented PHP API by
-    // default, while keeping native tests and release builds isolated.
-    if (kDebugMode && kIsWeb) {
+    // default, while keeping native tests isolated.
+    if (kIsWeb) {
       return 'http://127.0.0.1:8081/api/v1';
     }
     return '';
@@ -59,7 +62,7 @@ class ApiService {
         uri.hasAuthority &&
         uri.host.isNotEmpty &&
         const {'http', 'https'}.contains(uri.scheme) &&
-        (!kReleaseMode || uri.scheme == 'https');
+        (!kReleaseMode || uri.scheme == 'https' || _isLoopback(uri.host));
   }
 
   void setBaseUrl(String newBaseUrl) {
@@ -69,7 +72,7 @@ class ApiService {
         !uri.hasAuthority ||
         uri.host.isEmpty ||
         !const {'http', 'https'}.contains(uri.scheme) ||
-        (kReleaseMode && uri.scheme != 'https')) {
+        (kReleaseMode && uri.scheme != 'https' && !_isLoopback(uri.host))) {
       throw ArgumentError.value(
         newBaseUrl,
         'newBaseUrl',

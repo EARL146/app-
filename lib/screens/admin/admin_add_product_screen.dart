@@ -282,7 +282,7 @@ class _AdminAddProductScreenState extends State<AdminAddProductScreen> {
             isExpanded: true,
             underline: const SizedBox(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            items: {'Burgers', 'Chicken', 'Sides', 'Drinks', _selectedCategory}
+            items: {'Burgers', 'Chicken', 'Fries', 'Sides', 'Drinks', _selectedCategory}
                 .map(
                   (category) =>
                       DropdownMenuItem(value: category, child: Text(category)),

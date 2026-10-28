@@ -54,21 +54,31 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   BurgerBitesWordmark(width: logoWidth),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 14),
                   const Text.rich(
                     TextSpan(
                       children: [
                         TextSpan(text: 'Welcome to '),
                         TextSpan(
-                          text: 'burger Bites',
-                          style: TextStyle(color: Color(0xFFE61928)),
+                          text: 'burger',
+                          style: TextStyle(
+                            color: Color(0xFFE51C23),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'Bites',
+                          style: TextStyle(
+                            color: Color(0xFF7B0D14),
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFF2C2927),
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w500,
                       letterSpacing: .2,
                     ),

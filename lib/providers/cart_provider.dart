@@ -384,7 +384,7 @@ class CartProvider extends ChangeNotifier {
       notifyListeners();
       return null;
     }
-    if (phone.replaceAll(RegExp(r'\D'), '').length < 10) {
+    if (phone.replaceAll(RegExp(r'\D'), '').length < 7) {
       _errorMessage = 'Enter a valid mobile number.';
       notifyListeners();
       return null;

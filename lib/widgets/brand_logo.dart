@@ -31,56 +31,55 @@ class BurgerBitesWordmark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final height = width * .62;
-    final fontSize = width * .086;
+    final fontSize = (width * .082).clamp(10.0, 28.0);
+    final burgerSize = width * .56;
+    final verticalOffset = height * .42;
+
     return SizedBox(
       width: width,
       height: height,
       child: Stack(
         clipBehavior: Clip.none,
+        alignment: Alignment.center,
         children: [
           Align(
-            alignment: Alignment.topCenter,
+            alignment: Alignment.center,
             child: BrandLogo(
-              width: width * .62,
+              width: burgerSize,
               height: height,
               animate: animate,
             ),
           ),
           Positioned(
-            left: 0,
-            right: 0,
-            top: height * .49,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Burger',
-                    textAlign: TextAlign.right,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: TextStyle(
-                      color: const Color(0xFFE61928),
-                      fontSize: fontSize,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: .2,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    'Bites',
-                    textAlign: TextAlign.left,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: TextStyle(
-                      color: const Color(0xFF9B141B),
-                      fontSize: fontSize,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: .2,
-                    ),
-                  ),
-                ),
-              ],
+            left: width * .02,
+            top: verticalOffset,
+            child: Text(
+              'Burger',
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                color: const Color(0xFFE51C23),
+                fontSize: fontSize,
+                fontWeight: FontWeight.w800,
+                letterSpacing: .3,
+                height: 1.0,
+              ),
+            ),
+          ),
+          Positioned(
+            right: width * .02,
+            top: verticalOffset,
+            child: Text(
+              'Bites',
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                color: const Color(0xFF7B0D14),
+                fontSize: fontSize,
+                fontWeight: FontWeight.w800,
+                letterSpacing: .3,
+                height: 1.0,
+              ),
             ),
           ),
         ],

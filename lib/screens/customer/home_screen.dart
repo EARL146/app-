@@ -17,6 +17,7 @@ import '../../widgets/food_image.dart';
 import '../../widgets/product_image_carousel.dart';
 import '../../widgets/discount_sale_badge.dart';
 import '../../widgets/discount_sale_section.dart';
+import '../../widgets/find_us_google_map.dart';
 import 'menu_screen.dart';
 import 'order_history_screen.dart';
 import 'profile_screen.dart';
@@ -109,6 +110,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen>
           elevation: 0,
           backgroundColor: Colors.transparent,
           onTap: (index) {
+            ScaffoldMessenger.of(context).clearSnackBars();
             setState(() => _selectedIndex = index);
             if (index <= 1) _refreshCatalog();
           },
@@ -410,7 +412,13 @@ class _HomeTab extends StatelessWidget {
     final products = catalog.products;
     final categories =
         products
-            .map((product) => product.category?.trim())
+            .map((product) {
+              final cat = product.category?.trim();
+              if (cat == 'Sides' && product.name.toLowerCase().contains('fries')) {
+                return 'Fries';
+              }
+              return cat;
+            })
             .whereType<String>()
             .where((category) => category.isNotEmpty)
             .where((category) => category.toLowerCase() != 'discount sale')
@@ -2204,42 +2212,8 @@ class _DiffFeatureTile extends StatelessWidget {
   }
 }
 
-class _FindUsDraggableMapSection extends StatefulWidget {
+class _FindUsDraggableMapSection extends StatelessWidget {
   const _FindUsDraggableMapSection();
-
-  @override
-  State<_FindUsDraggableMapSection> createState() =>
-      _FindUsDraggableMapSectionState();
-}
-
-class _FindUsDraggableMapSectionState
-    extends State<_FindUsDraggableMapSection> {
-  Offset _panOffset = Offset.zero;
-  double _zoom = 1.0;
-  bool _satelliteMode = false;
-
-  void _updatePan(Offset delta) {
-    setState(() {
-      final limit = 90.0 * _zoom;
-      _panOffset = Offset(
-        (_panOffset.dx + delta.dx).clamp(-limit, limit),
-        (_panOffset.dy + delta.dy).clamp(-limit, limit),
-      );
-    });
-  }
-
-  void _changeZoom(double delta) {
-    setState(() {
-      _zoom = (_zoom + delta).clamp(0.85, 1.85);
-    });
-  }
-
-  void _resetMap() {
-    setState(() {
-      _panOffset = Offset.zero;
-      _zoom = 1.0;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -2263,7 +2237,7 @@ class _FindUsDraggableMapSectionState
             SizedBox(width: 3),
             Flexible(
               child: Text(
-                'Location: Compostela, Davao de Oro PH',
+                'Location: Poblacion, Compostela, Davao de Oro PH',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -2278,208 +2252,28 @@ class _FindUsDraggableMapSectionState
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
-            final stackVertically = constraints.maxWidth < 520;
-            final mapHeight = stackVertically ? 235.0 : 320.0;
+            final stackVertically = constraints.maxWidth < 580;
+            final mapHeight = stackVertically ? 275.0 : 320.0;
             final storefrontHeight = stackVertically
                 ? (constraints.maxWidth * 0.84).clamp(230.0, 320.0).toDouble()
                 : mapHeight;
-            final mapWidget = SizedBox(
-              height: mapHeight,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.grab,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onPanUpdate: (details) => _updatePan(details.delta),
-                          onDoubleTap: () => _changeZoom(0.25),
-                          child: CustomPaint(
-                            painter: _CompostelaMapPainter(
-                              panOffset: _panOffset,
-                              zoom: _zoom,
-                              satelliteMode: _satelliteMode,
-                            ),
-                            child: const SizedBox.expand(),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: Container(
-                        constraints: BoxConstraints(
-                          maxWidth: constraints.maxWidth * 0.48,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.97),
-                          borderRadius: BorderRadius.circular(7),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x26000000),
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'BurgerBites',
-                              style: TextStyle(
-                                color: Color(0xFF1E293B),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            const Text(
-                              'Compostela, Davao de Oro, Philippines',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Color(0xFF64748B),
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            InkWell(
-                              onTap: _resetMap,
-                              child: const Text(
-                                'Recenter map',
-                                style: TextStyle(
-                                  color: Color(0xFF2563EB),
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 8,
-                      bottom: 8,
-                      child: InkWell(
-                        onTap: () =>
-                            setState(() => _satelliteMode = !_satelliteMode),
-                        borderRadius: BorderRadius.circular(5),
-                        child: Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: _satelliteMode
-                                  ? const [Color(0xFFE2E8F0), Color(0xFFCBD5E1)]
-                                  : const [
-                                      Color(0xFF14532D),
-                                      Color(0xFF064E3B),
-                                    ],
-                            ),
-                            borderRadius: BorderRadius.circular(5),
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x33000000),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            _satelliteMode
-                                ? Icons.map_rounded
-                                : Icons.satellite_alt_rounded,
-                            size: 17,
-                            color: _satelliteMode
-                                ? const Color(0xFF1E293B)
-                                : Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 10,
-                      bottom: 10,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(5),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x26000000),
-                              blurRadius: 6,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            InkWell(
-                              onTap: () => _changeZoom(0.2),
-                              child: const SizedBox(
-                                width: 36,
-                                height: 31,
-                                child: Icon(
-                                  Icons.add_rounded,
-                                  size: 21,
-                                  color: Color(0xFF334155),
-                                ),
-                              ),
-                            ),
-                            Container(
-                              width: 26,
-                              height: 1,
-                              color: const Color(0xFFE2E8F0),
-                            ),
-                            InkWell(
-                              onTap: () => _changeZoom(-0.2),
-                              child: const SizedBox(
-                                width: 36,
-                                height: 31,
-                                child: Icon(
-                                  Icons.remove_rounded,
-                                  size: 21,
-                                  color: Color(0xFF334155),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-
+            final mapWidget = FindUsGoogleMap(height: mapHeight);
             final storefront = _FindUsStorefrontPhoto(height: storefrontHeight);
+
             if (stackVertically) {
               return Column(
-                children: [mapWidget, const SizedBox(height: 10), storefront],
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [mapWidget, const SizedBox(height: 12), storefront],
               );
             }
 
-            return SizedBox(
-              height: mapHeight,
-              child: Row(
-                children: [
-                  Expanded(flex: 6, child: mapWidget),
-                  const SizedBox(width: 4),
-                  Expanded(flex: 4, child: storefront),
-                ],
-              ),
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 6, child: mapWidget),
+                const SizedBox(width: 12),
+                Expanded(flex: 4, child: storefront),
+              ],
             );
           },
         ),
@@ -2500,9 +2294,18 @@ class _FindUsStorefrontPhoto extends StatelessWidget {
       width: double.infinity,
       child: DecoratedBox(
         decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFF171717), width: 2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x18000000),
+              blurRadius: 14,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
-        child: ClipRect(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
           child: Image.asset(
             'assets/products/find_us_storefront.png',
             fit: BoxFit.cover,
@@ -2514,214 +2317,6 @@ class _FindUsStorefrontPhoto extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Interactive CustomPainter for the Compostela, Davao de Oro street map (Image 6).
-class _CompostelaMapPainter extends CustomPainter {
-  const _CompostelaMapPainter({
-    required this.panOffset,
-    required this.zoom,
-    required this.satelliteMode,
-  });
-
-  final Offset panOffset;
-  final double zoom;
-  final bool satelliteMode;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bgPaint = Paint()
-      ..color = satelliteMode
-          ? const Color(0xFF1B2E25)
-          : const Color(0xFFEFF3F6);
-    canvas.drawRect(Offset.zero & size, bgPaint);
-
-    canvas.save();
-    final center = Offset(size.width / 2, size.height / 2);
-    canvas.translate(center.dx + panOffset.dx, center.dy + panOffset.dy);
-    canvas.scale(zoom);
-    canvas.translate(-center.dx, -center.dy);
-
-    // Green parks & blocks
-    final parkPaint = Paint()
-      ..color = satelliteMode
-          ? const Color(0xFF234233)
-          : const Color(0xFFD5F2DC);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.05, size.height * 0.25, 58, 42),
-        const Radius.circular(6),
-      ),
-      parkPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.52, size.height * 0.16, 54, 36),
-        const Radius.circular(6),
-      ),
-      parkPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(size.width * 0.36, size.height * 0.54, 48, 34),
-        const Radius.circular(6),
-      ),
-      parkPaint,
-    );
-
-    // Coastal water body on bottom-right (matching Image 6)
-    final waterPath = Path()
-      ..moveTo(size.width * 0.58, size.height * 1.15)
-      ..quadraticBezierTo(
-        size.width * 0.78,
-        size.height * 0.65,
-        size.width * 1.15,
-        size.height * 0.30,
-      )
-      ..lineTo(size.width * 1.25, size.height * 1.25)
-      ..close();
-    canvas.drawPath(
-      waterPath,
-      Paint()
-        ..color = satelliteMode
-            ? const Color(0xFF0C4A6E)
-            : const Color(0xFF8CD3FB),
-    );
-
-    // Diagonal grid streets of Compostela
-    final minorRoadPaint = Paint()
-      ..color = satelliteMode
-          ? const Color(0xFF334155)
-          : const Color(0xFFFFFFFF)
-      ..strokeWidth = 4.0
-      ..style = PaintingStyle.stroke;
-
-    for (var i = -3; i <= 6; i++) {
-      final offset = i * 38.0;
-      canvas.drawLine(
-        Offset(offset - 60, -40),
-        Offset(offset + size.width * 0.75, size.height + 40),
-        minorRoadPaint,
-      );
-      canvas.drawLine(
-        Offset(-40, offset + size.height * 0.6),
-        Offset(size.width + 40, offset - 50),
-        minorRoadPaint,
-      );
-    }
-
-    // Main National Highway
-    final highwayPaint = Paint()
-      ..color = satelliteMode
-          ? const Color(0xFFF59E0B)
-          : const Color(0xFFFDE68A)
-      ..strokeWidth = 7.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(size.width * 0.08, size.height * 0.95),
-      Offset(size.width * 0.85, size.height * 0.05),
-      highwayPaint,
-    );
-
-    // Landmarks from Image 6
-    _drawPin(
-      canvas,
-      Offset(size.width * 0.62, size.height * 0.25),
-      const Color(0xFF16A34A),
-      'Compostela Park',
-      satelliteMode,
-    );
-    _drawPin(
-      canvas,
-      Offset(size.width * 0.34, size.height * 0.42),
-      const Color(0xFFF97316),
-      'Jollibee',
-      satelliteMode,
-    );
-    _drawPin(
-      canvas,
-      Offset(size.width * 0.80, size.height * 0.44),
-      const Color(0xFF2563EB),
-      'Gaisano',
-      satelliteMode,
-    );
-    _drawPin(
-      canvas,
-      Offset(size.width * 0.53, size.height * 0.63),
-      const Color(0xFF0D9488),
-      'Municipal Hall',
-      satelliteMode,
-    );
-
-    // Main Red BurgerBites Pin in center
-    final mainPinPos = Offset(size.width * 0.56, size.height * 0.43);
-    canvas.drawCircle(
-      mainPinPos.translate(0, 3),
-      9,
-      Paint()..color = const Color(0x33DC2626),
-    );
-    canvas.drawCircle(
-      mainPinPos,
-      8.5,
-      Paint()..color = const Color(0xFFDC2626),
-    );
-    canvas.drawCircle(mainPinPos, 3.5, Paint()..color = Colors.white);
-
-    final tp = TextPainter(
-      text: TextSpan(
-        text: 'BurgerBites\n',
-        style: TextStyle(
-          color: satelliteMode ? Colors.white : const Color(0xFFB91C1C),
-          fontSize: 9.5,
-          fontWeight: FontWeight.w900,
-        ),
-        children: [
-          TextSpan(
-            text: 'Compostela, Davao de Oro',
-            style: TextStyle(
-              color: satelliteMode ? Colors.white70 : const Color(0xFF475569),
-              fontSize: 7.0,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: 120);
-    tp.paint(canvas, mainPinPos.translate(11, -9));
-
-    canvas.restore();
-  }
-
-  void _drawPin(
-    Canvas canvas,
-    Offset pos,
-    Color color,
-    String label,
-    bool darkText,
-  ) {
-    canvas.drawCircle(pos, 5.5, Paint()..color = color);
-    canvas.drawCircle(pos, 2.0, Paint()..color = Colors.white);
-    final tp = TextPainter(
-      text: TextSpan(
-        text: label,
-        style: TextStyle(
-          color: darkText ? Colors.white70 : color.withValues(alpha: 0.9),
-          fontSize: 7.0,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: 85);
-    tp.paint(canvas, pos.translate(7, -5));
-  }
-
-  @override
-  bool shouldRepaint(covariant _CompostelaMapPainter oldDelegate) =>
-      oldDelegate.panOffset != panOffset ||
-      oldDelegate.zoom != zoom ||
-      oldDelegate.satelliteMode != satelliteMode;
 }
 
 /// Bottom Dark Promo Banner: "THE PERFECT COMBO" + Footer Trust Strip (Images 4 & 6).
@@ -3207,11 +2802,27 @@ class _ProductCard extends StatelessWidget {
                           }
                           if (!context.mounted) return;
                           cart.addItem(product);
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          final messenger = ScaffoldMessenger.of(context);
+                          messenger.clearSnackBars();
+                          messenger.showSnackBar(
                             SnackBar(
-                              content: Text('${product.name} added to cart'),
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '${product.name} added to cart',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                ],
+                              ),
                               behavior: SnackBarBehavior.floating,
-                              duration: const Duration(seconds: 1),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              duration: const Duration(seconds: 2),
                             ),
                           );
                         },

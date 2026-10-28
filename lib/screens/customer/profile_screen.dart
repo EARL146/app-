@@ -21,6 +21,14 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String? _requestedUserId;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ScaffoldMessenger.of(context).clearSnackBars();
+    });
+  }
+
   Future<void> _pickProfilePhoto() async {
     if (!context.read<AuthService>().isAuthenticated) {
       ScaffoldMessenger.of(context).showSnackBar(

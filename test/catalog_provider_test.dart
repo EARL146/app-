@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:burger_bites/models/product_model.dart';
 import 'package:burger_bites/providers/catalog_provider.dart';
 import 'package:burger_bites/services/api_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,5 +37,38 @@ void main() {
     await catalog.loadProducts(force: true);
     expect(requestCount, 2);
     expect(catalog.isLoading, isFalse);
+  });
+
+  test('categories exclude Discount Sale button label', () {
+    final catalog = CatalogProvider(apiService: ApiService());
+    addTearDown(catalog.dispose);
+
+    catalog.upsertProduct(
+      Product(
+        id: '1',
+        name: 'Classic Burger',
+        description: 'Juicy beef patty',
+        price: 130,
+        discountPercent: 20,
+        category: 'Burgers',
+        stockQuantity: 10,
+        createdAt: DateTime.utc(2026, 10, 28),
+      ),
+    );
+    catalog.upsertProduct(
+      Product(
+        id: '2',
+        name: 'Loaded Fries',
+        description: 'Crispy fries',
+        price: 95,
+        discountPercent: 25,
+        category: 'Fries',
+        stockQuantity: 10,
+        createdAt: DateTime.utc(2026, 10, 28),
+      ),
+    );
+
+    expect(catalog.categories, ['All', 'Burgers', 'Fries']);
+    expect(catalog.categories, isNot(contains('Discount Sale')));
   });
 }

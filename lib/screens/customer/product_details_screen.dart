@@ -37,6 +37,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 
   @override
+  void deactivate() {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    super.deactivate();
+  }
+
+  @override
   void didUpdateWidget(covariant ProductDetailsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.product.id == widget.product.id) return;
@@ -764,17 +770,59 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                                                   }
                                                 : const {},
                                           );
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
+                                          final messenger =
+                                              ScaffoldMessenger.of(context);
+                                          messenger.clearSnackBars();
+                                          messenger.showSnackBar(
                                             SnackBar(
-                                              content: Text(
-                                                '$displayName added to cart',
+                                              content: Row(
+                                                children: [
+                                                  const Icon(
+                                                    Icons.check_circle_rounded,
+                                                    color: Colors.white,
+                                                    size: 18,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      '$displayName added to cart',
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                               behavior:
                                                   SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              margin: EdgeInsets.only(
+                                                bottom: 84 +
+                                                    MediaQuery.paddingOf(
+                                                      context,
+                                                    ).bottom,
+                                                left: 16,
+                                                right: 16,
+                                              ),
                                               duration: const Duration(
-                                                seconds: 1,
+                                                seconds: 2,
+                                              ),
+                                              action: SnackBarAction(
+                                                label: 'View Cart',
+                                                textColor:
+                                                    AppColors.brandOrange,
+                                                onPressed: () {
+                                                  messenger.clearSnackBars();
+                                                  Navigator.of(context)
+                                                      .pushNamed('/cart');
+                                                },
                                               ),
                                             ),
                                           );

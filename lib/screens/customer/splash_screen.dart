@@ -57,6 +57,29 @@ class _SplashScreenState extends State<SplashScreen> {
     super.dispose();
   }
 
+  Widget _doodle({
+    required String asset,
+    required double width,
+    required double height,
+    double opacity = 0.92,
+  }) {
+    return Opacity(
+      opacity: opacity,
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(asset),
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,36 +87,98 @@ class _SplashScreenState extends State<SplashScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxHeight < 300;
-            final widthLimit = math
-                .max(56.0, constraints.maxWidth - 32)
-                .toDouble();
-            final heightLimit = compact
-                ? constraints.maxHeight * .80
-                : constraints.maxHeight * .48;
-            final wordmarkWidth = math
-                .min(350.0, math.min(widthLimit, heightLimit))
-                .toDouble();
-            final loaderSize = compact
-                ? math.max(24.0, constraints.maxHeight * .25).toDouble()
-                : math.min(156.0, constraints.maxHeight * .21).toDouble();
-            final logoTop = constraints.maxHeight * (compact ? .06 : .08);
-            final loaderTop = constraints.maxHeight * (compact ? .56 : .44);
+            final availableHeight = constraints.maxHeight;
+            final availableWidth = constraints.maxWidth;
+            final isShort = availableHeight < 300;
+            final showDoodles = availableHeight >= 200 && availableWidth >= 200;
+
+            final maxLogoWidth = math
+                .min(
+                  330.0,
+                  math.min(
+                    availableWidth - 32,
+                    availableHeight * (isShort ? 0.70 : 0.38),
+                  ),
+                )
+                .clamp(60.0, 330.0);
+
+            final loaderSize = isShort
+                ? math.max(24.0, availableHeight * 0.25)
+                : math.min(160.0, availableHeight * 0.22).clamp(80.0, 160.0);
+
+            final logoTop = availableHeight * (isShort ? 0.05 : 0.07);
+            final loaderTop = availableHeight * (isShort ? 0.54 : 0.40);
 
             return Stack(
               clipBehavior: Clip.hardEdge,
               children: [
+                if (showDoodles) ...[
+                  // Top-left bottle doodle
+                  Positioned(
+                    top: availableHeight * 0.04,
+                    left: -4,
+                    child: _doodle(
+                      asset: 'assets/branding/doodle_bottle.png',
+                      width: math.min(65.0, availableWidth * 0.20),
+                      height: math.min(85.0, availableHeight * 0.15),
+                    ),
+                  ),
+                  // Top-right burger with flag doodle
+                  Positioned(
+                    top: availableHeight * 0.03,
+                    right: -4,
+                    child: _doodle(
+                      asset: 'assets/branding/doodle_burger.png',
+                      width: math.min(68.0, availableWidth * 0.20),
+                      height: math.min(78.0, availableHeight * 0.14),
+                    ),
+                  ),
+                  // Middle-right burger with flag doodle
+                  Positioned(
+                    top: availableHeight * 0.58,
+                    right: -4,
+                    child: _doodle(
+                      asset: 'assets/branding/doodle_burger.png',
+                      width: math.min(70.0, availableWidth * 0.21),
+                      height: math.min(80.0, availableHeight * 0.14),
+                    ),
+                  ),
+                  // Bottom-left fries in carton doodle
+                  Positioned(
+                    bottom: availableHeight * 0.10,
+                    left: -6,
+                    child: _doodle(
+                      asset: 'assets/branding/doodle_fries_box.png',
+                      width: math.min(85.0, availableWidth * 0.25),
+                      height: math.min(125.0, availableHeight * 0.18),
+                    ),
+                  ),
+                  // Bottom-right fries bundle doodle
+                  Positioned(
+                    bottom: availableHeight * 0.02,
+                    right: 0,
+                    child: _doodle(
+                      asset: 'assets/branding/doodle_fries_bundle.png',
+                      width: math.min(65.0, availableWidth * 0.20),
+                      height: math.min(75.0, availableHeight * 0.13),
+                    ),
+                  ),
+                ],
+
+                // Centered Burger Bites Logo Lockup at Top
                 Positioned(
                   top: logoTop,
                   left: 0,
                   right: 0,
                   child: Center(
                     child: BurgerBitesWordmark(
-                      width: wordmarkWidth,
+                      width: maxLogoWidth,
                       animate: true,
                     ),
                   ),
                 ),
+
+                // Center Large Circular Progress Indicator with Black Arc and Light Grey Track
                 Positioned(
                   top: loaderTop,
                   left: 0,
@@ -103,61 +188,13 @@ class _SplashScreenState extends State<SplashScreen> {
                       label: 'Loading Burger Bites',
                       child: SizedBox.square(
                         dimension: loaderSize,
-                        child: const CircularProgressIndicator(
-                          strokeWidth: 10,
+                        child: CircularProgressIndicator(
+                          strokeWidth: isShort ? 5.0 : 15.0,
                           strokeCap: StrokeCap.round,
                           color: Colors.black,
-                          backgroundColor: Color(0xFFECEDEF),
+                          backgroundColor: const Color(0xFFECECEC),
                         ),
                       ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: -18,
-                  top: constraints.maxHeight * .10,
-                  child: Transform.rotate(
-                    angle: -.34,
-                    child: Icon(
-                      Icons.fastfood_outlined,
-                      size: 54,
-                      color: Colors.black.withValues(alpha: .24),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: -20,
-                  top: constraints.maxHeight * .04,
-                  child: Transform.rotate(
-                    angle: .22,
-                    child: Icon(
-                      Icons.local_pizza_outlined,
-                      size: 56,
-                      color: Colors.black.withValues(alpha: .24),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: -15,
-                  bottom: constraints.maxHeight * .13,
-                  child: Transform.rotate(
-                    angle: .46,
-                    child: Icon(
-                      Icons.local_cafe_outlined,
-                      size: 62,
-                      color: Colors.black.withValues(alpha: .20),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: -19,
-                  bottom: constraints.maxHeight * .05,
-                  child: Transform.rotate(
-                    angle: -.28,
-                    child: Icon(
-                      Icons.fastfood_outlined,
-                      size: 58,
-                      color: Colors.black.withValues(alpha: .22),
                     ),
                   ),
                 ),

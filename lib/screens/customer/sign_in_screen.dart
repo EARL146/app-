@@ -33,11 +33,11 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 390),
               child: Form(
@@ -45,61 +45,68 @@ class _SignInScreenState extends State<SignInScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 2),
                     Center(
                       child: LayoutBuilder(
                         builder: (context, constraints) => BurgerBitesWordmark(
                           width: constraints.maxWidth < 320
                               ? constraints.maxWidth
                               : 320,
-                          animate: true,
+                          animate: false,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Welcome back',
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Sign in',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                        color: AppColors.textPrimary,
+                        letterSpacing: -0.2,
+                        color: Color(0xFF111111),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Sign in to continue ordering your favorite burgers',
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Enter your email to sign in to this app',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                        height: 1.5,
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    const SizedBox(height: 23),
+                    const SizedBox(height: 20),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      style: const TextStyle(fontSize: 14, color: Color(0xFF111111)),
                       decoration: InputDecoration(
-                        hintText: 'Email address',
+                        hintText: 'email@domain.com',
+                        hintStyle: const TextStyle(
+                          color: Color(0xFF9CA3AF),
+                          fontSize: 14,
+                        ),
                         filled: true,
                         fillColor: Colors.white,
-                        prefixIcon: Icon(Icons.email_outlined),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(14)),
+                          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.border),
-                          borderRadius: BorderRadius.all(Radius.circular(14)),
+                          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: AppColors.brandOrange,
-                            width: 1.6,
+                          borderSide: const BorderSide(
+                            color: Colors.black,
+                            width: 1.4,
                           ),
-                          borderRadius: BorderRadius.all(Radius.circular(14)),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       validator: (value) {
@@ -111,16 +118,29 @@ class _SignInScreenState extends State<SignInScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) => _submit(),
+                      style: const TextStyle(fontSize: 14, color: Color(0xFF111111)),
                       decoration: InputDecoration(
                         hintText: 'Password',
+                        hintStyle: const TextStyle(
+                          color: Color(0xFF9CA3AF),
+                          fontSize: 14,
+                        ),
                         filled: true,
                         fillColor: Colors.white,
-                        prefixIcon: const Icon(Icons.lock_outline),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         suffixIcon: IconButton(
+                          tooltip: _obscurePassword
+                              ? 'Show password'
+                              : 'Hide password',
                           onPressed: () {
                             setState(() {
                               _obscurePassword = !_obscurePassword;
@@ -130,21 +150,24 @@ class _SignInScreenState extends State<SignInScreen> {
                             _obscurePassword
                                 ? Icons.visibility_off_outlined
                                 : Icons.visibility_outlined,
+                            size: 20,
+                            color: const Color(0xFF9CA3AF),
                           ),
                         ),
-                        border: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(14)),
+                        border: OutlineInputBorder(
+                          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: AppColors.border),
-                          borderRadius: BorderRadius.all(Radius.circular(14)),
+                          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: AppColors.brandOrange,
-                            width: 1.6,
+                          borderSide: const BorderSide(
+                            color: Colors.black,
+                            width: 1.4,
                           ),
-                          borderRadius: BorderRadius.all(Radius.circular(14)),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       validator: (value) {
@@ -154,7 +177,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     AnimatedPressScale(
                       enabled: !_isSubmitting,
                       child: SizedBox(
@@ -162,20 +185,18 @@ class _SignInScreenState extends State<SignInScreen> {
                         child: ElevatedButton(
                           onPressed: _isSubmitting ? null : _submit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.darkSurface,
+                            backgroundColor: Colors.black,
                             foregroundColor: Colors.white,
-                            elevation: 3,
-                            shadowColor: AppColors.darkSurface.withValues(
-                              alpha: 0.25,
-                            ),
+                            disabledBackgroundColor: Colors.black87,
+                            disabledForegroundColor: Colors.white70,
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: _isSubmitting
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
+                              ? const SizedBox.square(
+                                  dimension: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     color: Colors.white,
@@ -184,32 +205,32 @@ class _SignInScreenState extends State<SignInScreen> {
                               : const Text(
                                   'Continue',
                                   style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
                                     letterSpacing: 0.2,
                                   ),
                                 ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 16),
                     Row(
-                      children: [
-                        Expanded(child: Divider()),
+                      children: const [
+                        Expanded(child: Divider(color: Color(0xFFE5E7EB), thickness: 1)),
                         Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 10),
+                          padding: EdgeInsets.symmetric(horizontal: 14),
                           child: Text(
-                            'or continue with',
+                            'or',
                             style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 10,
+                              color: Color(0xFF6B7280),
+                              fontSize: 12,
                             ),
                           ),
                         ),
-                        Expanded(child: Divider()),
+                        Expanded(child: Divider(color: Color(0xFFE5E7EB), thickness: 1)),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
                     _socialButton(
                       context,
                       icon: const Text(
@@ -217,51 +238,74 @@ class _SignInScreenState extends State<SignInScreen> {
                         style: TextStyle(
                           color: Color(0xFF4285F4),
                           fontWeight: FontWeight.w900,
-                          fontSize: 15,
+                          fontSize: 17,
                         ),
                       ),
                       label: 'Continue with Google',
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     _socialButton(
                       context,
                       icon: const Icon(
                         Icons.apple_rounded,
                         color: Colors.black,
-                        size: 18,
+                        size: 20,
                       ),
                       label: 'Continue with Apple',
                     ),
-                    const SizedBox(height: 13),
-                    Text(
-                      'By continuing, you agree to our Terms of Service and Privacy Policy.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 9,
-                        height: 1.45,
+                    const SizedBox(height: 16),
+                    Text.rich(
+                      TextSpan(
+                        style: const TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 11,
+                          height: 1.45,
+                        ),
+                        children: const [
+                          TextSpan(text: 'By clicking continue, you agree to our '),
+                          TextSpan(
+                            text: 'Terms of Service',
+                            style: TextStyle(
+                              color: Color(0xFF111111),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextSpan(text: '\nand '),
+                          TextSpan(
+                            text: 'Privacy Policy',
+                            style: TextStyle(
+                              color: Color(0xFF111111),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
+                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
                     Wrap(
                       alignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Text(
+                        const Text(
                           'Don’t have an account?',
                           style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
                           ),
                         ),
                         AnimatedPressScale(
                           child: TextButton(
                             onPressed: _openRegistration,
-                            child: Text(
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.brandRed,
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                            ),
+                            child: const Text(
                               'Create one',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.brandOrange,
+                                fontSize: 12,
                               ),
                             ),
                           ),
@@ -339,8 +383,8 @@ class _SignInScreenState extends State<SignInScreen> {
   }) {
     return AnimatedPressScale(
       child: SizedBox(
-        height: 40,
-        child: OutlinedButton(
+        height: 48,
+        child: ElevatedButton(
           onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -349,12 +393,13 @@ class _SignInScreenState extends State<SignInScreen> {
               behavior: SnackBarBehavior.floating,
             ),
           ),
-          style: OutlinedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-            side: BorderSide(color: AppColors.border),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFEEEEEE),
+            foregroundColor: const Color(0xFF111111),
+            elevation: 0,
+            shadowColor: Colors.transparent,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(11),
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
           child: Row(
@@ -369,8 +414,9 @@ class _SignInScreenState extends State<SignInScreen> {
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF111111),
                   ),
                 ),
               ),

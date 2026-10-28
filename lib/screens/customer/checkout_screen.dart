@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -83,17 +84,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         name: _nameController.text,
                         address: _addressController.text,
                         phone: _phoneController.text,
-                        onEdit: () async {
-                          await Navigator.of(context).pushNamed('/settings');
-                          if (!context.mounted) return;
-                          final auth = context.read<AuthService>();
-                          setState(() {
-                            _nameController.text = auth.currentUserName ?? '';
-                            _addressController.text =
-                                auth.currentUserAddress ?? '';
-                            _phoneController.text = auth.currentUserPhone ?? '';
-                          });
-                        },
+                        onEdit: () => _showEditAddressSheet(context),
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -108,7 +99,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                           ),
                           Text(
-                            '${cart.items.length} items',
+                            '${cart.items.length} ${cart.items.length == 1 ? "item".tr : "items".tr}',
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 10,
@@ -360,12 +351,176 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
+  Future<bool> _showEditAddressSheet(BuildContext context) async {
+    final auth = context.read<AuthService>();
+    final nameCtrl = TextEditingController(
+      text: _nameController.text.isNotEmpty
+          ? _nameController.text
+          : (auth.currentUserName ?? ''),
+    );
+    final addressCtrl = TextEditingController(
+      text: _addressController.text.isNotEmpty
+          ? _addressController.text
+          : (auth.currentUserAddress ?? ''),
+    );
+    final phoneCtrl = TextEditingController(
+      text: _phoneController.text.isNotEmpty
+          ? _phoneController.text
+          : (auth.currentUserPhone ?? ''),
+    );
+    final sheetFormKey = GlobalKey<FormState>();
+
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceElevated,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            child: Form(
+              key: sheetFormKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Delivery details',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Please confirm your delivery address and contact number.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Full name',
+                      prefixIcon: Icon(Icons.person_outline_rounded),
+                    ),
+                    validator: (v) => (v == null || v.trim().length < 2)
+                        ? 'Name must be at least 2 characters'
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: addressCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Delivery address',
+                      hintText: 'Purok, Street, Landmark, Compostela',
+                      prefixIcon: Icon(Icons.home_outlined),
+                    ),
+                    validator: (v) => (v == null || v.trim().length < 8)
+                        ? 'Address must be at least 8 characters'
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Contact phone / mobile',
+                      hintText: '09xxxxxxxxx',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                    ),
+                    validator: (v) {
+                      final clean = (v ?? '').replaceAll(RegExp(r'\D'), '');
+                      return clean.length < 7
+                          ? 'Phone number must have at least 7 digits'
+                          : null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (!sheetFormKey.currentState!.validate()) return;
+                      Navigator.of(sheetContext).pop(true);
+                    },
+                    child: const Text('Save Delivery Details'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (saved == true) {
+      final newName = nameCtrl.text.trim();
+      final newAddress = addressCtrl.text.trim();
+      final newPhone = phoneCtrl.text.trim();
+      setState(() {
+        _nameController.text = newName;
+        _addressController.text = newAddress;
+        _phoneController.text = newPhone;
+      });
+      unawaited(
+        auth.updateProfile(
+          name: newName,
+          address: newAddress,
+          phone: newPhone,
+        ),
+      );
+      return true;
+    }
+    return false;
+  }
+
   Future<void> _submit(BuildContext context, CartProvider cart) async {
     if (!await requireCustomerAccount(context, action: 'place this order')) {
       return;
     }
     if (!context.mounted) return;
     FocusScope.of(context).unfocus();
+
+    final auth = context.read<AuthService>();
+    if (_nameController.text.trim().isEmpty && auth.currentUserName != null) {
+      _nameController.text = auth.currentUserName!;
+    }
+    if (_addressController.text.trim().isEmpty && auth.currentUserAddress != null) {
+      _addressController.text = auth.currentUserAddress!;
+    }
+    if (_phoneController.text.trim().isEmpty && auth.currentUserPhone != null) {
+      _phoneController.text = auth.currentUserPhone!;
+    }
+
+    if (_nameController.text.trim().length < 2 ||
+        _addressController.text.trim().length < 8 ||
+        _phoneController.text.replaceAll(RegExp(r'\D'), '').length < 7) {
+      final saved = await _showEditAddressSheet(context);
+      if (!saved || !context.mounted) return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
     final orderId = await cart.submitOrder(
       customerName: _nameController.text,

@@ -34,7 +34,9 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
     final menuCategories = catalog.categories
-        .where((category) => category != 'Discount Sale')
+        .map((category) => category == 'Sides' ? 'Fries' : category)
+        .where((category) => category.toLowerCase() != 'discount sale')
+        .toSet()
         .toList(growable: false);
     final filteredProducts = _selectedCategory == 'Discount Sale'
         ? catalog.products
@@ -43,7 +45,14 @@ class _MenuScreenState extends State<MenuScreen> {
         : _selectedCategory == 'All'
         ? catalog.products
         : catalog.products
-              .where((product) => product.category == _selectedCategory)
+              .where((product) {
+                if (_selectedCategory == 'Fries' || _selectedCategory == 'Sides') {
+                  return FriesOptions.isFries(product.category, product.name) ||
+                      product.category == 'Fries' ||
+                      product.category == 'Sides';
+                }
+                return product.category == _selectedCategory;
+              })
               .toList();
 
     return Scaffold(
@@ -313,7 +322,7 @@ class _MenuScreenState extends State<MenuScreen> {
                               const Icon(Icons.shopping_bag_outlined, size: 18),
                               const SizedBox(width: 8),
                               AnimatedValueText(
-                                '${cart.items.fold<int>(0, (sum, item) => sum + item.quantity)} ${'items'.tr}',
+                                '${cart.items.fold<int>(0, (sum, item) => sum + item.quantity)} ${cart.items.fold<int>(0, (sum, item) => sum + item.quantity) == 1 ? 'item'.tr : 'items'.tr}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -771,13 +780,6 @@ class MenuProductCard extends StatelessWidget {
                                   : isFries
                                   ? {'size': 'Small'}
                                   : const {},
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('$quickAddName added to cart'),
-                                behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 1),
-                              ),
                             );
                           },
                           icon: const Icon(Icons.add_rounded, size: 18),
